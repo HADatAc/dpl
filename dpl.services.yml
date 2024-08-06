@@ -1,0 +1,6 @@
+services:
+  #dpl.custom_access_check:
+  #  class: Drupal\dpl\Access\CustomAccessCheck
+  #  arguments: ['@current_user']
+  #  tags:
+  #    - { name: access_check, applies_to: _custom_access_check }

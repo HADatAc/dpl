@@ -1,0 +1,10 @@
+name: Deployment Elements
+description: GUI for managing deployment elements including platforms, (data) streams, and deployment itself, all these concepts stored in a HAScO API
+package: Semantic Tools
+core_version_requirement: ^8 || ^9
+type: module 
+dependencies:
+  - drupal:rep
+  - drupal:sir
+version: '0.7.0'
+configure: rep.admin_settings

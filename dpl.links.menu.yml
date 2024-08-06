@@ -1,0 +1,127 @@
+dpl.search:
+  title: Search Deployment Elements
+  description: Search Deployment Elements
+  route_name: dpl.search
+  parent: rep.top_dpl
+  menu_name: main
+  enabled: 1
+  weight: 1
+  requirements:
+   _permission: 'access content'
+
+dpl.divider1:
+  title: '_________________________________'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 9
+  route_name: '<none>'
+
+dpl.manage_ins_files:
+  title: Manage DP2 Templates
+  description: Manage DP2 Templates
+  route_name: rep.select_mt_element
+  route_parameters:
+    elementtype: 'dp2'
+    mode: 'table'
+    page: '1'
+    pagesize: '10'
+    studyuri: 'none'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 10
+  requirements:
+    _permission: 'access content'
+
+dpl.manage_ins_files:
+  title: Manage STR Templates
+  description: Manage STR Templates
+  route_name: rep.select_mt_element
+  route_parameters:
+    elementtype: 'str'
+    mode: 'table'
+    page: '1'
+    pagesize: '10'
+    studyuri: 'none'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 11
+  requirements:
+    _permission: 'access content'
+
+dpl.divider2:
+  title: '_________________________________'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 19
+  route_name: '<none>'
+  
+dpl.manage_platforms:
+  title: Manage Platforms
+  description: Manage Platforms
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'platform'
+    page: '1'
+    pagesize: '10'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 20
+  requirements:
+    _permission: 'access content'
+
+dpl.manage_instrument_instances:
+  title: Manage Instrument Instancess
+  description: Manage Instrument Intances
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'instrumentinstance'
+    page: '1'
+    pagesize: '10'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 21
+  requirements:
+    _permission: 'access content'
+
+dpl.manage_detector_instances :
+  title: Manage Detector Instances 
+  description: Manage Detector Instances
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'detectorinstance'
+    page: '1'
+    pagesize: '10'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 22
+  requirements:
+    _permission: 'access content'
+
+dpl.manage_streams :
+  title: Manage Streams 
+  description: Manage Streams
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'stream'
+    page: '1'
+    pagesize: '10'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 23
+  requirements:
+    _permission: 'access content'
+
+dpl.manage_deployments :
+  title: Manage Deployments 
+  description: Manage Deployments
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'deployment'
+    page: '1'
+    pagesize: '10'
+  parent: rep.top_dpl
+  menu_name: main
+  weight: 24
+  requirements:
+    _permission: 'access content'
+

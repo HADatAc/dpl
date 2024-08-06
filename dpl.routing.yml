@@ -1,0 +1,110 @@
+dpl.search:
+  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\DPLListForm'
+    elementtype: 'platform'
+    keyword: '_'
+    language: '_'
+    page: '1'
+    pagesize: '12'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+# Main menu options
+
+dpl.list_element:
+  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\DPLListForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.select_element:
+  path: 'dpl/select/{elementtype}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\DPLSelectForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+# Platform CRUD options
+
+#dpl.add_platform:
+#  path: 'dpl/manage/addplatform'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\AddPlatformForm'
+#    _title: 'Add Platform'    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'    
+#  options:
+#    no_cache: 'TRUE'
+
+#dpl.edit_platform:
+#  path: 'dpl/manage/editplatform/{platformuri}'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\EditPlatformForm'
+#    _title: 'Edit Platform'    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'
+#  options:
+#    no_cache: 'TRUE'
+
+# Stream CRUD options
+
+#dpl.add_stream:
+#  path: 'dpl/manage/addstream'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\AddStreamForm'
+#    _title: 'Add Stream'    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'    
+#  options:
+#    no_cache: 'TRUE'
+
+#dpl.edit_stream:
+#  path: 'dpl/manage/editstream/{streamuri}'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\EditStreamForm'
+#    _title: 'Edit Stream'    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'
+#  options:
+#    no_cache: 'TRUE'
+
+# Deployment CRUD options
+
+#dpl.add_deployments:
+#  path: 'dpl/manage/adddeployment'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\AddDeploymentForm'
+#    _title: "Create Deployment"    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'    
+#  options:
+#    _modal_form_layout: TRUE
+#    no_cache: 'TRUE'
+
+#dpl.edit_deployment:
+#  path: 'dpl/manage/editdeployment/{deploymenturi}'
+#  defaults:
+#    _form: '\Drupal\dpl\Form\EditDeploymentForm'
+#    _title: 'Edit Deployment'    
+#  requirements:
+#    _permission: 'access content'
+#    _custom_access_check: 'TRUE'    
+#  options:
+#    no_cache: 'TRUE'
+

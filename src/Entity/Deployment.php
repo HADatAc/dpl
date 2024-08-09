@@ -6,7 +6,7 @@ use Drupal\rep\Entity\Tables;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\REPGUI;
 
-class Platform {
+class Deployment {
 
   public static function generateHeader() {
 

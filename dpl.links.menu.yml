@@ -7,10 +7,10 @@ dpl.top_level:
   requirements:
     _permission: 'access content'
 
-dpl.search:
+dpl.search_menu:
   title: Search Deployment Elements
   description: Search Deployment Elements
-  route_name: dpl.search
+  route_name: dpl.search_deployment
   parent: dpl.top_level
   menu_name: main
   enabled: 1
@@ -78,6 +78,20 @@ dpl.manage_platforms:
   requirements:
     _permission: 'access content'
 
+dpl.manage_platform_instances:
+  title: Manage Platform Instances
+  description: Manage Platform Instances
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'platforminstance'
+    page: '1'
+    pagesize: '10'
+  parent: dpl.top_level
+  menu_name: main
+  weight: 21
+  requirements:
+    _permission: 'access content'
+
 dpl.manage_instrument_instances:
   title: Manage Instrument Instances
   description: Manage Instrument Instances
@@ -88,7 +102,7 @@ dpl.manage_instrument_instances:
     pagesize: '10'
   parent: dpl.top_level
   menu_name: main
-  weight: 21
+  weight: 22
   requirements:
     _permission: 'access content'
 
@@ -102,7 +116,7 @@ dpl.manage_detector_instances:
     pagesize: '10'
   parent: dpl.top_level
   menu_name: main
-  weight: 22
+  weight: 23
   requirements:
     _permission: 'access content'
 
@@ -116,7 +130,7 @@ dpl.manage_streams:
     pagesize: '10'
   parent: dpl.top_level
   menu_name: main
-  weight: 23
+  weight: 24
   requirements:
     _permission: 'access content'
 
@@ -130,7 +144,7 @@ dpl.manage_deployments:
     pagesize: '10'
   parent: dpl.top_level
   menu_name: main
-  weight: 24
+  weight: 25
   requirements:
     _permission: 'access content'
 

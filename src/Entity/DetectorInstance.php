@@ -6,7 +6,7 @@ use Drupal\rep\Entity\Tables;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\REPGUI;
 
-class Platform {
+class DetectorInstance {
 
   public static function generateHeader() {
 
@@ -32,7 +32,7 @@ class Platform {
       $uri = Utils::namespaceUri($uri);
       $label = ' ';
       if ($element->label != NULL) {
-        $label = $element->label;
+        $content = $element->label;
       }
       $version = ' ';
       if ($element->hasVersion != NULL) {

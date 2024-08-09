@@ -4,7 +4,7 @@ namespace Drupal\dpl\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\rep\ListKeywordLanguagePage;
+use Drupal\rep\ListKeywordPage;
 use Drupal\dpl\Entity\Platform;
 
 class DPLListForm extends FormBase {
@@ -39,12 +39,12 @@ class DPLListForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $elementtype=NULL, $keyword=NULL, $language=NULL, $page=NULL, $pagesize=NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $elementtype=NULL, $keyword=NULL, $page=NULL, $pagesize=NULL) {
 
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setListSize(-1);
     if ($elementtype != NULL) {
-      $this->setListSize(ListKeywordLanguagePage::total($elementtype, $keyword, $language));
+      $this->setListSize(ListKeywordPage::total($elementtype, $keyword));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -59,19 +59,19 @@ class DPLListForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListKeywordLanguagePage::link($elementtype, $keyword, $language, $next_page, $pagesize);
+      $next_page_link = ListKeywordPage::link($elementtype, $keyword, $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListKeywordLanguagePage::link($elementtype, $keyword, $language, $previous_page, $pagesize);
+      $previous_page_link = ListKeywordPage::link($elementtype, $keyword, $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListKeywordLanguagePage::exec($elementtype, $keyword, $language, $page, $pagesize));
+    $this->setList(ListKeywordPage::exec($elementtype, $keyword, $page, $pagesize));
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
@@ -84,6 +84,18 @@ class DPLListForm extends FormBase {
         $class_name = $preferred_instrument . "s";
         $header = Platform::generateHeader();
         $output = Platform::generateOutput($this->getList());    
+        break;
+
+      case "stream":
+        $class_name = $preferred_instrument . "s";
+        $header = Stream::generateHeader();
+        $output = Stream::generateOutput($this->getList());    
+        break;
+
+      case "deployment":
+        $class_name = $preferred_instrument . "s";
+        $header = Deployment::generateHeader();
+        $output = Deployment::generateOutput($this->getList());    
         break;
 
       default:
@@ -102,8 +114,8 @@ class DPLListForm extends FormBase {
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListKeywordLanguagePage::link($elementtype, $keyword, $language, 1, $pagesize),
-        'last' => ListKeywordLanguagePage::link($elementtype, $keyword, $language, $total_pages, $pagesize),
+        'first' => ListKeywordPage::link($elementtype, $keyword, 1, $pagesize),
+        'last' => ListKeywordPage::link($elementtype, $keyword, $language, $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),

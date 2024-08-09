@@ -9,8 +9,8 @@ use Drupal\Core\Block\BlockBase;
  *
  * @Block(
  *  id = "dpl_search_block",
- *  admin_label = @Translation("DPL Search Criteria"),
- *  category = @Translation("DPL Search Criteria")
+ *  admin_label = @Translation("Search Deployment Criteria"),
+ *  category = @Translation("Search Deployment Criteria")
  * )
  */
 class DPLSearchBlock extends BlockBase {

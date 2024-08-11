@@ -115,7 +115,7 @@ class DPLListForm extends FormBase {
       '#items' => [
         'page' => strval($page),
         'first' => ListKeywordPage::link($elementtype, $keyword, 1, $pagesize),
-        'last' => ListKeywordPage::link($elementtype, $keyword, $language, $total_pages, $pagesize),
+        'last' => ListKeywordPage::link($elementtype, $keyword, $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),

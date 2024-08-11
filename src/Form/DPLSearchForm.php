@@ -64,8 +64,6 @@ class DPLSearchForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    dpm("HERE DPL SEARCH");
-    
     // RETRIEVE PARAMETERS FROM HTML REQUEST
     $request = \Drupal::request();
     $pathInfo = $request->getPathInfo();

@@ -2,7 +2,6 @@
 
 namespace Drupal\dpl\Entity;
 
-use Drupal\rep\Entity\Tables;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\REPGUI;
 

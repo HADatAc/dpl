@@ -8,7 +8,6 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
-use Drupal\rep\Entity\Tables;
 use Drupal\rep\Vocabulary\VSTOI;
 
 class EditPlatformForm extends FormBase {

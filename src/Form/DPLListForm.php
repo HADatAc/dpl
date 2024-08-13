@@ -6,6 +6,9 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\rep\ListKeywordPage;
 use Drupal\dpl\Entity\Platform;
+use Drupal\dpl\Entity\Deployment;
+use Drupal\dpl\Entity\Stream;
+use Drupal\dpl\Entity\VSTOIInstance;
 
 class DPLListForm extends FormBase {
 
@@ -86,19 +89,40 @@ class DPLListForm extends FormBase {
         $output = Platform::generateOutput($this->getList());    
         break;
 
+      // STREAM
       case "stream":
         $class_name = $preferred_instrument . "s";
         $header = Stream::generateHeader();
         $output = Stream::generateOutput($this->getList());    
         break;
 
+      // DEPLOYMENT
       case "deployment":
         $class_name = $preferred_instrument . "s";
         $header = Deployment::generateHeader();
         $output = Deployment::generateOutput($this->getList());    
         break;
 
-      default:
+      // PLATFORM INSTANCE
+      case "platforminstance":
+        $class_name = "Platform Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
+        break;
+
+      // INSTRUMENT INSTANCE
+      case "instrumentinstance":
+        $class_name = $preferred_instrument . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
+        break;
+
+      // DETECTOR INSTANCE
+      case "detectorinstance":
+        $class_name = $preferred_detector . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
+        break;      default:
         $class_name = "Objects of Unknown Types";
     }
 

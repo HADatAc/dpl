@@ -1,10 +1,9 @@
 dpl.search_deployment:
-  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+  path: 'dpl/list/{elementtype}/{keyword}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\DPLListForm'
     elementtype: 'platform'
     keyword: '_'
-    language: '_'
     page: '1'
     pagesize: '12'
   requirements:
@@ -16,7 +15,7 @@ dpl.search_deployment:
 # Main menu options
 
 dpl.list_element:
-  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+  path: 'dpl/list/{elementtype}/{keyword}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\DPLListForm'
   requirements:
@@ -108,3 +107,49 @@ dpl.edit_deployment:
   options:
     no_cache: 'TRUE'
 
+# VSTOI Instance CRUD options
+
+dpl.add_instance:
+  path: 'dpl/manage/addinstance/{elementtype}'
+  defaults:
+    _form: '\Drupal\dpl\Form\AddInstanceForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    _modal_form_layout: TRUE
+    no_cache: 'TRUE'
+
+dpl.edit_instance:
+  path: 'dpl/manage/editinstance/{instanceuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\EditInstanceForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.platform_autocomplete:
+  path: '/dpl/type/autocomplete/platform'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execPlatform'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.instrument_autocomplete:
+  path: '/dpl/type/autocomplete/instrument'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execInstrument'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.detector_autocomplete:
+  path: '/dpl/type/autocomplete/detector'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetector'
+    _format: json
+  requirements:
+    _permission: 'access content'

@@ -72,7 +72,7 @@ class DPLSearchForm extends FormBase {
     $this->setKeyword('');
     $this->setPage(1);
     $this->setPageSize(12);
-    if (sizeof($pathElements) >= 8) {
+    if (sizeof($pathElements) >= 7) {
 
       // ELEMENT TYPE
       $this->setElementType($pathElements[3]);
@@ -85,10 +85,10 @@ class DPLSearchForm extends FormBase {
       }
 
       // PAGE
-      $this->setPage((int)$pathElements[6]);
+      $this->setPage((int)$pathElements[5]);
 
       // PAGESIZE
-      $this->setPageSize((int)$pathElements[7]);
+      $this->setPageSize((int)$pathElements[6]);
     }
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
@@ -99,10 +99,10 @@ class DPLSearchForm extends FormBase {
       '#title' => $this->t('Element Type'),
       '#required' => TRUE,
       '#options' => [
-        'dp2' => $this->t('DP2s'),
-        'str' => $this->t('STRs'),
+        //'dp2' => $this->t('DP2s'),
+        //'str' => $this->t('STRs'),
         'platform' => $this->t('Platforms'),
-        'plafforminstance' => $this->t('Platform Instances'),
+        'platforminstance' => $this->t('Platform Instances'),
         'instrumentinstance' => $this->t('Instrument Instances'),
         'detectorinstance' => $this->t('Detector Instances'),
         'deployment' => $this->t('Deployments'),
@@ -143,11 +143,9 @@ class DPLSearchForm extends FormBase {
     if ($this->getKeyword() == NULL || $this->getKeyword() == '') {
       $this->setKeyword("_");
     }
-    $this->setLanguage("_");
     $url = Url::fromRoute('dpl.list_element');
     $url->setRouteParameter('elementtype', $form_state->getValue('search_element_type'));
     $url->setRouteParameter('keyword', $this->getKeyword());
-    $url->setRouteParameter('language', $this->getLanguage());
     $url->setRouteParameter('page', $this->getPage());
     $url->setRouteParameter('pagesize', $this->getPageSize());
     return $url;

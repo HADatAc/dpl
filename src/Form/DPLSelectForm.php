@@ -5,14 +5,13 @@ namespace Drupal\dpl\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\ListManagerEmailPage;
 use Drupal\rep\Utils;
 use Drupal\dpl\Entity\Platform;
-use Drupal\dpl\Entity\PlatformInstance;
-use Drupal\dpl\Entity\InstrumentInstance;
-use Drupal\dpl\Entity\DetectorInstance;
 use Drupal\dpl\Entity\Stream;
 use Drupal\dpl\Entity\Deployment;
+use Drupal\dpl\Entity\VSTOIInstance;
 
 class DPLSelectForm extends FormBase {
 
@@ -119,24 +118,24 @@ class DPLSelectForm extends FormBase {
       case "platforminstance":
         $this->single_class_name = "Platform Instance";
         $this->plural_class_name = "Platform Instances";
-        $header = PlatformInstance::generateHeader();
-        $output = PlatformInstance::generateOutput($this->getList());    
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
         break;
 
       // INSTRUMENT INSTANCE
       case "instrumentinstance":
         $this->single_class_name = $preferred_instrument . " Instance";
         $this->plural_class_name = $preferred_instrument . " Instances";
-        $header = InstrumentInstance::generateHeader();
-        $output = InstrumentInstance::generateOutput($this->getList());    
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
         break;
 
       // DETECTOR INSTANCE
       case "detectorinstance":
         $this->single_class_name = $preferred_detector . " Instance";
         $this->plural_class_name = $preferred_detector . " Instances";
-        $header = DetectorInstance::generateHeader();
-        $output = DetectorInstance::generateOutput($this->getList());    
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
         break;
 
       // STREAM
@@ -262,6 +261,13 @@ class DPLSelectForm extends FormBase {
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_deployment');
         $url = Url::fromRoute('dpl.add_deployment');
       } 
+      if ($this->element_type == 'platforminstance' ||
+          $this->element_type == 'instrumentinstance' ||
+          $this->element_type == 'detectorinstance') {
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_instance');
+        $url = Url::fromRoute('dpl.add_instance');
+        $url->setRouteParameter('elementtype', $this->element_type);
+      } 
       $form_state->setRedirectUrl($url);
     }  
 
@@ -285,6 +291,13 @@ class DPLSelectForm extends FormBase {
           Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
           $url = Url::fromRoute('dpl.edit_deployment', ['deploymenturi' => base64_encode($first)]);
         }
+        if ($this->element_type == 'platforminstance' ||
+            $this->element_type == 'instrumentinstance' ||
+            $this->element_type == 'detectorinstance') {
+          Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
+          $url = Url::fromRoute('dpl.edit_instance');
+          $url->setRouteParameter('instanceuri', base64_encode($first));
+        } 
         $form_state->setRedirectUrl($url);
       } 
     }
@@ -298,15 +311,7 @@ class DPLSelectForm extends FormBase {
         $api = \Drupal::service('rep.api_connector');
         foreach($rows as $shortUri) {
           $uri = Utils::plainUri($shortUri);
-          if ($this->element_type == 'platform') {
-            $api->elementDel('platform',$uri);
-          }
-          if ($this->element_type == 'stream') {
-            $api->elementDel('stream',$uri);
-          }
-          if ($this->element_type == 'deployment') {
-            $api->elementDel('deployment',$uri);
-          }
+          $api->elementDel('platform',$uri);
         }
         \Drupal::messenger()->addMessage(t("Selected " . $this->plural_class_name . " has/have been deleted successfully."));      
         return;

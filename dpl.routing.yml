@@ -107,6 +107,26 @@ dpl.edit_deployment:
   options:
     no_cache: 'TRUE'
 
+dpl.execute_close_deployment:
+  path: 'dpl/manage/executeclosedeployment/{mode}/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteCloseDeploymentForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.manage_deployments_route:
+  path: 'dpl/manage/deployments/{state}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ManageDeploymentsForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
 # VSTOI Instance CRUD options
 
 dpl.add_instance:
@@ -153,3 +173,28 @@ dpl.detector_autocomplete:
     _format: json
   requirements:
     _permission: 'access content'
+
+dpl.platforminstance_autocomplete:
+  path: '/dpl/type/autocomplete/platforminstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execPlatformInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.instrumentinstance_autocomplete:
+  path: '/dpl/type/autocomplete/instrumentinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execInstrumentInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.detectorinstance_autocomplete:
+  path: '/dpl/type/autocomplete/detectorinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetectorInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+    

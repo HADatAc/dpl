@@ -8,7 +8,7 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
-use Drupal\rep\Vocabulary\HASCO;
+use Drupal\rep\Vocabulary\VSTOI;
 
 class EditDeploymentForm extends FormBase {
 
@@ -59,10 +59,38 @@ class EditDeploymentForm extends FormBase {
       return;
     }
 
-    $form['deployment_name'] = [
+    $platformLabel = ' ';
+    if (isset($this->getDeployment()->platform) && 
+        isset($this->getDeployment()->platform->uri) &&
+        isset($this->getDeployment()->platform->label)) {
+      $platformLabel = Utils::fieldToAutocomplete(
+        $this->getDeployment()->platform->uri,
+        $this->getDeployment()->platform->label
+      );
+    }
+    $instrumentLabel = ' ';
+    if (isset($this->getDeployment()->platform) && 
+        isset($this->getDeployment()->platform->uri) &&
+        isset($this->getDeployment()->platform->label)) {
+      $instrumentLabel = Utils::fieldToAutocomplete(
+        $this->getDeployment()->instrument->uri,
+        $this->getDeployment()->instrument->label
+      );
+    }
+
+    //dpm($this->getDeployment());
+
+    $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Name'),
-      '#default_value' => $this->getDeployment()->label,
+      '#title' => $this->t('Platform Instance'),
+      '#default_value' => $platformLabel,
+      '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
+    ];
+    $form['deployment_instrument_instance'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Instrument Instance'),
+      '#default_value' => $instrumentLabel,
+      '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
     ];
     $form['deployment_version'] = [
       '#type' => 'textfield',
@@ -98,14 +126,11 @@ class EditDeploymentForm extends FormBase {
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
-    if ($button_name != 'back') {
-      if(strlen($form_state->getValue('deployment_name')) < 1) {
-        $form_state->setErrorByName('deployment_name', $this->t('Please enter a valid name'));
-      }
-      if(strlen($form_state->getValue('deployment_version')) < 1) {
-        $form_state->setErrorByName('deployment_version', $this->t('Please enter a valid version'));
-      }
-    }
+    //if ($button_name != 'back') {
+    //  if(strlen($form_state->getValue('deployment_name')) < 1) {
+    //    $form_state->setErrorByName('deployment_name', $this->t('Please enter a valid name'));
+    //  }
+    //}
   }
 
   /**
@@ -121,18 +146,44 @@ class EditDeploymentForm extends FormBase {
       return;
     } 
 
+    $platformUri = '';
+    $platformName = '';
+    if ($form_state->getValue('deployment_platform_instance') != NULL && $form_state->getValue('deployment_platform_instance') != '') {
+      $platformUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_platform_instance'));
+      $platformName = Utils::labelFromAutocomplete($form_state->getValue('deployment_platform_instance'));
+    } 
+    $instrumentUri = '';
+    $instrumentName = '';
+    if ($form_state->getValue('deployment_instrument_instance') != NULL && $form_state->getValue('deployment_instrument_instance') != '') {
+      $instrumentUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
+      $instrumentName = Utils::labelFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
+    } 
+
+    $finalLabel = 'a deployment';
+    if ($platformName == '' && $instrumentName != '') {
+      $finalLabel = 'a deployment with instrument ' . $instrumentName;
+    } else if ($platformName != '' && $instrumentName == '') {
+      $finalLabel = 'a deployment @ ' . $platformName;
+    } else if ($platformName != '' && $instrumentName != '') {
+      $finalLabel = $instrumentName . ' @ ' . $platformName;
+    }
+
     try{
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
       $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
-        '"typeUri":"'.HASCO::DEPLOYMENT.'",'.
-        '"hascoTypeUri":"'.HASCO::DEPLOYMENT.'",'.
-        '"label":"'.$form_state->getValue('deployment_name').'",'.
+        '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
+        '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
+        '"label":"'.$finalLabel.'",'.
         '"hasVersion":"'.$form_state->getValue('deployment_version').'",'.
         '"comment":"'.$form_state->getValue('deployment_description').'",'.
+        '"platformUri":"'.$platformUri.'",'.
+        '"instrumentUri":"'.$instrumentUri.'",'.
+        '"canUpdate":["'.$useremail.'"],'.
+        '"designedAt":"'.$this->getDeployment()->designedAt.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
-
+  
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('deployment',$this->getDeploymentUri());

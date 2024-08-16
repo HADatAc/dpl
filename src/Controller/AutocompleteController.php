@@ -25,7 +25,17 @@ class AutocompleteController extends ControllerBase{
     return self::exec($request, 'detector');
   }
 
+  public function execPlatformInstance(Request $request) {
+    return self::exec($request, 'platforminstance');
+  }
 
+  public function execInstrumentInstance(Request $request) {
+    return self::exec($request, 'instrumentinstance');
+  }
+
+  public function execDetectorInstance(Request $request) {
+    return self::exec($request, 'detectorinstance');
+  }
 
   /**
    * @return JsonResponse

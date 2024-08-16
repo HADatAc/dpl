@@ -7,17 +7,27 @@ use Drupal\rep\Vocabulary\REPGUI;
 
 class Deployment {
 
-  public static function generateHeader() {
+  public static function generateHeader($state) {
 
-    return $header = [
-      'element_uri' => t('URI'),
-      'element_name' => t('Name'),
-      'element_version' => t('Version'),
-    ];
+    if ($state == 'design') {
+      return $header = [
+        'element_uri' => t('URI'),
+        'element_datetime' => t('Design Time'),
+        'element_platform' => t('Associated Platform'),
+        'element_instrument' => t('Associated Instrument'),
+      ];
+    } else {
+      return $header = [
+        'element_uri' => t('URI'),
+        'element_datetime' => t('Execution Time'),
+        'element_platform' => t('Associated Platform'),
+        'element_instrument' => t('Associated Instrument'),
+      ];
+    }
 
   }
 
-  public static function generateOutput($list) {
+  public static function generateOutput($state, $list) {
 
     // ROOT URL
     $root_url = \Drupal::request()->getBaseUrl();
@@ -33,14 +43,32 @@ class Deployment {
       if ($element->label != NULL) {
         $label = $element->label;
       }
-      $version = ' ';
-      if ($element->hasVersion != NULL) {
-        $version = $element->hasVersion;
+      $platform = ' ';
+      if (isset($element->platform) && isset($element->platform->label)) {
+        $platform = $element->platform->label;
       }
+      $instrument = ' ';
+      if (isset($element->instrument) && isset($element->instrument->label)) {
+        $instrument = $element->instrument->label;
+      }
+      $datetime = ' ';
+      if ($state == 'design') {
+        if (isset($element->designedAt)) {
+          $dateTimeRaw = new \DateTime($element->designedAt);
+          $datetime = $dateTimeRaw->format('F j, Y \a\t g:i A');
+        }
+      } else {
+        if (isset($element->startedAt)) {
+          $dateTimeRaw = new \DateTime($element->startedAt);
+          $datetime = $dateTimeRaw->format('F j, Y \a\t g:i A');
+        }
+      }
+
       $output[$element->uri] = [
         'element_uri' => t('<a href="'.$root_url.REPGUI::DESCRIBE_PAGE.base64_encode($uri).'">'.$uri.'</a>'),     
-        'element_name' => $label,     
-        'element_version' => $version,
+        'element_datetime' => $datetime,     
+        'element_platform' => $platform,
+        'element_instrument' => $instrument,
       ];
     }
     return $output;

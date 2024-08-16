@@ -44,7 +44,7 @@ class AddInstanceForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $elementtype = NULL) {
 
-    #dpm($elementtype);
+    //dpm($elementtype);
 
     if ($elementtype == NULL || $elementtype == "") {
       \Drupal::messenger()->addError(t("No element type has been provided"));
@@ -164,7 +164,7 @@ class AddInstanceForm extends FormBase {
       $acquisitionDate = $form_state->getValue('instance_acquisition_date');
     } 
 
-    $label = "Instance of [" . "] with Serial Number: [" . $form_state->getValue('instance_serial_number') . "].";
+    $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();

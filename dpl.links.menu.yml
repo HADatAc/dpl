@@ -120,12 +120,12 @@ dpl.manage_detector_instances:
   requirements:
     _permission: 'access content'
 
-dpl.manage_streams:
-  title: Manage Streams
-  description: Manage Streams
-  route_name: dpl.select_element
+dpl.manage_deployments:
+  title: Manage Deployments
+  description: Manage Deployments
+  route_name: dpl.manage_deployments_route
   route_parameters:
-    elementtype: 'stream'
+    state: 'design'
     page: '1'
     pagesize: '10'
   parent: dpl.top_level
@@ -134,12 +134,12 @@ dpl.manage_streams:
   requirements:
     _permission: 'access content'
 
-dpl.manage_deployments:
-  title: Manage Deployments
-  description: Manage Deployments
+dpl.manage_streams:
+  title: Manage Streams
+  description: Manage Streams
   route_name: dpl.select_element
   route_parameters:
-    elementtype: 'deployment'
+    elementtype: 'stream'
     page: '1'
     pagesize: '10'
   parent: dpl.top_level

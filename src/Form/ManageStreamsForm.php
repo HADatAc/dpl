@@ -6,23 +6,25 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\dpl\Form\ListDeploymentStatePage;
-use Drupal\rep\Entity\Deployment;
+use Drupal\dpl\Form\ListStreamStateByDeploymentPage;
+use Drupal\rep\Entity\Stream;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\REPGUI;
 
-class ManageDeploymentsForm extends FormBase {
+class ManageStreamsForm extends FormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'dpl_manage_deployments_form';
+    return 'dpl_manage_streams_form';
   }
 
   protected $manager_email;
 
   protected $manager_name;
+
+  protected $deployment;
 
   protected $state;
 
@@ -53,6 +55,13 @@ class ManageDeploymentsForm extends FormBase {
     return $this->state = $state; 
   }
 
+  public function getDeployment() {
+    return $this->deployment;
+  }
+  public function setDeployment($deployment) {
+    return $this->deployment = $deployment; 
+  }
+
   public function getList() {
     return $this->list;
   }
@@ -77,10 +86,23 @@ class ManageDeploymentsForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $state=NULL, $page=NULL, $pagesize=NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi=NULL, $state=NULL, $page=NULL, $pagesize=NULL) {
 
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
+
+    // RETRIEVE DEPLOYMENT
+    $api = \Drupal::service('rep.api_connector');
+    $uri_decode=base64_decode($deploymenturi);
+    $rawresponse = $api->getUri($uri_decode);
+    $obj = json_decode($rawresponse);
+    if ($obj->isSuccessful) {
+      $this->setDeployment($obj->body);
+    } else {
+      \Drupal::messenger()->addError(t("Failed to retrieve Deployment."));
+      self::backUrl();
+      return;
+    }
 
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
@@ -93,7 +115,7 @@ class ManageDeploymentsForm extends FormBase {
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
-      $this->setListSize(ListDeploymentStatePage::total($this->getState(), $this->getManagerEmail()));
+      $this->setListSize(ListStreamStateByDeploymentPage::total($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -108,32 +130,36 @@ class ManageDeploymentsForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $next_page, $pagesize);
+      $next_page_link = ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $previous_page, $pagesize);
+      $previous_page_link = ListStreamStatePage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListDeploymentStatePage::exec($this->getState(), $this->getManagerEmail(), $page, $pagesize));
+    $this->setList(ListStreamStateByDeploymentPage::exec($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $page, $pagesize));
 
     //dpm($this->getList());
-    $header = Deployment::generateHeaderState($this->getState());
-    $output = Deployment::generateOutputState($this->getState(), $this->getList());    
+    $header = Stream::generateHeaderState($this->getState());
+    $output = Stream::generateOutputState($this->getState(), $this->getList());    
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
       '#type' => 'item',
-      '#title' => $this->t('<h3>Manage Deployments</h3>'),
+      '#title' => $this->t('<h3>Manage Streams</h3>'),
+    ];
+    $form['page_context'] = [
+      '#type' => 'item',
+      '#title' => $this->t('<h4>Streams belonging to deployment <font color="DarkGreen">' . $this->getDeployment()->label . '</font></h4>'),
     ];
     $form['page_subtitle'] = [
       '#type' => 'item',
-      '#title' => $this->t('<h4>Deployments maintained by <font color="DarkGreen">' . $this->getManagerName() . ' (' . $this->getManagerEmail() . ')</font></h4>'),
+      '#title' => $this->t('<h4>Streams maintained by <font color="DarkGreen">' . $this->getManagerName() . ' (' . $this->getManagerEmail() . ')</font></h4>'),
     ];
 
     $form['pills_card'] = [
@@ -144,37 +170,37 @@ class ManageDeploymentsForm extends FormBase {
               <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' . 
-                      $this->stateLink('design',$page,$pagesize) . '" role="tab">Upcoming Deployments</a>
+                      $this->stateLink($this->getDeployment()->uri, 'design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' . 
-                      $this->stateLink('active',$page,$pagesize) . '" role="tab">Active Deployments</a>
+                      $this->stateLink($this->getDeployment()->uri, 'active', $page, $pagesize) . '" role="tab">Active Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' . 
-                      $this->stateLink('closed',$page,$pagesize) . '" role="tab">Completed Deployments</a>
+                      $this->stateLink($this->getDeployment()->uri, 'closed', $page, $pagesize) . '" role="tab">Completed Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' . 
-                      $this->stateLink('all',$page,$pagesize) . '" role="tab">All Deployments</a>
+                      $this->stateLink($this->getDeployment()->uri, 'all', $page, $pagesize) . '" role="tab">All Streams</a>
                   </li>
               </ul>
           </div>
       </div>',
-    ];
+  ];
 
     $form['break_line'] = [
       '#type' => 'item',
       '#title' => $this->t('<BR>'),
     ];
-  
+
     if ($this->getState() == 'active') {
       $form['break_line'] = [
         '#type' => 'item',
-        '#title' => $this->t('<br><b>Note</b>: To create a new deployment, select the option "Upcoming Deployments" above.<br>'),
+        '#title' => $this->t('<br><b>Note</b>: To create a new stream, select the option "Upcoming Streams" above.<br>'),
       ];
     }
-  
+    
     $form['card'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['card']],
@@ -192,7 +218,7 @@ class ManageDeploymentsForm extends FormBase {
     if ($this->getState() == 'design') {
       $form['card']['card_body']['add_element'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Create Deployment'),
+        '#value' => $this->t('Create Stream'),
         '#name' => 'add_element',
       ];
       $form['card']['card_body']['edit_selected_element'] = [
@@ -223,25 +249,20 @@ class ManageDeploymentsForm extends FormBase {
         '#value' => $this->t('Modify Selected'),
         '#name' => 'modify_element',
       ];
-      $form['card']['card_body']['stream_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Streams of Selected'),
-        '#name' => 'manage_streams',
-      ];
     }
     $form['card']['card_body']['element_table'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#options' => $output,
       '#js_select' => FALSE,
-      '#empty' => t('No deployment has been found'),
+      '#empty' => t('No stream has been found'),
     ];
     $form['card']['card_body']['pager'] = [
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), 1, $pagesize),
-        'last' => ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $total_pages, $pagesize),
+        'first' => ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, 1, $pagesize),
+        'last' => ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),
@@ -289,7 +310,8 @@ class ManageDeploymentsForm extends FormBase {
 
     // DESIGN STATE
     if ($button_name === 'design_state' && $this->getState() != 'design') {
-      $url = Url::fromRoute('dpl.manage_deployments_route');
+      $url = Url::fromRoute('dpl.manage_streams_route');
+      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'design');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -299,7 +321,8 @@ class ManageDeploymentsForm extends FormBase {
 
     // ACTIVE STATE
     if ($button_name === 'active_state' && $this->getState() != 'active') {
-      $url = Url::fromRoute('dpl.manage_deployments_route');
+      $url = Url::fromRoute('dpl.manage_streams_route');
+      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'active');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -309,7 +332,8 @@ class ManageDeploymentsForm extends FormBase {
 
     // CLOSED STATE
     if ($button_name === 'closed_state' && $this->getState() != 'closed') {
-      $url = Url::fromRoute('dpl.manage_deployments_route');
+      $url = Url::fromRoute('dpl.manage_streams_route');
+      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'closed');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -319,7 +343,8 @@ class ManageDeploymentsForm extends FormBase {
 
     // ALL STATE
     if ($button_name === 'all_state' && $this->getState() != 'all') {
-      $url = Url::fromRoute('dpl.manage_deployments_route');
+      $url = Url::fromRoute('dpl.manage_streams_route');
+      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'all');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -329,21 +354,21 @@ class ManageDeploymentsForm extends FormBase {
 
     // ADD ELEMENT
     if ($button_name === 'add_element') {
-      Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_deployment');
-      $url = Url::fromRoute('dpl.add_deployment');
+      Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_stream');
+      $url = Url::fromRoute('dpl.add_stream', ['deploymenturi' => base64_encode($this->getDeployment()->uri)]);
       $form_state->setRedirectUrl($url);
     }  
 
     // EDIT ELEMENT
     if ($button_name === 'edit_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be edited."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be edited."));      
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be edited at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be edited at once."));      
       } else {
         $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
-        $url = Url::fromRoute('dpl.edit_deployment', ['deploymenturi' => base64_encode($first)]);
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_stream');
+        $url = Url::fromRoute('dpl.edit_stream', ['streamuri' => base64_encode($first)]);
         $form_state->setRedirectUrl($url);
       } 
     }
@@ -351,15 +376,15 @@ class ManageDeploymentsForm extends FormBase {
     // EXECUTE ELEMENT
     if ($button_name === 'execute_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be executed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be executed."));      
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be executed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be executed at once."));      
       } else {
         $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
-        $url = Url::fromRoute('dpl.execute_close_deployment', [
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_stream');
+        $url = Url::fromRoute('dpl.execute_close_stream', [
           'mode' => 'execute',
-          'deploymenturi' => base64_encode($first)
+          'streamuri' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
       } 
@@ -368,34 +393,15 @@ class ManageDeploymentsForm extends FormBase {
     // CLOSE ELEMENT
     if ($button_name === 'close_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be closed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be closed."));      
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be closed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be closed at once."));      
       } else {
         $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
-        $url = Url::fromRoute('dpl.execute_close_deployment', [
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_stream');
+        $url = Url::fromRoute('dpl.execute_close_stream', [
           'mode' => 'close',
-          'deploymenturi' => base64_encode($first)
-        ]);
-        $form_state->setRedirectUrl($url);
-      } 
-    }
-
-    // MANAGE STREAM
-    if ($button_name === 'manage_streams') {
-      if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to have streams managed."));      
-      } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("To manage streams, select exactly one deployment."));      
-      } else {
-        $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.manage_streams_route');
-        $url = Url::fromRoute('dpl.manage_streams_route', [
-          'deploymenturi' => base64_encode($first),
-          'state' => 'active',
-          'page' => 1,
-          'pagesize' => 10,
+          'streamuri' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
       } 
@@ -404,36 +410,45 @@ class ManageDeploymentsForm extends FormBase {
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {
-        \Drupal::messenger()->addWarning(t("At least one deployment needs to be selected to be deleted."));      
+        \Drupal::messenger()->addWarning(t("At least one stream needs to be selected to be deleted."));      
         return;
       } else {
         $api = \Drupal::service('rep.api_connector');
         foreach($rows as $shortUri) {
           $uri = Utils::plainUri($shortUri);
-          $api->elementDel('deployment',$uri);
+          $api->elementDel('stream',$uri);
         }
-        \Drupal::messenger()->addMessage(t("Selected deployment(s) has/have been deleted successfully."));      
+        \Drupal::messenger()->addMessage(t("Selected stream(s) has/have been deleted successfully."));      
         return;
       }
     }  
 
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
-      $url = Url::fromRoute('rep.home');
-      $form_state->setRedirectUrl($url);
+      $this->backUrl();
       return;
     }  
 
     return;
   }
 
-  public function stateLink($state, $page, $pagesize) {
+  function backUrl() {
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.manage_streams_route');
+    if ($previousUrl) {
+      $response = new RedirectResponse($previousUrl);
+      $response->send();
+      return;
+    }
+  }
+  
+  public function stateLink($deploymenturi, $state, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
-    return $root_url . REPGUI::MANAGE_DEPLOYMENTS . 
+    return $root_url . REPGUI::MANAGE_STREAMS . 
+        base64_encode($deploymenturi) . '/'. 
         $state . '/' .
         strval($page) . '/' . 
         strval($pagesize);
   }
-
 
 }

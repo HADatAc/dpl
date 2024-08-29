@@ -1,0 +1,38 @@
+(function (Drupal) {
+    'use strict';
+  
+    // Define the behavior.
+    Drupal.behaviors.accordionBehavior = {
+      attach: function (context, settings) {
+        console.log('Accordion behavior attached.');
+  
+        const accordions = context.querySelectorAll('.accordion');
+  
+        accordions.forEach(function (accordion) {
+          const collapseElements = accordion.querySelectorAll('[data-bs-toggle="collapse"]');
+  
+          collapseElements.forEach(function (element) {
+            element.addEventListener('click', function () {
+              // Find all collapse elements within the same accordion
+              const targetSelector = this.getAttribute('data-bs-target');
+              const targetElement = document.querySelector(targetSelector);
+  
+              if (targetElement) {
+                // Collapse all other panels
+                accordion.querySelectorAll('.collapse.show').forEach(function (el) {
+                  if (el !== targetElement) {
+                    const bsCollapse = new bootstrap.Collapse(el, { toggle: false });
+                    bsCollapse.hide();
+                  }
+                });
+  
+                // Toggle the clicked panel
+                const bsCollapse = new bootstrap.Collapse(targetElement, { toggle: true });
+              }
+            });
+          });
+        });
+      }
+    };
+  })(Drupal);
+  

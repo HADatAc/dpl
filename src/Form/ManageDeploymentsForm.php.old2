@@ -7,9 +7,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\dpl\Form\ListDeploymentStatePage;
-use Drupal\rep\Entity\Deployment;
 use Drupal\rep\Utils;
-use Drupal\rep\Vocabulary\REPGUI;
+use Drupal\rep\Entity\Deployment;
 
 class ManageDeploymentsForm extends FormBase {
 
@@ -79,9 +78,6 @@ class ManageDeploymentsForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $state=NULL, $page=NULL, $pagesize=NULL) {
 
-    // Attach custom library.
-    $form['#attached']['library'][] = 'dpl/dpl_accordion';
-
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());
@@ -89,13 +85,21 @@ class ManageDeploymentsForm extends FormBase {
     $this->setManagerName($user->getAccountName());
 
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
+    if ($state == NULL) {
+      \Drupal::messenger()->addMessage(t("No state has been provided."));      
+      $url = Url::fromRoute('rep.home');
+      $form_state->setRedirectUrl($url);
+      return; 
+    }
     $this->setState($state);
     $this->setPageSize($pagesize);
-    $this->setListSize(-1);
-    if ($this->getState() != NULL) {
-      $this->setListSize(ListDeploymentStatePage::total($this->getState(), $this->getManagerEmail()));
-    }
-    if (gettype($this->list_size) == 'string') {
+    $listSize = [
+      'design' => ListDeploymentStatePage::total('design', $this->getManagerEmail()),
+      'active' => ListDeploymentStatePage::total('active', $this->getManagerEmail()),
+      'closed' => ListDeploymentStatePage::total('closed', $this->getManagerEmail()), 
+    ];
+    $this->setListSize($listSize);
+    if (gettype($this->getListSize[$this->getStatus()]) == 'string') {
       $total_pages = "0";
     } else { 
       if ($this->list_size % $pagesize == 0) {
@@ -104,6 +108,35 @@ class ManageDeploymentsForm extends FormBase {
         $total_pages = floor($this->list_size / $pagesize) + 1;
       }
     }
+
+    /*
+    $designLabel = '';
+    $activeLabel = '';
+    $closedLabel = '';
+    $allLabel = '';
+
+    if ($state == "design") {
+      $designLabel = '[[ DESIGN ]]';
+      $activeLabel = 'Active';
+      $closedLabel = 'Closed';
+      $allLabel = 'All';
+    } else if ($state == "active") {
+      $designLabel = 'Design';
+      $activeLabel = '[[ ACTIVE ]]';
+      $closedLabel = 'Closed';
+      $allLabel = 'All';
+    } else if ($state == "closed") {
+      $designLabel = 'Design';
+      $activeLabel = 'Active';
+      $closedLabel = '[[ CLOSED ]]';
+      $allLabel = 'All';
+    } else if ($state == "all") {
+      $designLabel = 'Design';
+      $activeLabel = 'Active';
+      $closedLabel = 'Closed';
+      $allLabel = '[[ ALL ]]';
+    }
+    */
 
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
@@ -123,8 +156,8 @@ class ManageDeploymentsForm extends FormBase {
     $this->setList(ListDeploymentStatePage::exec($this->getState(), $this->getManagerEmail(), $page, $pagesize));
 
     //dpm($this->getList());
-    $header = Deployment::generateHeaderState($this->getState());
-    $output = Deployment::generateOutputState($this->getState(), $this->getList());    
+    $header = Deployment::generateHeader($this->getState());
+    $output = Deployment::generateOutput($this->getState(), $this->getList());    
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -135,77 +168,59 @@ class ManageDeploymentsForm extends FormBase {
       '#type' => 'item',
       '#title' => $this->t('<h4>Deployments maintained by <font color="DarkGreen">' . $this->getManagerName() . ' (' . $this->getManagerEmail() . ')</font></h4>'),
     ];
-
-    $form['pills_card'] = [
-      '#type' => 'markup',
-      '#markup' => '
-      <div class="card">
-          <div class="card-header">
-              <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
-                  <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' . 
-                      $this->stateLink('design',$page,$pagesize) . '" role="tab">Upcoming Deployments</a>
-                  </li>
-                  <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' . 
-                      $this->stateLink('active',$page,$pagesize) . '" role="tab">Active Deployments</a>
-                  </li>
-                  <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' . 
-                      $this->stateLink('closed',$page,$pagesize) . '" role="tab">Completed Deployments</a>
-                  </li>
-                  <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' . 
-                      $this->stateLink('all',$page,$pagesize) . '" role="tab">All Deployments</a>
-                  </li>
-              </ul>
-          </div>
-      </div>',
+    $form['design_state'] = [
+      '#type' => 'submit',
+      '#value' => $designLabel,
+      '#name' => 'design_state',
+      '#attributes' => [
+        'class' => ['btn', 'btn-info'],    
+      ],
     ];
-
+    $form['active_state'] = [
+      '#type' => 'submit',
+      '#value' => $activeLabel,
+      '#name' => 'active_state',
+      '#attributes' => [
+        'class' => ['btn', 'btn-info'],    
+      ],
+    ];
+    $form['closed_state'] = [
+      '#type' => 'submit',
+      '#value' => $closedLabel,
+      '#name' => 'closed_state',
+      '#attributes' => [
+        'class' => ['btn', 'btn-info'],    
+      ],
+    ];
+    //$form['all_state'] = [
+    //  '#type' => 'submit',
+    //  '#value' => $allLabel,
+    //  '#name' => 'all_state',
+    //  '#attributes' => [
+    //    'class' => ['btn', 'btn-info'],
+    //  ],
+    //];
     $form['break_line'] = [
       '#type' => 'item',
       '#title' => $this->t('<BR>'),
     ];
-  
-    if ($this->getState() == 'active') {
-      $form['break_line'] = [
-        '#type' => 'item',
-        '#title' => $this->t('<br><b>Note</b>: To create a new deployment, select the option "Upcoming Deployments" above.<br>'),
-      ];
-    }
-  
-    $form['card'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['card']],
-      //'card_header' => [
-      //  '#type' => 'container',
-      //  '#attributes' => ['class' => ['card-header']],
-      //],
-      'card_body' => [
-        '#type' => 'container',
-        '#attributes' => ['class' => ['card-body']],
-      ],
-    ];
-
-
     if ($this->getState() == 'design') {
-      $form['card']['card_body']['add_element'] = [
+      $form['add_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Create Deployment'),
         '#name' => 'add_element',
       ];
-      $form['card']['card_body']['edit_selected_element'] = [
+      $form['edit_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Edit Selected'),
         '#name' => 'edit_element',
       ];
-      $form['card']['card_body']['execute_selected_element'] = [
+      $form['execute_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Execute Selected'),
         '#name' => 'execute_element',
       ];
-      $form['card']['card_body']['delete_selected_element'] = [
+      $form['delete_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Delete Selected'),
         '#name' => 'delete_element',
@@ -213,30 +228,25 @@ class ManageDeploymentsForm extends FormBase {
       ];
     }
     if ($this->getState() == 'active') {
-      $form['card']['card_body']['close_selected'] = [
+      $form['close_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Close Selected'),
         '#name' => 'close_element',
       ];
-      $form['card']['card_body']['modify_selected'] = [
+      $form['modify_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Modify Selected'),
         '#name' => 'modify_element',
       ];
-      $form['card']['card_body']['stream_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Streams of Selected'),
-        '#name' => 'manage_streams',
-      ];
     }
-    $form['card']['card_body']['element_table'] = [
+    $form['element_table'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#options' => $output,
       '#js_select' => FALSE,
       '#empty' => t('No deployment has been found'),
     ];
-    $form['card']['card_body']['pager'] = [
+    $form['pager'] = [
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
@@ -249,16 +259,12 @@ class ManageDeploymentsForm extends FormBase {
         'title' => ' ',
       ],
     ];
-    $form['space1'] = [
-      '#type' => 'item',
-      '#value' => $this->t('<br><br>'),
-    ];
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Back'),
       '#name' => 'back',
     ];
-    $form['space2'] = [
+    $form['space'] = [
       '#type' => 'item',
       '#value' => $this->t('<br><br><br>'),
     ];
@@ -382,25 +388,6 @@ class ManageDeploymentsForm extends FormBase {
       } 
     }
 
-    // MANAGE STREAM
-    if ($button_name === 'manage_streams') {
-      if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to have streams managed."));      
-      } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("To manage streams, select exactly one deployment."));      
-      } else {
-        $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.manage_streams_route');
-        $url = Url::fromRoute('dpl.manage_streams_route', [
-          'deploymenturi' => base64_encode($first),
-          'state' => 'active',
-          'page' => 1,
-          'pagesize' => 10,
-        ]);
-        $form_state->setRedirectUrl($url);
-      } 
-    }
-
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {
@@ -416,7 +403,7 @@ class ManageDeploymentsForm extends FormBase {
         return;
       }
     }  
-
+    
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
       $url = Url::fromRoute('rep.home');
@@ -425,15 +412,7 @@ class ManageDeploymentsForm extends FormBase {
     }  
 
     return;
+
   }
-
-  public function stateLink($state, $page, $pagesize) {
-    $root_url = \Drupal::request()->getBaseUrl();
-    return $root_url . REPGUI::MANAGE_DEPLOYMENTS . 
-        $state . '/' .
-        strval($page) . '/' . 
-        strval($pagesize);
-  }
-
-
+  
 }

@@ -10,17 +10,26 @@ use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
 
-class ExecuteCloseDeploymentForm extends FormBase {
+class ExecuteCloseStreamForm extends FormBase {
 
   protected $mode;
 
-  protected $deployment;
+  protected $streamUri;
+
+  protected $stream;
 
   public function getMode() {
     return $this->mode;
   }
   public function setMode($mode) {
     return $this->mode = $mode; 
+  }
+
+  public function getStreamUri() {
+    return $this->streamUri;
+  }
+  public function setStreamUri($uri) {
+    return $this->streamUri = $uri; 
   }
 
   public function getDeployment() {
@@ -34,16 +43,14 @@ class ExecuteCloseDeploymentForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'execute_close_deployment_form';
+    return 'execute_close_stream_form';
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $deploymenturi = NULL) {
-    $api = \Drupal::service('rep.api_connector');
 
-    // CHECK MODE
     if (($mode == NULL) || 
         ($mode != 'execute' && $mode != 'close')) {
       \Drupal::messenger()->addError(t("Invalid Deployment execute/close operation."));
@@ -52,10 +59,14 @@ class ExecuteCloseDeploymentForm extends FormBase {
     } 
     $this->setMode($mode);
 
-    // RETRIEVE DEPLOYMENT
-    $uri_decode=base64_decode($deploymenturi);
-    $rawresponse = $api->getUri($uri_decode);
+    $uri=$deploymenturi;
+    $uri_decode=base64_decode($uri);
+    $this->setDeploymentUri($uri_decode);
+
+    $api = \Drupal::service('rep.api_connector');
+    $rawresponse = $api->getUri($this->getDeploymentUri());
     $obj = json_decode($rawresponse);
+    
     if ($obj->isSuccessful) {
       $this->setDeployment($obj->body);
     } else {
@@ -64,33 +75,33 @@ class ExecuteCloseDeploymentForm extends FormBase {
       return;
     }
 
-    $platformInstanceLabel = ' ';
-    if (isset($this->getDeployment()->platformInstance) && 
-        isset($this->getDeployment()->platformInstance->uri) &&
-        isset($this->getDeployment()->platformInstance->label)) {
-      $platformInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platformInstance->uri,
-        $this->getDeployment()->platformInstance->label
+    $platformLabel = ' ';
+    if (isset($this->getDeployment()->platform) && 
+        isset($this->getDeployment()->platform->uri) &&
+        isset($this->getDeployment()->platform->label)) {
+      $platformLabel = Utils::fieldToAutocomplete(
+        $this->getDeployment()->platform->uri,
+        $this->getDeployment()->platform->label
       );
     }
-    $instrumentInstanceLabel = ' ';
-    if (isset($this->getDeployment()->instrumentInstance) && 
-        isset($this->getDeployment()->instrumentInstance->uri) &&
-        isset($this->getDeployment()->instrumentInstance->label)) {
-      $instrumentInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrumentInstance->uri,
-        $this->getDeployment()->instrumentInstance->label
+    $instrumentLabel = ' ';
+    if (isset($this->getDeployment()->platform) && 
+        isset($this->getDeployment()->platform->uri) &&
+        isset($this->getDeployment()->platform->label)) {
+      $instrumentLabel = Utils::fieldToAutocomplete(
+        $this->getDeployment()->instrument->uri,
+        $this->getDeployment()->instrument->label
       );
     }
 
     $validationError = NULL;
-    if (!isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
+    if (!isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
       $validationError = "Deployment is missing both PLATFORM instance and INSTRUMENT instance.";
     }
-    if (!isset($this->getDeployment()->platformInstance) && isset($this->getDeployment()->instrumentInstance)) {
+    if (!isset($this->getDeployment()->platform) && isset($this->getDeployment()->instrument)) {
       $validationError = "Deployment is missing associated PLATFORM instance.";
     }
-    if (isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
+    if (isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
       $validationError = "Deployment is missing associated INSTRUMENT instance.";
     }
 
@@ -117,13 +128,13 @@ class ExecuteCloseDeploymentForm extends FormBase {
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Platform Instance'),
-      '#default_value' => $platformInstanceLabel,
+      '#default_value' => $platformLabel,
       '#disabled' => TRUE,
     ];
     $form['deployment_instrument_instance'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Instrument Instance'),
-      '#default_value' => $instrumentInstanceLabel,
+      '#default_value' => $instrumentLabel,
       '#disabled' => TRUE,
     ];
 
@@ -221,18 +232,18 @@ class ExecuteCloseDeploymentForm extends FormBase {
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $deploymentJson = '{"uri":"'.$this->getDeployment()->uri.'",'.
+      $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
         '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"label":"'.$this->getDeployment()->label.'",'.
         '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
         '"comment":"'.$this->getDeployment()->comment.'",'.
-        '"platformInstanceUri":"'.$this->getDeployment()->platformInstanceUri.'",'.
-        '"instrumentInstanceUri":"'.$this->getDeployment()->instrumentInstanceUri.'",'.
+        '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
+        '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
         //'"detectorUri":"'.$detectorUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$this->getDeployment()->designedAt.'",';
-      if ($this->getMode() == 'execute') {
+        if ($this->getMode() == 'execute') {
         $deploymentJson .= 
           '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
       } 
@@ -243,11 +254,14 @@ class ExecuteCloseDeploymentForm extends FormBase {
       }
       $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
+      //$updatedDeployment = clone $this->getDeployment();
+      //$deploymentJson = json_encode($updatedDeployment);
+
       //dpm($deploymentJson);
 
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
-      $api->elementDel('deployment',$this->getDeployment()->uri);
+      $api->elementDel('deployment',$this->getDeploymentUri());
       $api->elementAdd('deployment',$deploymentJson);
     
       \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
@@ -271,4 +285,5 @@ class ExecuteCloseDeploymentForm extends FormBase {
     }
   }
   
+
 }

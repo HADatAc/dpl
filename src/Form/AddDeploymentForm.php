@@ -94,17 +94,17 @@ class AddDeploymentForm extends FormBase {
       return;
     } 
 
-    $platformUri = '';
-    $platformName = '';
+    $platformInstanceUri = '';
+    $platformInstanceName = '';
     if ($form_state->getValue('deployment_platform_instance') != NULL && $form_state->getValue('deployment_platform_instance') != '') {
-      $platformUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_platform_instance'));
-      $platformName = Utils::labelFromAutocomplete($form_state->getValue('deployment_platform_instance'));
+      $platformInstanceUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_platform_instance'));
+      $platformInstanceName = Utils::labelFromAutocomplete($form_state->getValue('deployment_platform_instance'));
     } 
-    $instrumentUri = '';
-    $instrumentName = '';
+    $instrumentInstanceUri = '';
+    $instrumentInstanceName = '';
     if ($form_state->getValue('deployment_instrument_instance') != NULL && $form_state->getValue('deployment_instrument_instance') != '') {
-      $instrumentUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
-      $instrumentName = Utils::labelFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
+      $instrumentInstanceUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
+      $instrumentInstanceName = Utils::labelFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
     } 
     //$detectorUri = '';
     //if ($form_state->getValue('deployment_detector_instance') != NULL && $form_state->getValue('deployment_detector_instance') != '') {
@@ -112,12 +112,12 @@ class AddDeploymentForm extends FormBase {
     //} 
 
     $finalLabel = 'a deployment';
-    if ($platformName == '' && $instrumentName != '') {
-      $finalLabel = 'a deployment with instrument ' . $instrumentName;
-    } else if ($platformName != '' && $instrumentName == '') {
-      $finalLabel = 'a deployment @ ' . $platformName;
-    } else if ($platformName != '' && $instrumentName != '') {
-      $finalLabel = $instrumentName . ' @ ' . $platformName;
+    if ($platformInstanceName == '' && $instrumentInstanceName != '') {
+      $finalLabel = 'a deployment with instrument ' . $instrumentInstanceName;
+    } else if ($platformInstanceName != '' && $instrumentInstanceName == '') {
+      $finalLabel = 'a deployment @ ' . $platformInstanceName;
+    } else if ($platformInstanceName != '' && $instrumentInstanceName != '') {
+      $finalLabel = $instrumentInstanceName . ' @ ' . $platforminstanceName;
     }
 
     $dateTime = new \DateTime();
@@ -132,9 +132,9 @@ class AddDeploymentForm extends FormBase {
         '"label":"'.$finalLabel.'",'.
         '"hasVersion":"'.$form_state->getValue('deployment_version').'",'.
         '"comment":"'.$form_state->getValue('deployment_description').'",'.
-        '"platformUri":"'.$platformUri.'",'.
-        '"instrumentUri":"'.$instrumentUri.'",'.
-        //'"detectorUri":"'.$detectorUri.'",'.
+        '"platformInstanceUri":"'.$platformInstanceUri.'",'.
+        '"instrumentInstanceUri":"'.$instrumentInstanceUri.'",'.
+        //'"detectorInstanceUri":"'.$detectorInstanceUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';

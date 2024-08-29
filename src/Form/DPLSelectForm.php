@@ -8,10 +8,10 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\ListManagerEmailPage;
 use Drupal\rep\Utils;
-use Drupal\dpl\Entity\Platform;
-use Drupal\dpl\Entity\Stream;
-use Drupal\dpl\Entity\Deployment;
-use Drupal\dpl\Entity\VSTOIInstance;
+use Drupal\rep\Entity\Platform;
+use Drupal\rep\Entity\Stream;
+use Drupal\rep\Entity\Deployment;
+use Drupal\rep\Entity\VSTOIInstance;
 
 class DPLSelectForm extends FormBase {
 

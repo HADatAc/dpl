@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * Implements hook_library_info().
+ */
+function dpl_library_info() {
+  $libraries['tabs'] = [
+    'css' => [
+      'css/dpl_tabs.css' => [],
+    ],
+    'js' => [
+      'js/tabs.js' => [],
+    ],
+    'dependencies' => [
+      'core/jquery',
+    ],
+  ];
+  //$libraries['accordion'] = [
+  //  'css' => [
+  //    'css/dpl_accordion.css' => [],
+  //  ],
+  //  'js' => [
+  //    'js/dpl_accordion.js' => [],
+  //  ],
+  //  'dependencies' => [
+  //    'core/jquery',
+  //  ],
+  //];
+  return $libraries;
+}

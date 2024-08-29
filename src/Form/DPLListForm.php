@@ -5,10 +5,10 @@ namespace Drupal\dpl\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\rep\ListKeywordPage;
-use Drupal\dpl\Entity\Platform;
-use Drupal\dpl\Entity\Deployment;
-use Drupal\dpl\Entity\Stream;
-use Drupal\dpl\Entity\VSTOIInstance;
+use Drupal\rep\Entity\Platform;
+use Drupal\rep\Entity\Deployment;
+use Drupal\rep\Entity\Stream;
+use Drupal\rp\Entity\VSTOIInstance;
 
 class DPLListForm extends FormBase {
 

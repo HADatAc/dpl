@@ -125,7 +125,7 @@ dpl.manage_deployments:
   description: Manage Deployments
   route_name: dpl.manage_deployments_route
   route_parameters:
-    state: 'design'
+    state: 'active'
     page: '1'
     pagesize: '10'
   parent: dpl.top_level
@@ -134,17 +134,17 @@ dpl.manage_deployments:
   requirements:
     _permission: 'access content'
 
-dpl.manage_streams:
-  title: Manage Streams
-  description: Manage Streams
-  route_name: dpl.select_element
-  route_parameters:
-    elementtype: 'stream'
-    page: '1'
-    pagesize: '10'
-  parent: dpl.top_level
-  menu_name: main
-  weight: 25
-  requirements:
-    _permission: 'access content'
+#dpl.manage_streams:
+#  title: Manage Streams
+#  description: Manage Streams
+#  route_name: dpl.manage_streams_route
+#  route_parameters:
+#    state: 'design'
+#    page: '1'
+#    pagesize: '10'
+#  parent: dpl.top_level
+#  menu_name: main
+#  weight: 25
+#  requirements:
+#    _permission: 'access content'
 

@@ -72,7 +72,15 @@ class DPLSearchForm extends FormBase {
     $this->setKeyword('');
     $this->setPage(1);
     $this->setPageSize(12);
-    if (sizeof($pathElements) >= 7) {
+
+    // IT IS A CLASS ELEMENT if size of path elements is equal 5
+    if (sizeof($pathElements) == 5) {
+
+          // ELEMENT TYPE
+          $this->setElementType($pathElements[4]);
+    
+    // IT IS AN INSTANCE ELEMENT if size of path elements is greate or equal 7
+    } else if (sizeof($pathElements) >= 7) {
 
       // ELEMENT TYPE
       $this->setElementType($pathElements[3]);
@@ -143,6 +151,16 @@ class DPLSearchForm extends FormBase {
     if ($this->getKeyword() == NULL || $this->getKeyword() == '') {
       $this->setKeyword("_");
     }
+
+    // IF ELEMENT TYPE IS CLASS
+        if ($form_state->getValue('search_element_type') == 'platform') {
+      $url = Url::fromRoute('rep.browse_tree');
+      $url->setRouteParameter('mode', 'browse');
+      $url->setRouteParameter('elementtype', $form_state->getValue('search_element_type'));
+      return $url;
+    }
+
+    // IF ELEMENT TYPE IS INSTANCE
     $url = Url::fromRoute('dpl.list_element');
     $url->setRouteParameter('elementtype', $form_state->getValue('search_element_type'));
     $url->setRouteParameter('keyword', $this->getKeyword());

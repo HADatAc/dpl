@@ -8,7 +8,7 @@ use Drupal\rep\ListKeywordPage;
 use Drupal\rep\Entity\Platform;
 use Drupal\rep\Entity\Deployment;
 use Drupal\rep\Entity\Stream;
-use Drupal\rp\Entity\VSTOIInstance;
+use Drupal\rep\Entity\VSTOIInstance;
 
 class DPLListForm extends FormBase {
 

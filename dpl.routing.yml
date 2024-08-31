@@ -1,11 +1,9 @@
 dpl.search_deployment:
-  path: 'dpl/list/{elementtype}/{keyword}/{page}/{pagesize}'
+  path: 'dpl/list/{mode}/{elementtype}'
   defaults:
-    _form: '\Drupal\dpl\Form\DPLListForm'
+    _form: '\Drupal\rep\Form\TreeForm'
+    mode: 'browse'
     elementtype: 'platform'
-    keyword: '_'
-    page: '1'
-    pagesize: '12'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'    

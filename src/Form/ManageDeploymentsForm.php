@@ -36,42 +36,42 @@ class ManageDeploymentsForm extends FormBase {
     return $this->manager_email;
   }
   public function setManagerEmail($manager_email) {
-    return $this->manager_email = $manager_email; 
+    return $this->manager_email = $manager_email;
   }
 
   public function getManagerName() {
     return $this->manager_name;
   }
   public function setManagerName($manager_name) {
-    return $this->manager_name = $manager_name; 
+    return $this->manager_name = $manager_name;
   }
 
   public function getState() {
     return $this->state;
   }
   public function setState($state) {
-    return $this->state = $state; 
+    return $this->state = $state;
   }
 
   public function getList() {
     return $this->list;
   }
   public function setList($list) {
-    return $this->list = $list; 
+    return $this->list = $list;
   }
 
   public function getListSize() {
     return $this->list_size;
   }
   public function setListSize($list_size) {
-    return $this->list_size = $list_size; 
+    return $this->list_size = $list_size;
   }
 
   public function getPageSize() {
     return $this->page_size;
   }
   public function setPageSize($page_size) {
-    return $this->page_size = $page_size; 
+    return $this->page_size = $page_size;
   }
 
   /**
@@ -97,7 +97,7 @@ class ManageDeploymentsForm extends FormBase {
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
-    } else { 
+    } else {
       if ($this->list_size % $pagesize == 0) {
         $total_pages = $this->list_size / $pagesize;
       } else {
@@ -124,7 +124,7 @@ class ManageDeploymentsForm extends FormBase {
 
     //dpm($this->getList());
     $header = Deployment::generateHeaderState($this->getState());
-    $output = Deployment::generateOutputState($this->getState(), $this->getList());    
+    $output = Deployment::generateOutputState($this->getState(), $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -143,19 +143,19 @@ class ManageDeploymentsForm extends FormBase {
           <div class="card-header">
               <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' . 
+                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink('design',$page,$pagesize) . '" role="tab">Upcoming Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' .
                       $this->stateLink('active',$page,$pagesize) . '" role="tab">Active Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' .
                       $this->stateLink('closed',$page,$pagesize) . '" role="tab">Completed Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' .
                       $this->stateLink('all',$page,$pagesize) . '" role="tab">All Deployments</a>
                   </li>
               </ul>
@@ -167,14 +167,14 @@ class ManageDeploymentsForm extends FormBase {
       '#type' => 'item',
       '#title' => $this->t('<BR>'),
     ];
-  
+
     if ($this->getState() == 'active') {
       $form['break_line'] = [
         '#type' => 'item',
         '#title' => $this->t('<br><b>Note</b>: To create a new deployment, select the option "Upcoming Deployments" above.<br>'),
       ];
     }
-  
+
     $form['card'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['card']],
@@ -194,22 +194,34 @@ class ManageDeploymentsForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Create Deployment'),
         '#name' => 'add_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'add-element-button'],
+        ],
       ];
       $form['card']['card_body']['edit_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Edit Selected'),
         '#name' => 'edit_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+        ],
       ];
       $form['card']['card_body']['execute_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Execute Selected'),
         '#name' => 'execute_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'play-button'],
+        ],
       ];
       $form['card']['card_body']['delete_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Delete Selected'),
         '#name' => 'delete_element',
-        '#attributes' => ['onclick' => 'if(!confirm("Really Delete?")){return false;}'],
+        '#attributes' => [
+          'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+          'class' => ['btn', 'btn-primary', 'delete-element-button']
+        ],
       ];
     }
     if ($this->getState() == 'active') {
@@ -217,16 +229,25 @@ class ManageDeploymentsForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Close Selected'),
         '#name' => 'close_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'close-button'],
+        ],
       ];
       $form['card']['card_body']['modify_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Modify Selected'),
         '#name' => 'modify_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+        ],
       ];
       $form['card']['card_body']['stream_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Streams of Selected'),
         '#name' => 'manage_streams',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'stream-button'],
+        ],
       ];
     }
     $form['card']['card_body']['element_table'] = [
@@ -257,23 +278,26 @@ class ManageDeploymentsForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Back'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'back-button'],
+      ],
     ];
     $form['space2'] = [
       '#type' => 'item',
       '#value' => $this->t('<br><br><br>'),
     ];
- 
+
     return $form;
   }
 
   /**
    * {@inheritdoc}
-   */   
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // RETRIEVE TRIGGERING BUTTON
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
-  
+
     // SET USER ID AND PREVIOUS URL FOR TRACKING STORE URLS
     $uid = \Drupal::currentUser()->id();
     $previousUrl = \Drupal::request()->getRequestUri();
@@ -332,28 +356,28 @@ class ManageDeploymentsForm extends FormBase {
       Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_deployment');
       $url = Url::fromRoute('dpl.add_deployment');
       $form_state->setRedirectUrl($url);
-    }  
+    }
 
     // EDIT ELEMENT
     if ($button_name === 'edit_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be edited."));      
+        \Drupal::messenger()->addWarning(t("Select the exact deployment to be edited."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be edited at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one deployment can be edited at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
         $url = Url::fromRoute('dpl.edit_deployment', ['deploymenturi' => base64_encode($first)]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // EXECUTE ELEMENT
     if ($button_name === 'execute_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be executed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact deployment to be executed."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be executed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one deployment can be executed at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
@@ -362,15 +386,15 @@ class ManageDeploymentsForm extends FormBase {
           'deploymenturi' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // CLOSE ELEMENT
     if ($button_name === 'close_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to be closed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact deployment to be closed."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one deployment can be closed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one deployment can be closed at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
@@ -379,15 +403,15 @@ class ManageDeploymentsForm extends FormBase {
           'deploymenturi' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // MANAGE STREAM
     if ($button_name === 'manage_streams') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to have streams managed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact deployment to have streams managed."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("To manage streams, select exactly one deployment."));      
+        \Drupal::messenger()->addWarning(t("To manage streams, select exactly one deployment."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.manage_streams_route');
@@ -398,13 +422,13 @@ class ManageDeploymentsForm extends FormBase {
           'pagesize' => 10,
         ]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {
-        \Drupal::messenger()->addWarning(t("At least one deployment needs to be selected to be deleted."));      
+        \Drupal::messenger()->addWarning(t("At least one deployment needs to be selected to be deleted."));
         return;
       } else {
         $api = \Drupal::service('rep.api_connector');
@@ -412,26 +436,26 @@ class ManageDeploymentsForm extends FormBase {
           $uri = Utils::plainUri($shortUri);
           $api->elementDel('deployment',$uri);
         }
-        \Drupal::messenger()->addMessage(t("Selected deployment(s) has/have been deleted successfully."));      
+        \Drupal::messenger()->addMessage(t("Selected deployment(s) has/have been deleted successfully."));
         return;
       }
-    }  
+    }
 
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
       $url = Url::fromRoute('rep.home');
       $form_state->setRedirectUrl($url);
       return;
-    }  
+    }
 
     return;
   }
 
   public function stateLink($state, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
-    return $root_url . REPGUI::MANAGE_DEPLOYMENTS . 
+    return $root_url . REPGUI::MANAGE_DEPLOYMENTS .
         $state . '/' .
-        strval($page) . '/' . 
+        strval($page) . '/' .
         strval($pagesize);
   }
 

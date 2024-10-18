@@ -38,49 +38,49 @@ class ManageStreamsForm extends FormBase {
     return $this->manager_email;
   }
   public function setManagerEmail($manager_email) {
-    return $this->manager_email = $manager_email; 
+    return $this->manager_email = $manager_email;
   }
 
   public function getManagerName() {
     return $this->manager_name;
   }
   public function setManagerName($manager_name) {
-    return $this->manager_name = $manager_name; 
+    return $this->manager_name = $manager_name;
   }
 
   public function getState() {
     return $this->state;
   }
   public function setState($state) {
-    return $this->state = $state; 
+    return $this->state = $state;
   }
 
   public function getDeployment() {
     return $this->deployment;
   }
   public function setDeployment($deployment) {
-    return $this->deployment = $deployment; 
+    return $this->deployment = $deployment;
   }
 
   public function getList() {
     return $this->list;
   }
   public function setList($list) {
-    return $this->list = $list; 
+    return $this->list = $list;
   }
 
   public function getListSize() {
     return $this->list_size;
   }
   public function setListSize($list_size) {
-    return $this->list_size = $list_size; 
+    return $this->list_size = $list_size;
   }
 
   public function getPageSize() {
     return $this->page_size;
   }
   public function setPageSize($page_size) {
-    return $this->page_size = $page_size; 
+    return $this->page_size = $page_size;
   }
 
   /**
@@ -119,7 +119,7 @@ class ManageStreamsForm extends FormBase {
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
-    } else { 
+    } else {
       if ($this->list_size % $pagesize == 0) {
         $total_pages = $this->list_size / $pagesize;
       } else {
@@ -146,7 +146,7 @@ class ManageStreamsForm extends FormBase {
 
     //dpm($this->getList());
     $header = Stream::generateHeaderState($this->getState());
-    $output = Stream::generateOutputState($this->getState(), $this->getList());    
+    $output = Stream::generateOutputState($this->getState(), $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -169,19 +169,19 @@ class ManageStreamsForm extends FormBase {
           <div class="card-header">
               <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' . 
+                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink($this->getDeployment()->uri, 'design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'active', $page, $pagesize) . '" role="tab">Active Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'closed', $page, $pagesize) . '" role="tab">Completed Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' . 
+                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'all', $page, $pagesize) . '" role="tab">All Streams</a>
                   </li>
               </ul>
@@ -200,7 +200,7 @@ class ManageStreamsForm extends FormBase {
         '#title' => $this->t('<br><b>Note</b>: To create a new stream, select the option "Upcoming Streams" above.<br>'),
       ];
     }
-    
+
     $form['card'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['card']],
@@ -220,22 +220,34 @@ class ManageStreamsForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Create Stream'),
         '#name' => 'add_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'add-element-button'],
+        ],
       ];
       $form['card']['card_body']['edit_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Edit Selected'),
         '#name' => 'edit_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+        ],
       ];
       $form['card']['card_body']['execute_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Execute Selected'),
         '#name' => 'execute_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'play-button'],
+        ],
       ];
       $form['card']['card_body']['delete_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Delete Selected'),
         '#name' => 'delete_element',
-        '#attributes' => ['onclick' => 'if(!confirm("Really Delete?")){return false;}'],
+        '#attributes' => [
+          'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+          'class' => ['btn', 'btn-primary', 'delete-button'],
+        ],
       ];
     }
     if ($this->getState() == 'active') {
@@ -243,11 +255,17 @@ class ManageStreamsForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Close Selected'),
         '#name' => 'close_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'close-button'],
+        ],
       ];
       $form['card']['card_body']['modify_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Modify Selected'),
         '#name' => 'modify_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+        ],
       ];
     }
     $form['card']['card_body']['element_table'] = [
@@ -278,23 +296,26 @@ class ManageStreamsForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Back'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'back-button'],
+      ],
     ];
     $form['space2'] = [
       '#type' => 'item',
       '#value' => $this->t('<br><br><br>'),
     ];
- 
+
     return $form;
   }
 
   /**
    * {@inheritdoc}
-   */   
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // RETRIEVE TRIGGERING BUTTON
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
-  
+
     // SET USER ID AND PREVIOUS URL FOR TRACKING STORE URLS
     $uid = \Drupal::currentUser()->id();
     $previousUrl = \Drupal::request()->getRequestUri();
@@ -357,28 +378,28 @@ class ManageStreamsForm extends FormBase {
       Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_stream');
       $url = Url::fromRoute('dpl.add_stream', ['deploymenturi' => base64_encode($this->getDeployment()->uri)]);
       $form_state->setRedirectUrl($url);
-    }  
+    }
 
     // EDIT ELEMENT
     if ($button_name === 'edit_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact stream to be edited."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be edited."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one stream can be edited at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be edited at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_stream');
         $url = Url::fromRoute('dpl.edit_stream', ['streamuri' => base64_encode($first)]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // EXECUTE ELEMENT
     if ($button_name === 'execute_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact stream to be executed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be executed."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one stream can be executed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be executed at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_stream');
@@ -387,15 +408,15 @@ class ManageStreamsForm extends FormBase {
           'streamuri' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // CLOSE ELEMENT
     if ($button_name === 'close_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact stream to be closed."));      
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be closed."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one stream can be closed at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one stream can be closed at once."));
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_stream');
@@ -404,13 +425,13 @@ class ManageStreamsForm extends FormBase {
           'streamuri' => base64_encode($first)
         ]);
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {
-        \Drupal::messenger()->addWarning(t("At least one stream needs to be selected to be deleted."));      
+        \Drupal::messenger()->addWarning(t("At least one stream needs to be selected to be deleted."));
         return;
       } else {
         $api = \Drupal::service('rep.api_connector');
@@ -418,16 +439,16 @@ class ManageStreamsForm extends FormBase {
           $uri = Utils::plainUri($shortUri);
           $api->elementDel('stream',$uri);
         }
-        \Drupal::messenger()->addMessage(t("Selected stream(s) has/have been deleted successfully."));      
+        \Drupal::messenger()->addMessage(t("Selected stream(s) has/have been deleted successfully."));
         return;
       }
-    }  
+    }
 
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
       $this->backUrl();
       return;
-    }  
+    }
 
     return;
   }
@@ -441,13 +462,13 @@ class ManageStreamsForm extends FormBase {
       return;
     }
   }
-  
+
   public function stateLink($deploymenturi, $state, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
-    return $root_url . REPGUI::MANAGE_STREAMS . 
-        base64_encode($deploymenturi) . '/'. 
+    return $root_url . REPGUI::MANAGE_STREAMS .
+        base64_encode($deploymenturi) . '/'.
         $state . '/' .
-        strval($page) . '/' . 
+        strval($page) . '/' .
         strval($pagesize);
   }
 

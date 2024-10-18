@@ -21,7 +21,7 @@ class EditPlatformForm extends FormBase {
   }
 
   public function setPlatformUri($uri) {
-    return $this->platformUri = $uri; 
+    return $this->platformUri = $uri;
   }
 
   public function getPlatform() {
@@ -29,7 +29,7 @@ class EditPlatformForm extends FormBase {
   }
 
   public function setPlatform($platform) {
-    return $this->platform = $platform; 
+    return $this->platform = $platform;
   }
 
   /**
@@ -50,7 +50,7 @@ class EditPlatformForm extends FormBase {
     $api = \Drupal::service('rep.api_connector');
     $rawresponse = $api->getUri($this->getPlatformUri());
     $obj = json_decode($rawresponse);
-    
+
     if ($obj->isSuccessful) {
       $this->setPlatform($obj->body);
     } else {
@@ -78,11 +78,17 @@ class EditPlatformForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Update'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -119,7 +125,7 @@ class EditPlatformForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     try{
       $uid = \Drupal::currentUser()->id();
@@ -137,7 +143,7 @@ class EditPlatformForm extends FormBase {
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('platform',$this->getPlatformUri());
       $newPlatform = $api->elementAdd('platform',$platformJson);
-    
+
       \Drupal::messenger()->addMessage(t("Platform has been updated successfully."));
       self::backUrl();
       return;
@@ -159,6 +165,6 @@ class EditPlatformForm extends FormBase {
       return;
     }
   }
-  
+
 
 }

@@ -30,6 +30,9 @@ class AccordionForm extends FormBase {
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'check-button'],
+      ],
     ];
 
     return $form;

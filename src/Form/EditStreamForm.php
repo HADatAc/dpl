@@ -19,7 +19,7 @@ class EditStreamForm extends FormBase {
   }
 
   public function setStream($stream) {
-    return $this->stream = $stream; 
+    return $this->stream = $stream;
   }
 
   /**
@@ -50,7 +50,7 @@ class EditStreamForm extends FormBase {
     }
 
     $deploymentLabel = ' ';
-    if (($this->getStream()->deployment != NULL) && 
+    if (($this->getStream()->deployment != NULL) &&
         isset($this->getStream()->deployment->uri) &&
         isset($this->getStream()->deployment->label)) {
       $deploymentLabel = Utils::fieldToAutocomplete(
@@ -146,7 +146,7 @@ class EditStreamForm extends FormBase {
     ];
 
     // Tab3 Content
-    
+
     $form['tabs']['tab_content']['tab3'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['tab-pane']],
@@ -187,11 +187,17 @@ class EditStreamForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -224,10 +230,10 @@ class EditStreamForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     $label = "Stream";
-      
+
     try{
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
@@ -252,7 +258,7 @@ class EditStreamForm extends FormBase {
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('stream',$this->getStream()->uri);
       $newStream = $api->elementAdd('stream',$streamJson);
-    
+
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;
@@ -274,6 +280,6 @@ class EditStreamForm extends FormBase {
       return;
     }
   }
-  
+
 
 }

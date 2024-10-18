@@ -15,6 +15,15 @@ function dpl_library_info() {
       'core/jquery',
     ],
   ];
+
+  /**
+   * Implements hook_page_attachments().
+   */
+  function dpl_page_attachments(array &$attachments) {
+    $attachments['#attached']['library'][] = 'core/drupal.dialog';
+    $attachments['#attached']['library'][] = 'rep/rep_js_css';
+  }
+
   //$libraries['accordion'] = [
   //  'css' => [
   //    'css/dpl_accordion.css' => [],

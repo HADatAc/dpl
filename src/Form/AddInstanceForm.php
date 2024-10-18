@@ -21,7 +21,7 @@ class AddInstanceForm extends FormBase {
   }
 
   public function setElementType($elementType) {
-    return $this->elementType = $elementType; 
+    return $this->elementType = $elementType;
   }
 
   public function getElementName() {
@@ -29,7 +29,7 @@ class AddInstanceForm extends FormBase {
   }
 
   public function setElementName($elementName) {
-    return $this->elementName = $elementName; 
+    return $this->elementName = $elementName;
   }
 
   /**
@@ -101,11 +101,17 @@ class AddInstanceForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -141,7 +147,7 @@ class AddInstanceForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     $hascoType = '';
     if ($this->getElementType() == 'platforminstance') {
@@ -157,19 +163,19 @@ class AddInstanceForm extends FormBase {
     $typeUri = '';
     if ($form_state->getValue('instance_type') != NULL && $form_state->getValue('instance_type') != '') {
       $typeUri = Utils::uriFromAutocomplete($form_state->getValue('instance_type'));
-    } 
+    }
 
     $acquisitionDate = '';
     if ($form_state->getValue('instance_acquisition_date') != NULL && $form_state->getValue('instance_acquisition_date') != '') {
       $acquisitionDate = $form_state->getValue('instance_acquisition_date');
-    } 
+    }
 
     $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();
       $newInstanceUri = Utils::uriGen($this->getElementType());
-      $streamJson = '{"uri":"'.$newInstanceUri.'",' . 
+      $streamJson = '{"uri":"'.$newInstanceUri.'",' .
         '"typeUri":"'.$typeUri.'",'.
         '"hascoTypeUri":"'.$hascoType.'",'.
         '"label":"'.$label.'",'.
@@ -179,7 +185,7 @@ class AddInstanceForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd($this->getElementType(),$streamJson);    
+      $api->elementAdd($this->getElementType(),$streamJson);
       \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));
       self::backUrl();
       return;
@@ -199,5 +205,5 @@ class AddInstanceForm extends FormBase {
       return;
     }
   }
-  
+
 }

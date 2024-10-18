@@ -20,14 +20,14 @@ class ExecuteCloseDeploymentForm extends FormBase {
     return $this->mode;
   }
   public function setMode($mode) {
-    return $this->mode = $mode; 
+    return $this->mode = $mode;
   }
 
   public function getDeployment() {
     return $this->deployment;
   }
   public function setDeployment($deployment) {
-    return $this->deployment = $deployment; 
+    return $this->deployment = $deployment;
   }
 
   /**
@@ -44,12 +44,12 @@ class ExecuteCloseDeploymentForm extends FormBase {
     $api = \Drupal::service('rep.api_connector');
 
     // CHECK MODE
-    if (($mode == NULL) || 
+    if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
       \Drupal::messenger()->addError(t("Invalid Deployment execute/close operation."));
       self::backUrl();
       return;
-    } 
+    }
     $this->setMode($mode);
 
     // RETRIEVE DEPLOYMENT
@@ -65,7 +65,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
     }
 
     $platformInstanceLabel = ' ';
-    if (isset($this->getDeployment()->platformInstance) && 
+    if (isset($this->getDeployment()->platformInstance) &&
         isset($this->getDeployment()->platformInstance->uri) &&
         isset($this->getDeployment()->platformInstance->label)) {
       $platformInstanceLabel = Utils::fieldToAutocomplete(
@@ -74,7 +74,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
       );
     }
     $instrumentInstanceLabel = ' ';
-    if (isset($this->getDeployment()->instrumentInstance) && 
+    if (isset($this->getDeployment()->instrumentInstance) &&
         isset($this->getDeployment()->instrumentInstance->uri) &&
         isset($this->getDeployment()->instrumentInstance->label)) {
       $instrumentInstanceLabel = Utils::fieldToAutocomplete(
@@ -143,6 +143,9 @@ class ExecuteCloseDeploymentForm extends FormBase {
           '#type' => 'submit',
           '#value' => $this->t('Execute'),
           '#name' => 'execute',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'play-button'],
+          ],
         ];
         }
       if ($this->getMode() == 'close') {
@@ -159,12 +162,18 @@ class ExecuteCloseDeploymentForm extends FormBase {
           '#type' => 'submit',
           '#value' => $this->t('Close'),
           '#name' => 'close',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'close-button'],
+          ],
         ];
         }
       $form['cancel_submit'] = [
         '#type' => 'submit',
         '#value' => $this->t('Cancel'),
         '#name' => 'back',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'cancel-button'],
+        ],
       ];
 
     // DEPLOYMENT IS INVALID
@@ -181,7 +190,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Back to Manage Deployments'),
         '#name' => 'back',
-      ];  
+      ];
     }
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -215,7 +224,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     try{
       $uid = \Drupal::currentUser()->id();
@@ -233,11 +242,11 @@ class ExecuteCloseDeploymentForm extends FormBase {
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$this->getDeployment()->designedAt.'",';
       if ($this->getMode() == 'execute') {
-        $deploymentJson .= 
+        $deploymentJson .=
           '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
-      } 
+      }
       if ($this->getMode() == 'close') {
-        $deploymentJson .= 
+        $deploymentJson .=
           '"startedAt":"'.$this->getDeployment()->startedAt.'",'.
           '"endedAt":"'.$form_state->getValue('deployment_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
       }
@@ -249,7 +258,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('deployment',$this->getDeployment()->uri);
       $api->elementAdd('deployment',$deploymentJson);
-    
+
       \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
       self::backUrl();
       return;
@@ -270,5 +279,5 @@ class ExecuteCloseDeploymentForm extends FormBase {
       return;
     }
   }
-  
+
 }

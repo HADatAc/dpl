@@ -129,7 +129,7 @@ class ManageDeploymentsForm extends FormBase {
     // PUT FORM TOGETHER
     $form['page_title'] = [
       '#type' => 'item',
-      '#title' => $this->t('<h3>Manage Deployments</h3>'),
+      '#title' => $this->t('<h3 class="mt-5">Manage Deployments</h3>'),
     ];
     $form['page_subtitle'] = [
       '#type' => 'item',
@@ -141,7 +141,7 @@ class ManageDeploymentsForm extends FormBase {
       '#markup' => '
       <div class="card">
           <div class="card-header">
-              <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
+              <ul class="nav nav-pills nav-justified mb-0" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink('design',$page,$pagesize) . '" role="tab">Upcoming Deployments</a>

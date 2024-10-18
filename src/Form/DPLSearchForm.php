@@ -32,7 +32,7 @@ class DPLSearchForm extends FormBase {
   }
 
   public function setElementType($type) {
-    return $this->elementtype = $type; 
+    return $this->elementtype = $type;
   }
 
   public function getKeyword() {
@@ -40,7 +40,7 @@ class DPLSearchForm extends FormBase {
   }
 
   public function setKeyword($kw) {
-    return $this->keyword = $kw; 
+    return $this->keyword = $kw;
   }
 
   public function getPage() {
@@ -48,7 +48,7 @@ class DPLSearchForm extends FormBase {
   }
 
   public function setPage($pg) {
-    return $this->page = $pg; 
+    return $this->page = $pg;
   }
 
   public function getPageSize() {
@@ -56,7 +56,7 @@ class DPLSearchForm extends FormBase {
   }
 
   public function setPageSize($pgsize) {
-    return $this->pagesize = $pgsize; 
+    return $this->pagesize = $pgsize;
   }
 
   /**
@@ -78,7 +78,7 @@ class DPLSearchForm extends FormBase {
 
           // ELEMENT TYPE
           $this->setElementType($pathElements[4]);
-    
+
     // IT IS AN INSTANCE ELEMENT if size of path elements is greate or equal 7
     } else if (sizeof($pathElements) >= 7) {
 
@@ -129,6 +129,9 @@ class DPLSearchForm extends FormBase {
     $form['search_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Search'),
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'search-button'],
+      ],
     ];
 
     return $form;

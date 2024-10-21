@@ -25,7 +25,7 @@ class AddStreamForm extends FormBase {
     return $this->deployment;
   }
   public function setDeployment($deployment) {
-    return $this->deployment = $deployment; 
+    return $this->deployment = $deployment;
   }
 
   /**
@@ -49,7 +49,7 @@ class AddStreamForm extends FormBase {
     }
 
     $deploymentLabel = ' ';
-    if (($this->getDeployment() != NULL) && 
+    if (($this->getDeployment() != NULL) &&
         isset($this->getDeployment()->uri) &&
         isset($this->getDeployment()->label)) {
       $deploymentLabel = Utils::fieldToAutocomplete(
@@ -179,11 +179,17 @@ class AddStreamForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'back-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -216,7 +222,7 @@ class AddStreamForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     $dateTime = new \DateTime();
     $formattedNow = $dateTime->format('Y-m-d\TH:i:s') . '.' . $dateTime->format('v') . $dateTime->format('O');
@@ -224,10 +230,10 @@ class AddStreamForm extends FormBase {
     $deployment = '';
     if ($form_state->getValue('stream_deployment') != NULL && $form_state->getValue('stream_deployment') != '') {
       $deployment = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment'));
-    } 
+    }
 
     $label = "Stream";
-      
+
     try{
       $useremail = \Drupal::currentUser()->getEmail();
       $newStreamUri = Utils::uriGen('stream');
@@ -248,7 +254,7 @@ class AddStreamForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('stream',$streamJson);    
+      $api->elementAdd('stream',$streamJson);
       \Drupal::messenger()->addMessage(t("Stream has been added successfully."));
       self::backUrl();
       return;
@@ -268,5 +274,5 @@ class AddStreamForm extends FormBase {
       return;
     }
   }
-  
+
 }

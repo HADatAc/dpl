@@ -40,11 +40,17 @@ class AddPlatformForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -77,7 +83,7 @@ class AddPlatformForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-  } 
+  }
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();
@@ -91,7 +97,7 @@ class AddPlatformForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('platform',$platformJson);    
+      $api->elementAdd('platform',$platformJson);
       \Drupal::messenger()->addMessage(t("Platform has been added successfully."));
       self::backUrl();
       return;
@@ -113,7 +119,7 @@ class AddPlatformForm extends FormBase {
       return;
     }
   }
-  
+
 
 
 }

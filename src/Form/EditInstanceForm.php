@@ -23,7 +23,7 @@ class EditInstanceForm extends FormBase {
   }
 
   public function setElement($element) {
-    return $this->element = $element; 
+    return $this->element = $element;
   }
 
   public function getElementType() {
@@ -31,7 +31,7 @@ class EditInstanceForm extends FormBase {
   }
 
   public function setElementType($elementType) {
-    return $this->elementType = $elementType; 
+    return $this->elementType = $elementType;
   }
 
   public function getElementName() {
@@ -39,7 +39,7 @@ class EditInstanceForm extends FormBase {
   }
 
   public function setElementName($elementName) {
-    return $this->elementName = $elementName; 
+    return $this->elementName = $elementName;
   }
 
   /**
@@ -103,7 +103,7 @@ class EditInstanceForm extends FormBase {
 
     $form['page_title'] = [
       '#type' => 'item',
-      '#title' => $this->t('<h3>Create ' . $this->getElementName() . '</h3>'),
+      '#title' => $this->t('<h3>Edit ' . $this->getElementName() . '</h3>'),
     ];
     $form['instance_type'] = [
       '#type' => 'textfield',
@@ -130,11 +130,17 @@ class EditInstanceForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -170,12 +176,12 @@ class EditInstanceForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     $typeUri = '';
     if ($form_state->getValue('instance_type') != NULL && $form_state->getValue('instance_type') != '') {
       $typeUri = Utils::uriFromAutocomplete($form_state->getValue('instance_type'));
-    } 
+    }
 
     $hascoTypeUri = '';
     if ($this->getElement()->hascoTypeUri != NULL) {
@@ -187,7 +193,7 @@ class EditInstanceForm extends FormBase {
     try{
       $useremail = \Drupal::currentUser()->getEmail();
       $newInstanceUri = Utils::uriGen($this->getElementType());
-      $instanceJson = '{"uri":"'.$newInstanceUri.'",' . 
+      $instanceJson = '{"uri":"'.$newInstanceUri.'",' .
         '"typeUri":"'.$typeUri.'",'.
         '"hascoTypeUri":"'.$hascoTypeUri.'",'.
         '"label":"'.$label.'",'.
@@ -196,7 +202,7 @@ class EditInstanceForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd($this->getElementType(),$instanceJson);    
+      $api->elementAdd($this->getElementType(),$instanceJson);
       \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));
       self::backUrl();
       return;
@@ -216,5 +222,5 @@ class EditInstanceForm extends FormBase {
       return;
     }
   }
-  
+
 }

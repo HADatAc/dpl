@@ -55,11 +55,17 @@ class AddDeploymentForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#name' => 'save',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'save-button'],
+      ],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'cancel-button'],
+      ],
     ];
     $form['bottom_space'] = [
       '#type' => 'item',
@@ -92,24 +98,24 @@ class AddDeploymentForm extends FormBase {
     if ($button_name === 'back') {
       self::backUrl();
       return;
-    } 
+    }
 
     $platformInstanceUri = '';
     $platformInstanceName = '';
     if ($form_state->getValue('deployment_platform_instance') != NULL && $form_state->getValue('deployment_platform_instance') != '') {
       $platformInstanceUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_platform_instance'));
       $platformInstanceName = Utils::labelFromAutocomplete($form_state->getValue('deployment_platform_instance'));
-    } 
+    }
     $instrumentInstanceUri = '';
     $instrumentInstanceName = '';
     if ($form_state->getValue('deployment_instrument_instance') != NULL && $form_state->getValue('deployment_instrument_instance') != '') {
       $instrumentInstanceUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
       $instrumentInstanceName = Utils::labelFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
-    } 
+    }
     //$detectorUri = '';
     //if ($form_state->getValue('deployment_detector_instance') != NULL && $form_state->getValue('deployment_detector_instance') != '') {
     //  $detectorUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_detector_instance'));
-    //} 
+    //}
 
     $finalLabel = 'a deployment';
     if ($platformInstanceName == '' && $instrumentInstanceName != '') {
@@ -140,7 +146,7 @@ class AddDeploymentForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('deployment',$deploymentJson);    
+      $api->elementAdd('deployment',$deploymentJson);
       \Drupal::messenger()->addMessage(t("Deployment has been added successfully."));
       self::backUrl();
       return;
@@ -160,5 +166,5 @@ class AddDeploymentForm extends FormBase {
       return;
     }
   }
-  
+
 }

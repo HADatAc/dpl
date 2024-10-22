@@ -1,5 +1,5 @@
 {
-    "name": "drupalmodules/dpl",
+    "name": "hasco/dpl",
     "description": "DPL module to integrate with Drupal",
     "type": "drupal-module",
     "require": {

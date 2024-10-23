@@ -1,16 +1,15 @@
-dpl_js_css:
-  version: 1.0
+dpl_tabs:
+  version: VERSION
   css:
-    theme:
-      css/dpl.css: {}
+    css/dpl_tabs.css: {}
   js:
-    js/dpl.js: {}
+    js/tabs.js: {}
   dependencies:
     - core/jquery
-    - core/drupal
-    - core/jquery.once
-fontawesome5:
-  version: 1.0
+dpl_accordion:
+  version: VERSION
   css:
-    component:
-      //use.fontawesome.com/releases/v5.15.4/css/all.css: {}
+    theme:
+      css/dpl_accordion.css: {}
+  js:
+    js/dpl_accordion.js: {}

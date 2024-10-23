@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Implements hook_library_info().
+ */
+function dpl_library_info() {
+  $libraries['tabs'] = [
+    'css' => [
+      'css/dpl_tabs.css' => [],
+    ],
+    'js' => [
+      'js/tabs.js' => [],
+    ],
+    'dependencies' => [
+      'core/jquery',
+    ],
+  ];
+
+  /**
+   * Implements hook_page_attachments().
+   */
+  function dpl_page_attachments(array &$attachments) {
+    $attachments['#attached']['library'][] = 'core/drupal.dialog';
+    $attachments['#attached']['library'][] = 'rep/rep_js_css';
+  }
+
+  //$libraries['accordion'] = [
+  //  'css' => [
+  //    'css/dpl_accordion.css' => [],
+  //  ],
+  //  'js' => [
+  //    'js/dpl_accordion.js' => [],
+  //  ],
+  //  'dependencies' => [
+  //    'core/jquery',
+  //  ],
+  //];
+  return $libraries;
+}

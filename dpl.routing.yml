@@ -1,12 +1,9 @@
-dpl.search:
-  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+dpl.search_deployment:
+  path: 'dpl/list/{mode}/{elementtype}'
   defaults:
-    _form: '\Drupal\dpl\Form\DPLListForm'
+    _form: '\Drupal\rep\Form\TreeForm'
+    mode: 'browse'
     elementtype: 'platform'
-    keyword: '_'
-    language: '_'
-    page: '1'
-    pagesize: '12'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'    
@@ -16,7 +13,7 @@ dpl.search:
 # Main menu options
 
 dpl.list_element:
-  path: 'dpl/list/{elementtype}/{keyword}/{language}/{page}/{pagesize}'
+  path: 'dpl/list/{elementtype}/{keyword}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\DPLListForm'
   requirements:
@@ -37,74 +34,195 @@ dpl.select_element:
 
 # Platform CRUD options
 
-#dpl.add_platform:
-#  path: 'dpl/manage/addplatform'
-#  defaults:
-#    _form: '\Drupal\dpl\Form\AddPlatformForm'
-#    _title: 'Add Platform'    
-#  requirements:
-#    _permission: 'access content'
-#    _custom_access_check: 'TRUE'    
-#  options:
-#    no_cache: 'TRUE'
+dpl.add_platform:
+  path: 'dpl/manage/addplatform'
+  defaults:
+    _form: '\Drupal\dpl\Form\AddPlatformForm'
+    _title: 'Add Platform'    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
 
-#dpl.edit_platform:
-#  path: 'dpl/manage/editplatform/{platformuri}'
-#  defaults:
-#    _form: '\Drupal\dpl\Form\EditPlatformForm'
-#    _title: 'Edit Platform'    
-#  requirements:
-#    _permission: 'access content'
-#    _custom_access_check: 'TRUE'
-#  options:
-#    no_cache: 'TRUE'
+dpl.edit_platform:
+  path: 'dpl/manage/editplatform/{platformuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\EditPlatformForm'
+    _title: 'Edit Platform'    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
 
 # Stream CRUD options
 
-#dpl.add_stream:
-#  path: 'dpl/manage/addstream'
-#  defaults:
-#    _form: '\Drupal\dpl\Form\AddStreamForm'
-#    _title: 'Add Stream'    
-#  requirements:
-#    _permission: 'access content'
-#    _custom_access_check: 'TRUE'    
-#  options:
-#    no_cache: 'TRUE'
+dpl.add_stream:
+  path: 'dpl/manage/addstream/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\AddStreamForm'
+    _title: 'Add Stream'    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
 
-#dpl.edit_stream:
-#  path: 'dpl/manage/editstream/{streamuri}'
-#  defaults:
-#    _form: '\Drupal\dpl\Form\EditStreamForm'
-#    _title: 'Edit Stream'    
-#  requirements:
-#    _permission: 'access content'
-#    _custom_access_check: 'TRUE'
-#  options:
-#    no_cache: 'TRUE'
+dpl.edit_stream:
+  path: 'dpl/manage/editstream/{streamuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\EditStreamForm'
+    _title: 'Edit Stream'    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+dpl.execute_close_stream:
+  path: 'dpl/manage/executeclosestream/{mode}/{streamuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteCloseStreamForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
 
 # Deployment CRUD options
 
-#dpl.add_deployments:
-#  path: 'dpl/manage/adddeployment'
+dpl.add_deployment:
+  path: 'dpl/manage/adddeployment'
+  defaults:
+    _form: '\Drupal\dpl\Form\AddDeploymentForm'
+    _title: "Create Deployment"    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    _modal_form_layout: TRUE
+    no_cache: 'TRUE'
+
+dpl.edit_deployment:
+  path: 'dpl/manage/editdeployment/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\EditDeploymentForm'
+    _title: 'Edit Deployment'    
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.execute_close_deployment:
+  path: 'dpl/manage/executeclosedeployment/{mode}/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteCloseDeploymentForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.manage_deployments_route:
+  path: 'dpl/manage/deployments/{state}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ManageDeploymentsForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.manage_streams_route:
+  path: 'dpl/manage/streams/{deploymenturi}/{state}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ManageStreamsForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+#dpl.accordion_route:
+#  path: 'dpl/accordion'
 #  defaults:
-#    _form: '\Drupal\dpl\Form\AddDeploymentForm'
-#    _title: "Create Deployment"    
+#    _form: '\Drupal\dpl\Form\AccordionForm'
 #  requirements:
 #    _permission: 'access content'
 #    _custom_access_check: 'TRUE'    
 #  options:
-#    _modal_form_layout: TRUE
 #    no_cache: 'TRUE'
 
-#dpl.edit_deployment:
-#  path: 'dpl/manage/editdeployment/{deploymenturi}'
-#  defaults:
-#    _form: '\Drupal\dpl\Form\EditDeploymentForm'
-#    _title: 'Edit Deployment'    
-#  requirements:
-#    _permission: 'access content'
-#    _custom_access_check: 'TRUE'    
-#  options:
-#    no_cache: 'TRUE'
+# VSTOI Instance CRUD options
 
+dpl.add_instance:
+  path: 'dpl/manage/addinstance/{elementtype}'
+  defaults:
+    _form: '\Drupal\dpl\Form\AddInstanceForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    _modal_form_layout: TRUE
+    no_cache: 'TRUE'
+
+dpl.edit_instance:
+  path: 'dpl/manage/editinstance/{instanceuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\EditInstanceForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'    
+  options:
+    no_cache: 'TRUE'
+
+dpl.platform_autocomplete:
+  path: '/dpl/type/autocomplete/platform'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execPlatform'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.instrument_autocomplete:
+  path: '/dpl/type/autocomplete/instrument'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execInstrument'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.detector_autocomplete:
+  path: '/dpl/type/autocomplete/detector'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetector'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.platforminstance_autocomplete:
+  path: '/dpl/type/autocomplete/platforminstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execPlatformInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.instrumentinstance_autocomplete:
+  path: '/dpl/type/autocomplete/instrumentinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execInstrumentInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.detectorinstance_autocomplete:
+  path: '/dpl/type/autocomplete/detectorinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetectorInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+    

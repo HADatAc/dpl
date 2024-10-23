@@ -1,0 +1,19 @@
+.tabs .nav-tabs {
+    margin-bottom: 1em;
+}
+  
+.tab-content .tab-pane {
+    display: none;
+}
+  
+.tab-content .tab-pane.active {
+    display: block;
+}
+  
+.nav-tabs .nav-link {
+    color: #000; /* Active tab text color */
+}
+
+.nav-tabs .nav-link.inactive {
+    color: #000; /* Inactive tab text color */
+}

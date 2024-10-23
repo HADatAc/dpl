@@ -5,9 +5,13 @@ namespace Drupal\dpl\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\ListManagerEmailPage;
 use Drupal\rep\Utils;
-use Drupal\dpl\Entity\Platform;
+use Drupal\rep\Entity\Platform;
+use Drupal\rep\Entity\Stream;
+use Drupal\rep\Entity\Deployment;
+use Drupal\rep\Entity\VSTOIInstance;
 
 class DPLSelectForm extends FormBase {
 
@@ -37,7 +41,7 @@ class DPLSelectForm extends FormBase {
   }
 
   public function setList($list) {
-    return $this->list = $list; 
+    return $this->list = $list;
   }
 
   public function getListSize() {
@@ -45,7 +49,7 @@ class DPLSelectForm extends FormBase {
   }
 
   public function setListSize($list_size) {
-    return $this->list_size = $list_size; 
+    return $this->list_size = $list_size;
   }
 
   /**
@@ -67,7 +71,7 @@ class DPLSelectForm extends FormBase {
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
-    } else { 
+    } else {
       if ($this->list_size % $pagesize == 0) {
         $total_pages = $this->list_size / $pagesize;
       } else {
@@ -92,7 +96,7 @@ class DPLSelectForm extends FormBase {
     // RETRIEVE ELEMENTS
     $this->setList(ListManagerEmailPage::exec($this->element_type, $this->manager_email, $page, $pagesize));
 
-    dpm($this->getList());
+    //dpm($this->getList());
 
     $this->single_class_name = "";
     $this->plural_class_name = "";
@@ -104,12 +108,51 @@ class DPLSelectForm extends FormBase {
 
       // PLATFORM
       case "platform":
-        $this->single_class_name = $preferred_instrument;
-        $this->plural_class_name = $preferred_instrument . "s";
+        $this->single_class_name = "Platform";
+        $this->plural_class_name = "Platforms";
         $header = Platform::generateHeader();
-        $output = Platform::generateOutput($this->getList());    
+        $output = Platform::generateOutput($this->getList());
         break;
 
+      // PLATFORM INSTANCE
+      case "platforminstance":
+        $this->single_class_name = "Platform Instance";
+        $this->plural_class_name = "Platform Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        break;
+
+      // INSTRUMENT INSTANCE
+      case "instrumentinstance":
+        $this->single_class_name = $preferred_instrument . " Instance";
+        $this->plural_class_name = $preferred_instrument . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        break;
+
+      // DETECTOR INSTANCE
+      case "detectorinstance":
+        $this->single_class_name = $preferred_detector . " Instance";
+        $this->plural_class_name = $preferred_detector . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        break;
+
+      // STREAM
+      case "stream":
+        $this->single_class_name = "Stream";
+        $this->plural_class_name = "Streams";
+        $header = Stream::generateHeader();
+        $output = Stream::generateOutput($this->getList());
+        break;
+
+      // DEPLOYMENT
+      case "deployment":
+        $this->single_class_name = "Deployment";
+        $this->plural_class_name = "Deployments";
+        $header = Deployment::generateHeader();
+        $output = Deployment::generateOutput($this->getList());
+        break;
 
       default:
         $this->single_class_name = "Object of Unknown Type";
@@ -119,7 +162,7 @@ class DPLSelectForm extends FormBase {
     // PUT FORM TOGETHER
     $form['page_title'] = [
       '#type' => 'item',
-      '#title' => $this->t('<h3>Manage ' . $this->plural_class_name . '</h3>'),
+      '#title' => $this->t('<h3 class="mt-5">Manage ' . $this->plural_class_name . '</h3>'),
     ];
     $form['page_subtitle'] = [
       '#type' => 'item',
@@ -129,12 +172,18 @@ class DPLSelectForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Add New ' . $this->single_class_name),
       '#name' => 'add_element',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'add-element-button'],
+      ],
     ];
     if ($this->element_type == 'detectorstem') {
       $form['derive_detectorstem'] = [
         '#type' => 'submit',
         '#value' => $this->t('Derive New ' . $preferred_detector. ' Stem from Selected'),
         '#name' => 'derive_detectorstem',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'derive-button'],
+        ],
       ];
     }
     $form['edit_selected_element'] = [
@@ -142,13 +191,19 @@ class DPLSelectForm extends FormBase {
       '#value' => $this->t('Edit Selected'),
       //'#value' => $this->t('Edit Selected ' . $this->single_class_name),
       '#name' => 'edit_element',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'edit-element-button'],
+      ],
     ];
     $form['delete_selected_element'] = [
       '#type' => 'submit',
       '#value' => $this->t('Delete Selected'),
       //'#value' => $this->t('Delete Selected ' . $this->plural_class_name),
       '#name' => 'delete_element',
-      '#attributes' => ['onclick' => 'if(!confirm("Really Delete?")){return false;}'],
+      '#attributes' => [
+        'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+        'class' => ['btn', 'btn-primary', 'delete-element-button'],
+      ],
     ];
     $form['element_table'] = [
       '#type' => 'tableselect',
@@ -174,23 +229,26 @@ class DPLSelectForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Back'),
       '#name' => 'back',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'back-button'],
+      ],
     ];
     $form['space'] = [
       '#type' => 'item',
       '#value' => $this->t('<br><br><br>'),
     ];
- 
+
     return $form;
   }
 
   /**
    * {@inheritdoc}
-   */   
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // RETRIEVE TRIGGERING BUTTON
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
-  
+
     // SET USER ID AND PREVIOUS URL FOR TRACKING STORE URLS
     $uid = \Drupal::currentUser()->id();
     $previousUrl = \Drupal::request()->getRequestUri();
@@ -209,53 +267,81 @@ class DPLSelectForm extends FormBase {
       if ($this->element_type == 'platform') {
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_platform');
         $url = Url::fromRoute('dpl.add_platform');
-      } 
+      }
+      if ($this->element_type == 'stream') {
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_stream');
+        $url = Url::fromRoute('dpl.add_stream');
+      }
+      if ($this->element_type == 'deployment') {
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_deployment');
+        $url = Url::fromRoute('dpl.add_deployment');
+      }
+      if ($this->element_type == 'platforminstance' ||
+          $this->element_type == 'instrumentinstance' ||
+          $this->element_type == 'detectorinstance') {
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_instance');
+        $url = Url::fromRoute('dpl.add_instance');
+        $url->setRouteParameter('elementtype', $this->element_type);
+      }
       $form_state->setRedirectUrl($url);
-    }  
+    }
 
     // EDIT ELEMENT
     if ($button_name === 'edit_element') {
       if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact " . $this->single_class_name . " to be edited."));      
+        \Drupal::messenger()->addWarning(t("Select the exact " . $this->single_class_name . " to be edited."));
       } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("No more than one " . $this->single_class_name . " can be edited at once."));      
+        \Drupal::messenger()->addWarning(t("No more than one " . $this->single_class_name . " can be edited at once."));
       } else {
         $first = array_shift($rows);
         if ($this->element_type == 'platform') {
           Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_platform');
           $url = Url::fromRoute('dpl.edit_platform', ['platformuri' => base64_encode($first)]);
         }
+        if ($this->element_type == 'stream') {
+          Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_stream');
+          $url = Url::fromRoute('dpl.edit_stream', ['streamuri' => base64_encode($first)]);
+        }
+        if ($this->element_type == 'deployment') {
+          Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
+          $url = Url::fromRoute('dpl.edit_deployment', ['deploymenturi' => base64_encode($first)]);
+        }
+        if ($this->element_type == 'platforminstance' ||
+            $this->element_type == 'instrumentinstance' ||
+            $this->element_type == 'detectorinstance') {
+          Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
+          $url = Url::fromRoute('dpl.edit_instance');
+          $url->setRouteParameter('instanceuri', base64_encode($first));
+        }
         $form_state->setRedirectUrl($url);
-      } 
+      }
     }
 
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {
-        \Drupal::messenger()->addWarning(t("At least one " . $this->single_class_name . " needs to be selected to be deleted."));      
+        \Drupal::messenger()->addWarning(t("At least one " . $this->single_class_name . " needs to be selected to be deleted."));
         return;
       } else {
         $api = \Drupal::service('rep.api_connector');
         foreach($rows as $shortUri) {
           $uri = Utils::plainUri($shortUri);
-          if ($this->element_type == 'platform') {
-            $api->instrumentDel($uri);
-          }
+          $api->elementDel('platform',$uri);
         }
-        \Drupal::messenger()->addMessage(t("Selected " . $this->plural_class_name . " has/have been deleted successfully."));      
+        \Drupal::messenger()->addMessage(t("Selected " . $this->plural_class_name . " has/have been deleted successfully."));
         return;
       }
-    }  
-    
+    }
+
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
       $url = Url::fromRoute('rep.home');
       $form_state->setRedirectUrl($url);
       return;
-    }  
+    }
 
     return;
 
   }
-  
+
 }

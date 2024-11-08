@@ -55,48 +55,69 @@ class DPLSelectForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $elementtype=NULL, $page=NULL, $pagesize=NULL) {
-
-    // GET manager EMAIL
+  public function buildForm(array $form, FormStateInterface $form_state, $elementtype=NULL, $page=NULL, $pagesize=NULL)
+  {
+    // GET MANAGER EMAIL
     $this->manager_email = \Drupal::currentUser()->getEmail();
     $uid = \Drupal::currentUser()->id();
     $user = \Drupal\user\Entity\User::load($uid);
     $this->manager_name = $user->name->value;
 
-    // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
+    // GET ELEMENT TYPE
     $this->element_type = $elementtype;
-    $this->setListSize(-1);
     if ($this->element_type != NULL) {
       $this->setListSize(ListManagerEmailPage::total($this->element_type, $this->manager_email));
     }
-    if (gettype($this->list_size) == 'string') {
-      $total_pages = "0";
-    } else {
-      if ($this->list_size % $pagesize == 0) {
-        $total_pages = $this->list_size / $pagesize;
-      } else {
-        $total_pages = floor($this->list_size / $pagesize) + 1;
+
+    // SET PAGE_SIZE
+    $pagesize = $form_state->get('page_size') ?? $pagesize ?? 9;
+    $form_state->set('page_size', $pagesize);
+
+    /// GET VIEW MODE
+    $session = \Drupal::request()->getSession();
+    $view_type = $form_state->get('view_type') ?? $session->get('dpl_select_view_type') ?? 'table';
+    $form_state->set('view_type', $view_type);
+
+    if ($view_type == 'table') {
+
+      $this->setListSize(-1);
+      if ($this->element_type != NULL) {
+        $this->setListSize(ListManagerEmailPage::total($this->element_type, $this->manager_email));
       }
-    }
+      if (gettype($this->list_size) == 'string') {
+        $total_pages = "0";
+      } else {
+        if ($this->list_size % $pagesize == 0) {
+          $total_pages = $this->list_size / $pagesize;
+        } else {
+          $total_pages = (int) floor($this->list_size / $pagesize) + 1;
+        }
+      }
 
-    // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
-    if ($page < $total_pages) {
-      $next_page = $page + 1;
-      $next_page_link = ListManagerEmailPage::link($this->element_type, $next_page, $pagesize);
+      // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
+      if ($page < $total_pages) {
+        $next_page = $page + 1;
+        $next_page_link = ListManagerEmailPage::link($this->element_type, $next_page, $pagesize);
+      } else {
+        $next_page_link = '';
+      }
+      if ($page > 1) {
+        $previous_page = $page - 1;
+        $previous_page_link = ListManagerEmailPage::link($this->element_type, $previous_page, $pagesize);
+      } else {
+        $previous_page_link = '';
+      }
+
+      $form_state->set('current_page', $page);
+      $form_state->set('page_size', $pagesize);
+
+      $this->setList(ListManagerEmailPage::exec($this->element_type, $this->manager_email, $page, $pagesize));
     } else {
-      $next_page_link = '';
+      // SET PAGE_SIZE
+      $pagesize = $form_state->get('page_size') ?? $pagesize ?? 9;
+      $form_state->set('page_size', $pagesize);
+      $this->setList(ListManagerEmailPage::exec($this->element_type, $this->manager_email, 1, $pagesize));
     }
-    if ($page > 1) {
-      $previous_page = $page - 1;
-      $previous_page_link = ListManagerEmailPage::link($this->element_type, $previous_page, $pagesize);
-    } else {
-      $previous_page_link = '';
-    }
-
-    // RETRIEVE ELEMENTS
-    $this->setList(ListManagerEmailPage::exec($this->element_type, $this->manager_email, $page, $pagesize));
-
-    //dpm($this->getList());
 
     $this->single_class_name = "";
     $this->plural_class_name = "";
@@ -168,6 +189,39 @@ class DPLSelectForm extends FormBase {
       '#type' => 'item',
       '#title' => $this->t('<h4>' . $this->plural_class_name . ' maintained by <font color="DarkGreen">' . $this->manager_name . ' (' . $this->manager_email . ')</font></h4>'),
     ];
+
+    // ADD BUTTONS FOR VIEW MODE
+    $form['view_toggle'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['view-toggle', 'd-flex', 'justify-content-end']],
+    ];
+
+    $form['view_toggle']['table_view'] = [
+      '#type' => 'submit',
+      '#value' => '',
+      '#name' => 'view_table',
+      '#attributes' => [
+        'style' => 'padding: 20px;',
+        'class' => ['table-view-button', 'fa-xl', 'mx-1'],
+        'title' => $this->t('Table View'),
+      ],
+      '#submit' => ['::viewTableSubmit'],
+      '#limit_validation_errors' => [],
+    ];
+
+    $form['view_toggle']['card_view'] = [
+      '#type' => 'submit',
+      '#value' => '',
+      '#name' => 'view_card',
+      '#attributes' => [
+        'style' => 'padding: 20px;',
+        'class' => ['card-view-button', 'fa-xl'],
+        'title' => $this->t('Card View'),
+      ],
+      '#submit' => ['::viewCardSubmit'],
+      '#limit_validation_errors' => [],
+    ];
+
     $form['add_element'] = [
       '#type' => 'submit',
       '#value' => $this->t('Add New ' . $this->single_class_name),
@@ -176,55 +230,66 @@ class DPLSelectForm extends FormBase {
         'class' => ['btn', 'btn-primary', 'add-element-button'],
       ],
     ];
-    if ($this->element_type == 'detectorstem') {
-      $form['derive_detectorstem'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Derive New ' . $preferred_detector. ' Stem from Selected'),
-        '#name' => 'derive_detectorstem',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'derive-button'],
+
+    // RENDER BASED ON VIEW TYPE
+    if ($view_type == 'table') {
+      $this->buildTableView($form, $form_state, $header, $output);
+
+      $form['pager'] = [
+        '#theme' => 'list-page',
+        '#items' => [
+          'page' => strval($page),
+          'first' => ListManagerEmailPage::link($this->element_type, 1, $pagesize),
+          'last' => ListManagerEmailPage::link($this->element_type, $total_pages, $pagesize),
+          'previous' => $previous_page_link,
+          'next' => $next_page_link,
+          'last_page' => strval($total_pages),
+          'links' => null,
+          'title' => ' ',
         ],
       ];
+
+    } elseif ($view_type == 'card') {
+      $this->buildCardView($form, $form_state, $header, $output);
+
+      $total_items = $this->getListSize();
+      $current_page_size = $form_state->get('page_size') ?? 9;
+
+      if ($total_items > $current_page_size) {
+        $form['load_more'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Load More'),
+          '#name' => 'load_more',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'load-more-button'],
+            'id' => 'load-more-button',
+            'style' => 'display: none;',
+          ],
+          '#submit' => ['::loadMoreSubmit'],
+          '#limit_validation_errors' => [],
+        ];
+
+        // ADD LOADING OVERLAY
+        $form['loading_overlay'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'id' => 'loading-overlay',
+            'class' => ['loading-overlay'],
+            'style' => 'display: none;',
+          ],
+          '#markup' => '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>',
+        ];
+
+        $form['list_state'] = [
+          '#type' => 'hidden',
+          '#value' => ($this->getListSize() > $form_state->get('page_size')) ? 1 : 0,
+          '#attributes' => [
+            'id' => 'list_state',
+          ],
+        ];
+      }
     }
-    $form['edit_selected_element'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Edit Selected'),
-      //'#value' => $this->t('Edit Selected ' . $this->single_class_name),
-      '#name' => 'edit_element',
-      '#attributes' => [
-        'class' => ['btn', 'btn-primary', 'edit-element-button'],
-      ],
-    ];
-    $form['delete_selected_element'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Delete Selected'),
-      //'#value' => $this->t('Delete Selected ' . $this->plural_class_name),
-      '#name' => 'delete_element',
-      '#attributes' => [
-        'onclick' => 'if(!confirm("Really Delete?")){return false;}',
-        'class' => ['btn', 'btn-primary', 'delete-element-button'],
-      ],
-    ];
-    $form['element_table'] = [
-      '#type' => 'tableselect',
-      '#header' => $header,
-      '#options' => $output,
-      '#js_select' => FALSE,
-      '#empty' => t('No ' . $this->plural_class_name . ' found'),
-    ];
-    $form['pager'] = [
-      '#theme' => 'list-page',
-      '#items' => [
-        'page' => strval($page),
-        'first' => ListManagerEmailPage::link($this->element_type, 1, $pagesize),
-        'last' => ListManagerEmailPage::link($this->element_type, $total_pages, $pagesize),
-        'previous' => $previous_page_link,
-        'next' => $next_page_link,
-        'last_page' => strval($total_pages),
-        'links' => null,
-        'title' => ' ',
-      ],
-    ];
+
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Back'),
@@ -239,6 +304,290 @@ class DPLSelectForm extends FormBase {
     ];
 
     return $form;
+  }
+
+  /**
+   * BUILD TABLE VIEW
+   */
+  protected function buildTableView(array &$form, FormStateInterface $form_state, $header, $output)
+  {
+    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+
+    $form['edit_selected_element'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Edit ' . $this->single_class_name . ' Selected'),
+      '#name' => 'edit_element',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'edit-element-button'],
+      ],
+    ];
+    $form['delete_selected_element'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Delete ' . $this->plural_class_name . ' Selected'),
+      '#name' => 'delete_element',
+      '#attributes' => [
+        'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+        'class' => ['btn', 'btn-primary', 'delete-element-button'],
+      ],
+    ];
+    if ($this->element_type == 'detectorstem') {
+      $form['derive_detectorstem'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Derive New ' . $preferred_detector. ' Stem from Selected'),
+        '#name' => 'derive_detectorstem',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'derive-button'],
+        ],
+      ];
+    }
+    $form['element_table'] = [
+      '#type' => 'tableselect',
+      '#header' => $header,
+      '#options' => $output,
+      '#js_select' => FALSE,
+      '#empty' => $this->t('No ' . $this->plural_class_name . ' found'),
+    ];
+  }
+
+  /**
+   * BUILD CARD VIEW
+   */
+  protected function buildCardView(array &$form, FormStateInterface $form_state, $header, $output)
+  {
+    // IMAGE PLACEHOLDER
+    $placeholder_image = base_path() . \Drupal::service('extension.list.module')->getPath('rep') . '/images/semVar_placeholder.png';
+
+    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+
+    $form['element_cards_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'element-cards-wrapper', 'class' => ['row', 'mt-3']],
+    ];
+
+    foreach ($output as $key => $item) {
+      $sanitized_key = md5($key);
+
+      $form['element_cards_wrapper'][$sanitized_key] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['col-md-4']],
+      ];
+
+      $form['element_cards_wrapper'][$sanitized_key]['card'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['card', 'mb-4']],
+      ];
+
+      $header_text = '';
+
+      // Definir a URL da imagem, usar placeholder se não houver imagem no item
+      $image_uri = !empty($item['image']) ? $item['image'] : $placeholder_image;
+
+      foreach ($header as $column_key => $column_label) {
+        if ($column_label == 'Name') {
+          $value = isset($item[$column_key]) ? $item[$column_key] : '';
+          $header_text = strip_tags($value);
+          break;
+        }
+      }
+
+      if (strlen($header_text) > 0) {
+        $form['element_cards_wrapper'][$sanitized_key]['card']['header'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'style' => 'margin-bottom:0!important;',
+            'class' => ['card-header'],
+          ],
+          '#markup' => '<h5 class="mb-0">' . $header_text . '</h5>',
+        ];
+      }
+
+      $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['row'],
+        ],
+      ];
+
+      // Coluna para a imagem
+      $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['image'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['col-md-5', 'text-align-center'],
+          'style' => 'text-align:center!important;margin-bottom:0px;',
+        ],
+        'image' => [
+          '#type' => 'html_tag',
+          '#tag' => 'img',
+          '#attributes' => [
+              'src' => $image_uri,
+              'alt' => $header_text,
+              'style' => 'max-width: 70%; height: auto;',
+          ]
+        ],
+      ];
+
+      // Coluna para o conteúdo existente
+      $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['content'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['col-md-7', 'card-body'],
+          'style' => 'margin-bottom:0!important;',
+        ],
+      ];
+
+      // Iterando sobre o conteúdo existente e adicionando-o à coluna de conteúdo
+      foreach ($header as $column_key => $column_label) {
+        $value = isset($item[$column_key]) ? $item[$column_key] : '';
+        if ($column_label == 'Name') {
+          continue;
+        }
+
+        if ($column_label == 'Status') {
+          $value_rendered = [
+            '#markup' => $value,
+            '#allowed_tags' => ['b', 'font', 'span', 'div', 'strong', 'em'],
+          ];
+        } else {
+          $value_rendered = [
+            '#markup' => $value,
+          ];
+        }
+
+        $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['content'][$column_key] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => ['field-container'],
+          ],
+          'label' => [
+            '#type' => 'html_tag',
+            '#tag' => 'strong',
+            '#value' => $column_label . ': ',
+          ],
+          'value' => $value_rendered,
+        ];
+      }
+
+
+      $form['element_cards_wrapper'][$sanitized_key]['card']['footer'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'style' => 'margin-bottom:0!important;',
+          'class' => ['d-flex', 'card-footer', 'justify-content-end'],
+        ],
+      ];
+
+      $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions'] = [
+        '#type' => 'actions',
+        '#attributes' => [
+          'style' => 'margin-bottom:0!important;',
+          'class' => ['mb-0'],
+        ],
+      ];
+
+      // EDIT BUTTON
+      $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['edit'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Edit'),
+        '#name' => 'edit_element_' . $sanitized_key,
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'btn-sm', 'edit-element-button'],
+        ],
+        '#submit' => ['::editElementSubmit'],
+        '#limit_validation_errors' => [],
+        '#element_uri' => $key,
+      ];
+
+      // DELETE BUTTON
+      $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['delete'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Delete'),
+        '#name' => 'delete_element_' . $sanitized_key,
+        '#attributes' => [
+          'class' => ['btn', 'btn-danger', 'btn-sm', 'delete-element-button'],
+          'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+        ],
+        '#submit' => ['::deleteElementSubmit'],
+        '#limit_validation_errors' => [],
+        '#element_uri' => $key
+      ];
+
+      // DERIVE DETECTOR STEM BUTTON
+      if ($this->element_type == 'detectorstem') {
+        $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['ingest'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Derive New ' . $preferred_detector),
+          '#name' => 'derive_detectorstem_' . $sanitized_key,
+          '#attributes' => [
+            'class' => ['btn', 'btn-success', 'btn-sm', 'derive-button'],
+          ],
+          '#submit' => ['::deriveDetectorStemSubmit'],
+          '#limit_validation_errors' => [],
+          '#element_uri' => $key
+        ];
+      }
+    }
+  }
+
+  /**
+   * HANDLER FOR LOAD MORE BUTTON
+   */
+  public function loadMoreSubmit(array &$form, FormStateInterface $form_state)
+  {
+    // Atualiza o tamanho da página para carregar mais itens
+    $current_page_size = $form_state->get('page_size') ?? 9;
+    $pagesize = $current_page_size + 9; // Soma mais 9 ao tamanho atual
+    $form_state->set('page_size', $pagesize);
+
+    // \Drupal::logger('rep_select_mt_form')->notice('Load More Triggered: new page_size @page_size', [
+    //     '@page_size' => $pagesize,
+    // ]);
+
+    // FORCE REBUILD
+    $form_state->setRebuild();
+  }
+
+  /**
+   * HANDLER TO CHANGE TO TABLE VIEW
+   */
+  public function viewTableSubmit(array &$form, FormStateInterface $form_state)
+  {
+    $form_state->set('view_type', 'table');
+    $session = \Drupal::request()->getSession();
+    $session->set('dpl_select_view_type', 'table');
+    $form_state->setRebuild();
+  }
+
+  /**
+   * HANDLER TO CHANGE TO CARD VIEW
+   */
+  public function viewCardSubmit(array &$form, FormStateInterface $form_state)
+  {
+    $form_state->set('view_type', 'card');
+    $session = \Drupal::request()->getSession();
+    $session->set('dpl_select_view_type', 'card');
+    $form_state->setRebuild();
+  }
+
+  /**
+   * HANDLER TO EDIT CARD
+   */
+  public function editElementSubmit(array &$form, FormStateInterface $form_state)
+  {
+    $triggering_element = $form_state->getTriggeringElement();
+    $uri = $triggering_element['#element_uri'];
+
+    $this->performEdit($uri, $form_state);
+  }
+
+  /**
+   * HANDLER TO DELETE CARD
+   */
+  public function deleteElementSubmit(array &$form, FormStateInterface $form_state)
+  {
+    $triggering_element = $form_state->getTriggeringElement();
+    $uri = $triggering_element['#element_uri'];
+
+    $this->performDelete([$uri], $form_state);
   }
 
   /**
@@ -343,5 +692,86 @@ class DPLSelectForm extends FormBase {
     return;
 
   }
+
+  /**
+   * EDIT CARD
+   */
+  protected function performEdit($uri, FormStateInterface $form_state)
+  {
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = \Drupal::request()->getRequestUri();
+
+    // Rastreia a URL para fins de navegação
+    Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_' . $this->element_type);
+
+    // Defina o parâmetro correto com base no tipo de elemento
+    $params = [];
+    switch ($this->element_type) {
+      case 'platform':
+        $params = ['platformuri' => base64_encode($uri)];
+        break;
+      case 'stream':
+        $params = ['streamuri' => base64_encode($uri)];
+        break;
+      case 'deployment':
+        $params = ['deploymenturi' => base64_encode($uri)];
+        break;
+      default:
+        $params = ['elementuri' => base64_encode($uri)];
+        break;
+    }
+
+    // Define a URL de edição com o parâmetro correto
+    $url = Url::fromRoute('dpl.edit_' . $this->element_type, $params);
+
+    // Redireciona para a URL de edição
+    $form_state->setRedirectUrl($url);
+  }
+
+
+  /**
+   * DELETE CARD
+   */
+  protected function performDelete(array $uris, FormStateInterface $form_state)
+  {
+    $api = \Drupal::service('rep.api_connector');
+
+    foreach ($uris as $uri) {
+      // Obter o tipo de elemento para gerar a URL de exclusão correta
+      $element_type_route = 'dpl.delete_' . $this->element_type;
+      $params = [];
+
+      switch ($this->element_type) {
+        case 'platform':
+          $params = ['platformuri' => base64_encode($uri)];
+          break;
+        case 'stream':
+          $params = ['streamuri' => base64_encode($uri)];
+          break;
+        case 'deployment':
+          $params = ['deploymenturi' => base64_encode($uri)];
+          break;
+        default:
+          $params = ['elementuri' => base64_encode($uri)];
+          break;
+      }
+
+      // Excluir o elemento usando o conector de API
+      $api->elementDel($this->element_type, $uri);
+
+      // Mensagem de confirmação de exclusão
+      \Drupal::messenger()->addMessage($this->t('Item with URI %uri was deleted successfully.', ['%uri' => $uri]));
+    }
+
+    // Exibe uma mensagem geral de confirmação para os elementos selecionados
+    \Drupal::messenger()->addMessage($this->t('The selected %elements were deleted successfully.', [
+      '%elements' => $this->plural_class_name,
+    ]));
+
+    // Reconstrói o formulário para refletir a exclusão
+    $form_state->setRebuild();
+  }
+
+
 
 }

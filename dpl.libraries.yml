@@ -4,6 +4,7 @@ dpl_tabs:
     css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}
+    js/dpl.js: {}
   dependencies:
     - core/jquery
 dpl_accordion:

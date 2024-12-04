@@ -123,7 +123,7 @@ class AddDeploymentForm extends FormBase {
     } else if ($platformInstanceName != '' && $instrumentInstanceName == '') {
       $finalLabel = 'a deployment @ ' . $platformInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName != '') {
-      $finalLabel = $instrumentInstanceName . ' @ ' . $platforminstanceName;
+      $finalLabel = $instrumentInstanceName . ' @ ' . $platformInstanceName;
     }
 
     $dateTime = new \DateTime();

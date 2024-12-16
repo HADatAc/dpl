@@ -123,6 +123,7 @@ class ManageDeploymentsForm extends FormBase {
     $this->setList(ListDeploymentStatePage::exec($this->getState(), $this->getManagerEmail(), $page, $pagesize));
 
     //dpm($this->getList());
+
     $header = Deployment::generateHeaderState($this->getState());
     $output = Deployment::generateOutputState($this->getState(), $this->getList());
 

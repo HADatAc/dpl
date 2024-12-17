@@ -33,7 +33,7 @@ dpl.manage_ins_files_dp2:
     elementtype: 'dp2'
     mode: 'table'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
     studyuri: 'none'
   parent: dpl.top_level
   menu_name: main
@@ -49,7 +49,7 @@ dpl.manage_ins_files_str:
     elementtype: 'str'
     mode: 'table'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
     studyuri: 'none'
   parent: dpl.top_level
   menu_name: main
@@ -71,7 +71,7 @@ dpl.manage_platforms:
   route_parameters:
     elementtype: 'platform'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
   parent: dpl.top_level
   menu_name: main
   weight: 20
@@ -85,7 +85,7 @@ dpl.manage_platform_instances:
   route_parameters:
     elementtype: 'platforminstance'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
   parent: dpl.top_level
   menu_name: main
   weight: 21
@@ -99,7 +99,7 @@ dpl.manage_instrument_instances:
   route_parameters:
     elementtype: 'instrumentinstance'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
   parent: dpl.top_level
   menu_name: main
   weight: 22
@@ -113,7 +113,7 @@ dpl.manage_detector_instances:
   route_parameters:
     elementtype: 'detectorinstance'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
   parent: dpl.top_level
   menu_name: main
   weight: 23
@@ -127,7 +127,7 @@ dpl.manage_deployments:
   route_parameters:
     state: 'active'
     page: '1'
-    pagesize: '10'
+    pagesize: '9'
   parent: dpl.top_level
   menu_name: main
   weight: 24

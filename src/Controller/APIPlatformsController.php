@@ -22,7 +22,7 @@ class APIPlatformsController extends ControllerBase {
     // Recupera o serviço rep.api_connector.
     $api = \Drupal::service('rep.api_connector');
     $platforms = $api->parseObjectResponse(
-      $api->listByManagerEmail('platform', $manager_email, $pagesize, $offset),
+      $api->listByManagerEmail('platforminstance', $manager_email, $pagesize, $offset),
       'listByManagerEmail'
     );
 

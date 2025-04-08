@@ -23,7 +23,7 @@ dpl.divider1:
   parent: dpl.top_level
   menu_name: main
   weight: 9
-  route_name: '<none>'
+  route_name: '<nolink>'
 
 # dpl.manage_ins_files_dp2:
 #   title: Manage DP2 Templates
@@ -62,7 +62,7 @@ dpl.divider1:
 #   parent: dpl.top_level
 #   menu_name: main
 #   weight: 19
-#   route_name: '<none>'
+#   route_name: '<nolink>'
 
 dpl.manage_platforms:
   title: Manage Platforms

@@ -18,12 +18,16 @@ dpl.search_menu:
   requirements:
     _permission: 'access content'
 
-dpl.divider1:
-  title: '_________________________________'
+dpl.manage_top_level:
+  title: Manage Elements
+  description: Manage STD Elements
+  route_name: '<nolink>'
   parent: dpl.top_level
   menu_name: main
-  weight: 9
-  route_name: '<nolink>'
+  weight: 3
+  requirements:
+    _permission: 'access content'
+    _role: 'authenticated'
 
 # dpl.manage_ins_files_dp2:
 #   title: Manage DP2 Templates
@@ -72,7 +76,7 @@ dpl.manage_platforms:
     elementtype: 'platform'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 20
   requirements:
@@ -86,7 +90,7 @@ dpl.manage_platform_instances:
     elementtype: 'platforminstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 21
   requirements:
@@ -100,7 +104,7 @@ dpl.manage_instrument_instances:
     elementtype: 'instrumentinstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 22
   requirements:
@@ -114,7 +118,7 @@ dpl.manage_detector_instances:
     elementtype: 'detectorinstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 23
   requirements:
@@ -128,7 +132,7 @@ dpl.manage_deployments:
     state: 'active'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 24
   requirements:

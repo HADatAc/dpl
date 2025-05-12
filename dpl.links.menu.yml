@@ -18,51 +18,16 @@ dpl.search_menu:
   requirements:
     _permission: 'access content'
 
-dpl.divider1:
-  title: '_________________________________'
+dpl.manage_top_level:
+  title: Manage Elements
+  description: Manage STD Elements
+  route_name: '<nolink>'
   parent: dpl.top_level
   menu_name: main
-  weight: 9
-  route_name: '<none>'
-
-# dpl.manage_ins_files_dp2:
-#   title: Manage DP2 Templates
-#   description: Manage DP2 Templates
-#   route_name: rep.select_mt_element
-#   route_parameters:
-#     elementtype: 'dp2'
-#     mode: 'table'
-#     page: '1'
-#     pagesize: '9'
-#     studyuri: 'none'
-#   parent: dpl.top_level
-#   menu_name: main
-#   weight: 10
-#   requirements:
-#     _permission: 'access content'
-
-# dpl.manage_ins_files_str:
-#   title: Manage STR Templates
-#   description: Manage STR Templates
-#   route_name: rep.select_mt_element
-#   route_parameters:
-#     elementtype: 'str'
-#     mode: 'table'
-#     page: '1'
-#     pagesize: '9'
-#     studyuri: 'none'
-#   parent: dpl.top_level
-#   menu_name: main
-#   weight: 11
-#   requirements:
-#     _permission: 'access content'
-
-# dpl.divider2:
-#   title: '_________________________________'
-#   parent: dpl.top_level
-#   menu_name: main
-#   weight: 19
-#   route_name: '<none>'
+  weight: 3
+  requirements:
+    _permission: 'access content'
+    _role: 'authenticated'
 
 dpl.manage_platforms:
   title: Manage Platforms
@@ -72,7 +37,7 @@ dpl.manage_platforms:
     elementtype: 'platform'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 20
   requirements:
@@ -86,7 +51,7 @@ dpl.manage_platform_instances:
     elementtype: 'platforminstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 21
   requirements:
@@ -100,7 +65,7 @@ dpl.manage_instrument_instances:
     elementtype: 'instrumentinstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 22
   requirements:
@@ -114,7 +79,7 @@ dpl.manage_detector_instances:
     elementtype: 'detectorinstance'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 23
   requirements:
@@ -128,7 +93,7 @@ dpl.manage_deployments:
     state: 'active'
     page: '1'
     pagesize: '9'
-  parent: dpl.top_level
+  parent: dpl.manage_top_level
   menu_name: main
   weight: 24
   requirements:

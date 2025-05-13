@@ -124,6 +124,7 @@ class DPLSelectForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
 
     switch ($this->element_type) {
 
@@ -155,6 +156,14 @@ class DPLSelectForm extends FormBase {
       case "detectorinstance":
         $this->single_class_name = $preferred_detector . " Instance";
         $this->plural_class_name = $preferred_detector . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        break;
+
+      // ACTUATOR INSTANCE
+      case "actuatorinstance":
+        $this->single_class_name = $preferred_actuator . " Instance";
+        $this->plural_class_name = $preferred_actuator . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
         break;
@@ -312,6 +321,7 @@ class DPLSelectForm extends FormBase {
   protected function buildTableView(array &$form, FormStateInterface $form_state, $header, $output)
   {
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
 
     $form['edit_selected_element'] = [
       '#type' => 'submit',
@@ -340,6 +350,16 @@ class DPLSelectForm extends FormBase {
         ],
       ];
     }
+    if ($this->element_type == 'actuatorstem') {
+      $form['derive_actuatorstem'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Derive New ' . $preferred_actuator . ' Stem from Selected'),
+        '#name' => 'derive_actuatorstem',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'derive-button'],
+        ],
+      ];
+    }
     $form['element_table'] = [
       '#type' => 'tableselect',
       '#header' => $header,
@@ -358,6 +378,7 @@ class DPLSelectForm extends FormBase {
     $placeholder_image = base_path() . \Drupal::service('extension.list.module')->getPath('rep') . '/images/semVar_placeholder.png';
 
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
 
     $form['element_cards_wrapper'] = [
       '#type' => 'container',
@@ -525,6 +546,20 @@ class DPLSelectForm extends FormBase {
           '#element_uri' => $key
         ];
       }
+      // DERIVE ACTUATOR BUTTON
+      if ($this->element_type == 'actuator') {
+        $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['ingest'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Derive New ' . $preferred_actuator),
+          '#name' => 'derive_actuator_' . $sanitized_key,
+          '#attributes' => [
+            'class' => ['btn', 'btn-success', 'btn-sm', 'derive-button'],
+          ],
+          '#submit' => ['::deriveActuatorSubmit'],
+          '#limit_validation_errors' => [],
+          '#element_uri' => $key
+        ];
+      }
     }
   }
 
@@ -627,7 +662,8 @@ class DPLSelectForm extends FormBase {
       }
       if ($this->element_type == 'platforminstance' ||
           $this->element_type == 'instrumentinstance' ||
-          $this->element_type == 'detectorinstance') {
+          $this->element_type == 'detectorinstance' ||
+          $this->element_type == 'actuatorinstance') {
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_instance');
         $url = Url::fromRoute('dpl.add_instance');
         $url->setRouteParameter('elementtype', $this->element_type);
@@ -657,7 +693,8 @@ class DPLSelectForm extends FormBase {
         }
         if ($this->element_type == 'platforminstance' ||
             $this->element_type == 'instrumentinstance' ||
-            $this->element_type == 'detectorinstance') {
+            $this->element_type == 'detectorinstance' ||
+            $this->element_type == 'actuatorinstance') {
           Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
           $url = Url::fromRoute('dpl.edit_instance');
           $url->setRouteParameter('instanceuri', base64_encode($first));

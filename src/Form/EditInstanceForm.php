@@ -86,6 +86,10 @@ class EditInstanceForm extends FormBase {
       $this->setElementName("Detector Instance");
       $this->setElementType("detectorinstance");
       $autocomplete = 'dpl.detector_autocomplete';
+    } else if ($this->getElement()->hascoTypeUri == VSTOI::ACTUATOR_INSTANCE) {
+      $this->setElementName("Actuator Instance");
+      $this->setElementType("actuatorinstance");
+      $autocomplete = 'dpl.actuator_autocomplete';
     }
 
     if ($this->getElementName() == NULL) {
@@ -121,6 +125,26 @@ class EditInstanceForm extends FormBase {
       '#title' => $this->t('Acquisition Date'),
       '#default_value' => $this->getElement()->hasAcquisitionDate,
     ];
+    // if ($socialEnabled) {
+      $form['instance_owner'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Owner'),
+        // '#required' => TRUE,
+        '#autocomplete_route_name'       => 'rep.social_autocomplete',
+        '#autocomplete_route_parameters' => [
+          'entityType' => 'organization',
+        ],
+      ];
+      $form['instance_maintainer'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Maintainer'),
+        // '#required' => TRUE,
+        '#autocomplete_route_name'       => 'rep.social_autocomplete',
+        '#autocomplete_route_parameters' => [
+          'entityType' => 'organization',
+        ],
+      ];
+    // }
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -196,9 +220,12 @@ class EditInstanceForm extends FormBase {
       $instanceJson = '{"uri":"'.$newInstanceUri.'",' .
         '"typeUri":"'.$typeUri.'",'.
         '"hascoTypeUri":"'.$hascoTypeUri.'",'.
+        '"hasStatus":"' . VSTOI::DRAFT . '",' .
         '"label":"'.$label.'",'.
         '"hasSerialNumber":"'.$form_state->getValue('instance_serial_number').'",'.
         '"comment":"'.$form_state->getValue('instance_description').'",'.
+        '"hasOwnerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_owner')).'",'.
+        '"hasMaintainerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer')).'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

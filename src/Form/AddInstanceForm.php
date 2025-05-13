@@ -66,7 +66,10 @@ class AddInstanceForm extends FormBase {
       $this->setElementName("Detector Instance");
       $autocomplete = 'dpl.detector_autocomplete';
     }
-
+    if ($elementtype == 'actuatorinstance') {
+      $this->setElementName("Actuator Instance");
+      $autocomplete = 'dpl.actuator_autocomplete';
+    }
 
     if ($this->getElementName() == NULL) {
       \Drupal::messenger()->addError(t("No VALID element type has been provided"));
@@ -93,6 +96,26 @@ class AddInstanceForm extends FormBase {
       '#type' => 'date',
       '#title' => $this->t('Acquisition Date'),
     ];
+    // if ($socialEnabled) {
+      $form['instance_owner'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Owner'),
+        // '#required' => TRUE,
+        '#autocomplete_route_name'       => 'rep.social_autocomplete',
+        '#autocomplete_route_parameters' => [
+          'entityType' => 'organization',
+        ],
+      ];
+      $form['instance_maintainer'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Maintainer'),
+        // '#required' => TRUE,
+        '#autocomplete_route_name'       => 'rep.social_autocomplete',
+        '#autocomplete_route_parameters' => [
+          'entityType' => 'organization',
+        ],
+      ];
+    // }
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -159,6 +182,9 @@ class AddInstanceForm extends FormBase {
     if ($this->getElementType() == 'detectorinstance') {
       $hascoType = VSTOI::DETECTOR_INSTANCE;
     }
+    if ($this->getElementType() == 'actuatorinstance') {
+      $hascoType = VSTOI::ACTUATOR_INSTANCE;
+    }
 
     $typeUri = '';
     if ($form_state->getValue('instance_type') != NULL && $form_state->getValue('instance_type') != '') {
@@ -178,10 +204,13 @@ class AddInstanceForm extends FormBase {
       $streamJson = '{"uri":"'.$newInstanceUri.'",' .
         '"typeUri":"'.$typeUri.'",'.
         '"hascoTypeUri":"'.$hascoType.'",'.
+        '"hasStatus":"' . VSTOI::DRAFT . '",' .
         '"label":"'.$label.'",'.
         '"hasSerialNumber":"'.$form_state->getValue('instance_serial_number').'",'.
         '"hasAcquisitionDate":"'.$acquisitionDate.'",'.
         '"comment":"'.$form_state->getValue('instance_description').'",'.
+        '"hasOwnerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_owner')).'",'.
+        '"hasMaintainerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer')).'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

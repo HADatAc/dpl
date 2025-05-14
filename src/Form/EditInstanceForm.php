@@ -141,7 +141,7 @@ class EditInstanceForm extends FormBase {
         // '#required' => TRUE,
         '#autocomplete_route_name'       => 'rep.social_autocomplete',
         '#autocomplete_route_parameters' => [
-          'entityType' => 'organization',
+          'entityType' => 'person',
         ],
       ];
     // }

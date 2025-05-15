@@ -226,8 +226,8 @@ class EditInstanceForm extends FormBase {
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();
-      $newInstanceUri = Utils::uriGen($this->getElementType());
-      $instanceJson = '{"uri":"'.$newInstanceUri.'",' .
+      // $newInstanceUri = Utils::uriGen($this->getElementType());
+      $instanceJson = '{"uri":"'.$this->getElement()->uri.'",' .
         '"typeUri":"'.$typeUri.'",'.
         '"hascoTypeUri":"'.$hascoTypeUri.'",'.
         '"hasStatus":"' . VSTOI::DRAFT . '",' .

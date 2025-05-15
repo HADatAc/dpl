@@ -130,12 +130,13 @@ class EditInstanceForm extends FormBase {
     ];
     if ($socialEnabled) {
       $api = \Drupal::service('rep.api_connector');
-      $makerUri = $api->getUri($this->getElement()->hasMakerUri);
+      $ownerUri = $api->getUri($this->getElement()->hasOwnerUri);
+      $maintainerUri = $api->getUri($this->getElement()->hasMaintainerUri);
       $form['instance_owner'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Owner'),
-        '#default_value' => isset($this->getElement()->hasMakerUri) ?
-                              Utils::fieldToAutocomplete($this->getElement()->hasMakerUri, $makerUri->label) : '',
+        '#default_value' => isset($this->getElement()->hasOwnerUri) ?
+                              Utils::fieldToAutocomplete($this->getElement()->hasOwnerUri, $ownerUri->label) : '',
         // '#required' => TRUE,
         '#autocomplete_route_name'       => 'rep.social_autocomplete',
         '#autocomplete_route_parameters' => [
@@ -145,6 +146,8 @@ class EditInstanceForm extends FormBase {
       $form['instance_maintainer'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Maintainer'),
+        '#default_value' => isset($this->getElement()->hasMaintainerUri) ?
+                              Utils::fieldToAutocomplete($this->getElement()->hasMaintainerUri, $maintainerUri->label) : '',
         // '#required' => TRUE,
         '#autocomplete_route_name'       => 'rep.social_autocomplete',
         '#autocomplete_route_parameters' => [

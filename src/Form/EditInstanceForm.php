@@ -54,6 +54,9 @@ class EditInstanceForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $instanceuri = NULL) {
 
+    // Does the repo have a social network?
+    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
+
     if ($instanceuri == NULL || $instanceuri == "") {
       \Drupal::messenger()->addError(t("No element uri has been provided"));
       self::backUrl();
@@ -67,7 +70,7 @@ class EditInstanceForm extends FormBase {
     if ($obj->isSuccessful) {
       $this->setElement($obj->body);
     } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve element with URI [" + $usi_decode + "]."));
+      \Drupal::messenger()->addError(t("Failed to retrieve element with URI [" + $uri_decode + "]."));
       self::backUrl();
       return;
     }
@@ -125,10 +128,14 @@ class EditInstanceForm extends FormBase {
       '#title' => $this->t('Acquisition Date'),
       '#default_value' => $this->getElement()->hasAcquisitionDate,
     ];
-    // if ($socialEnabled) {
+    if ($socialEnabled) {
+      $api = \Drupal::service('rep.api_connector');
+      $makerUri = $api->getUri($this->getElement()->hasMakerUri);
       $form['instance_owner'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Owner'),
+        '#default_value' => isset($this->getElement()->hasMakerUri) ?
+                              Utils::fieldToAutocomplete($this->getElement()->hasMakerUri, $makerUri->label) : '',
         // '#required' => TRUE,
         '#autocomplete_route_name'       => 'rep.social_autocomplete',
         '#autocomplete_route_parameters' => [
@@ -144,7 +151,7 @@ class EditInstanceForm extends FormBase {
           'entityType' => 'person',
         ],
       ];
-    // }
+    }
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),

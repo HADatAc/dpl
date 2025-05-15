@@ -45,6 +45,8 @@ class AddInstanceForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $elementtype = NULL) {
 
     //dpm($elementtype);
+    // Does the repo have a social network?
+    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
     if ($elementtype == NULL || $elementtype == "") {
       \Drupal::messenger()->addError(t("No element type has been provided"));
@@ -96,7 +98,7 @@ class AddInstanceForm extends FormBase {
       '#type' => 'date',
       '#title' => $this->t('Acquisition Date'),
     ];
-    // if ($socialEnabled) {
+    if ($socialEnabled) {
       $form['instance_owner'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Owner'),
@@ -115,7 +117,7 @@ class AddInstanceForm extends FormBase {
           'entityType' => 'person',
         ],
       ];
-    // }
+    }
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),

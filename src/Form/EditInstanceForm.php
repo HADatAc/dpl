@@ -273,6 +273,10 @@ class EditInstanceForm extends FormBase {
       $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
       $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
       $damageDate = $form_state->getValue('has_damage_date') ?: '';
+      $acquisitionDate = '';
+      if ($form_state->getValue('instance_acquisition_date') != NULL && $form_state->getValue('instance_acquisition_date') != '') {
+        $acquisitionDate = $form_state->getValue('instance_acquisition_date');
+      }
 
       $payload = [
         'uri'                 => $this->getElement()->uri,
@@ -282,6 +286,7 @@ class EditInstanceForm extends FormBase {
         'label'               => $label,
         'hasSerialNumber'     => $form_state->getValue('instance_serial_number'),
         'comment'             => $form_state->getValue('instance_description'),
+        'hasAcquisitionDate'  => $acquisitionDate,
         'isDamaged'           => $isDamaged === 'true',
       ];
 

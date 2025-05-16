@@ -128,47 +128,47 @@ class AddInstanceForm extends FormBase {
     ];
 
     // isDamaged checkbox
-    $form['damage_wrapper'] = [
-      '#type' => 'container',
-      '#attributes' => [
-        'class' => ['row', 'g-3', 'mb-4'],
-      ],
-    ];
+    // $form['damage_wrapper'] = [
+    //   '#type' => 'container',
+    //   '#attributes' => [
+    //     'class' => ['row', 'g-3', 'mb-4'],
+    //   ],
+    // ];
 
-    // Damaged? as a Bootstrap switch
-    $form['damage_wrapper']['is_damaged'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Damaged?'),
-      '#title_display' => 'after',
-      '#attributes' => [
-        // this makes it render as <input class="form-check-input" …>
-        'class' => ['form-check-input', 'me-2', 'ms-2'],
-      ],
-      // wrap the checkbox & label in the proper Bootstrap markup
-      '#wrapper_attributes' => [
-        'class' => ['col-auto', 'form-check', 'form-switch', 'd-flex', 'align-items-center'],
-        'style' => 'padding-left:0!important;margin-top:0;'
-      ],
-    ];
+    // // Damaged? as a Bootstrap switch
+    // $form['damage_wrapper']['is_damaged'] = [
+    //   '#type' => 'checkbox',
+    //   '#title' => $this->t('Damaged?'),
+    //   '#title_display' => 'after',
+    //   '#attributes' => [
+    //     // this makes it render as <input class="form-check-input" …>
+    //     'class' => ['form-check-input', 'me-2', 'ms-2'],
+    //   ],
+    //   // wrap the checkbox & label in the proper Bootstrap markup
+    //   '#wrapper_attributes' => [
+    //     'class' => ['col-auto', 'form-check', 'form-switch', 'd-flex', 'align-items-center'],
+    //     'style' => 'padding-left:0!important;margin-top:0;'
+    //   ],
+    // ];
 
-    // 3) Damage Date, only visible when is_damaged = TRUE
-    $form['damage_wrapper']['has_damage_date'] = [
-      '#type' => 'date',
-      '#title' => $this->t('Damage Date'),
-      '#attributes' => [
-        'class' => ['form-control'], // Bootstrap styling
-      ],
-      '#wrapper_attributes' => [
-        'class' => ['col-auto'],
-        'style' => 'margin-top:0;'
-      ],
-      '#states' => [
-        'visible' => [
-          // rely on our checkbox’s name attribute
-          ':input[name="is_damaged"]' => ['checked' => TRUE],
-        ],
-      ],
-    ];
+    // // 3) Damage Date, only visible when is_damaged = TRUE
+    // $form['damage_wrapper']['has_damage_date'] = [
+    //   '#type' => 'date',
+    //   '#title' => $this->t('Damage Date'),
+    //   '#attributes' => [
+    //     'class' => ['form-control'], // Bootstrap styling
+    //   ],
+    //   '#wrapper_attributes' => [
+    //     'class' => ['col-auto'],
+    //     'style' => 'margin-top:0;'
+    //   ],
+    //   '#states' => [
+    //     'visible' => [
+    //       // rely on our checkbox’s name attribute
+    //       ':input[name="is_damaged"]' => ['checked' => TRUE],
+    //     ],
+    //   ],
+    // ];
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -257,28 +257,8 @@ class AddInstanceForm extends FormBase {
       $newInstanceUri = Utils::uriGen($this->getElementType());
 
       $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
-      $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
-      $damageDate = $form_state->getValue('has_damage_date') ?: '';
-
-      // $streamJson = '{"uri":"'.$newInstanceUri.'",' .
-      //   '"typeUri":"'.$typeUri.'",'.
-      //   '"hascoTypeUri":"'.$hascoType.'",'.
-      //   '"hasStatus":"' . VSTOI::DRAFT . '",' .
-      //   '"label":"'.$label.'",'.
-      //   '"hasSerialNumber":"'.$form_state->getValue('instance_serial_number').'",'.
-      //   '"hasAcquisitionDate":"'.$acquisitionDate.'",'.
-      //   '"comment":"'.$form_state->getValue('instance_description').'",'
-      //   . ($socialEnabled
-      //     ?
-      //       '"hasOwnerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_owner')).'",'
-      //       .'"hasMaintainerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer')).'",'
-      //     : '')
-      //   . '"isDamaged":"'      . $isDamaged      . '",'
-      //   . ($isDamaged === 'true'
-      //       ? '"hasDamageDate":"' . $damageDate . '",'
-      //       : ''
-      //     )
-      //   .'"hasSIRManagerEmail":"'.$useremail.'"}';
+      // $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
+      // $damageDate = $form_state->getValue('has_damage_date') ?: '';
 
       // 1) Build a PHP array
       $payload = [
@@ -290,7 +270,7 @@ class AddInstanceForm extends FormBase {
         'hasSerialNumber'   => $form_state->getValue('instance_serial_number'),
         'hasAcquisitionDate'=> $acquisitionDate,
         'comment'           => $form_state->getValue('instance_description'),
-        'isDamaged'         => $isDamaged === 'true',
+        // 'isDamaged'         => $isDamaged === 'true',
       ];
 
       // 2) Conditionally add owner/maintainer
@@ -300,9 +280,9 @@ class AddInstanceForm extends FormBase {
       }
 
       // 3) Conditionally add damage date
-      if ($isDamaged === 'true' && $damageDate) {
-        $payload['hasDamageDate'] = $damageDate;
-      }
+      // if ($isDamaged === 'true' && $damageDate) {
+      //   $payload['hasDamageDate'] = $damageDate;
+      // }
 
       // 4) Always add the manager email
       $payload['hasSIRManagerEmail'] = $useremail;

@@ -25,6 +25,10 @@ class AutocompleteController extends ControllerBase{
     return self::exec($request, 'detector');
   }
 
+  public function execActuator(Request $request) {
+    return self::exec($request, 'actuator');
+  }
+
   public function execPlatformInstance(Request $request) {
     return self::exec($request, 'platforminstance');
   }
@@ -35,6 +39,10 @@ class AutocompleteController extends ControllerBase{
 
   public function execDetectorInstance(Request $request) {
     return self::exec($request, 'detectorinstance');
+  }
+
+  public function execActuatorInstance(Request $request) {
+    return self::exec($request, 'actuatorinstance');
   }
 
   /**

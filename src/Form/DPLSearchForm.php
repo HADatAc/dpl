@@ -113,6 +113,7 @@ class DPLSearchForm extends FormBase {
         'platforminstance' => $this->t('Platform Instances'),
         'instrumentinstance' => $this->t('Instrument Instances'),
         'detectorinstance' => $this->t('Detector Instances'),
+        'actuatorinstance' => $this->t('Actuator Instances'),
         'deployment' => $this->t('Deployments'),
         'stream' => $this->t('Streams'),
       ],

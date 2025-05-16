@@ -202,6 +202,14 @@ dpl.detector_autocomplete:
   requirements:
     _permission: 'access content'
 
+dpl.actuator_autocomplete:
+  path: '/dpl/type/autocomplete/actuator'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuator'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
 dpl.platforminstance_autocomplete:
   path: '/dpl/type/autocomplete/platforminstance'
   defaults:
@@ -222,6 +230,14 @@ dpl.detectorinstance_autocomplete:
   path: '/dpl/type/autocomplete/detectorinstance'
   defaults:
     _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetectorInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
+dpl.actuatorinstance_autocomplete:
+  path: '/dpl/type/autocomplete/actuatorinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuatorInstance'
     _format: json
   requirements:
     _permission: 'access content'

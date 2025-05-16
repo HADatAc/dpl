@@ -28,7 +28,7 @@ class DPLListForm extends FormBase {
   }
 
   public function setList($list) {
-    return $this->list = $list; 
+    return $this->list = $list;
   }
 
   public function getListSize() {
@@ -36,7 +36,7 @@ class DPLListForm extends FormBase {
   }
 
   public function setListSize($list_size) {
-    return $this->list_size = $list_size; 
+    return $this->list_size = $list_size;
   }
 
   /**
@@ -51,7 +51,7 @@ class DPLListForm extends FormBase {
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
-    } else { 
+    } else {
       if ($this->list_size % $pagesize == 0) {
         $total_pages = $this->list_size / $pagesize;
       } else {
@@ -78,6 +78,7 @@ class DPLListForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
 
     $class_name = "";
     switch ($elementtype) {
@@ -86,43 +87,53 @@ class DPLListForm extends FormBase {
       case "platform":
         $class_name = $preferred_instrument . "s";
         $header = Platform::generateHeader();
-        $output = Platform::generateOutput($this->getList());    
+        $output = Platform::generateOutput($this->getList());
         break;
 
       // STREAM
       case "stream":
         $class_name = $preferred_instrument . "s";
         $header = Stream::generateHeader();
-        $output = Stream::generateOutput($this->getList());    
+        $output = Stream::generateOutput($this->getList());
         break;
 
       // DEPLOYMENT
       case "deployment":
         $class_name = $preferred_instrument . "s";
         $header = Deployment::generateHeader();
-        $output = Deployment::generateOutput($this->getList());    
+        $output = Deployment::generateOutput($this->getList());
         break;
 
       // PLATFORM INSTANCE
       case "platforminstance":
         $class_name = "Platform Instances";
-        $header = VSTOIInstance::generateHeader($this->element_type);
-        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
+        $header = VSTOIInstance::generateHeader($elementtype);
+        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
 
       // INSTRUMENT INSTANCE
       case "instrumentinstance":
         $class_name = $preferred_instrument . " Instances";
-        $header = VSTOIInstance::generateHeader($this->element_type);
-        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
+        $header = VSTOIInstance::generateHeader($elementtype);
+        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
 
       // DETECTOR INSTANCE
       case "detectorinstance":
         $class_name = $preferred_detector . " Instances";
-        $header = VSTOIInstance::generateHeader($this->element_type);
-        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());    
-        break;      default:
+        $header = VSTOIInstance::generateHeader($elementtype);
+        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
+        break;
+
+      // ACTUATOR INSTANCE
+      case "actuatorinstance":
+        $class_name = $preferred_actuator . " Instances";
+        $header = VSTOIInstance::generateHeader($elementtype);
+        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
+        break;
+
+      // UNKNOWN
+      default:
         $class_name = "Objects of Unknown Types";
     }
 
@@ -147,13 +158,13 @@ class DPLListForm extends FormBase {
         'title' => ' ',
       ],
     ];
- 
+
     return $form;
   }
 
   /**
    * {@inheritdoc}
-   */   
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
   }
 

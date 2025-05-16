@@ -287,7 +287,7 @@ class EditInstanceForm extends FormBase {
         'hasSerialNumber'     => $form_state->getValue('instance_serial_number'),
         'comment'             => $form_state->getValue('instance_description'),
         'hasAcquisitionDate'  => $acquisitionDate,
-        'isDamaged'           => $isDamaged === 'true',
+        'isDamaged'           => $isDamaged,
       ];
 
       if ($isDamaged === 'true' && $damageDate) {

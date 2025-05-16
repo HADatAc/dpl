@@ -155,6 +155,48 @@ class EditInstanceForm extends FormBase {
         ],
       ];
     }
+    // --- DAMAGE FIELDS INLINE ---
+    // 1) Container flex/Bootstrap row
+    $form['damage_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['row', 'g-3', 'mb-4'],
+      ],
+    ];
+
+    // 2) isDamaged como switch
+    $form['damage_wrapper']['is_damaged'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Damaged?'),
+      '#title_display' => 'after',
+      '#default_value' => !empty($this->getElement()->isDamaged === 'true' ? 1:0),
+      '#attributes' => [
+        'class' => ['form-check-input','me-2', 'ms-2'],
+      ],
+      '#wrapper_attributes' => [
+        'class' => ['col-auto', 'form-check', 'form-switch', 'd-flex', 'align-items-center'],
+        'style' => 'padding-left:0!important;margin-top:0;'
+      ],
+    ];
+
+    // 3) Damage Date só visível se is_damaged == TRUE
+    $form['damage_wrapper']['has_damage_date'] = [
+      '#type' => 'date',
+      '#title' => $this->t('Damage Date'),
+      '#default_value' => $this->getElement()->hasDamageDate ?? '',
+      '#attributes' => [
+        'class' => ['form-control'],
+      ],
+      '#wrapper_attributes' => [
+        'class' => ['col-auto'],
+      ],
+      '#states' => [
+        'visible' => [
+          // dispara quando a checkbox is_damaged estiver checked
+          ':input[name="is_damaged"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -227,17 +269,34 @@ class EditInstanceForm extends FormBase {
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();
-      // $newInstanceUri = Utils::uriGen($this->getElementType());
-      $instanceJson = '{"uri":"'.$this->getElement()->uri.'",' .
-        '"typeUri":"'.$typeUri.'",'.
-        '"hascoTypeUri":"'.$hascoTypeUri.'",'.
-        '"hasStatus":"' . VSTOI::DRAFT . '",' .
-        '"label":"'.$label.'",'.
-        '"hasSerialNumber":"'.$form_state->getValue('instance_serial_number').'",'.
-        '"comment":"'.$form_state->getValue('instance_description').'",'.
-        '"hasOwnerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_owner')).'",'.
-        '"hasMaintainerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer')).'",'.
-        '"hasSIRManagerEmail":"'.$useremail.'"}';
+
+      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
+      $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
+      $damageDate = $form_state->getValue('has_damage_date') ?: '';
+
+      $payload = [
+        'uri'                 => $this->getElement()->uri,
+        'typeUri'             => $typeUri,
+        'hascoTypeUri'        => $hascoTypeUri,
+        'hasStatus'           => VSTOI::DRAFT,
+        'label'               => $label,
+        'hasSerialNumber'     => $form_state->getValue('instance_serial_number'),
+        'comment'             => $form_state->getValue('instance_description'),
+        'isDamaged'           => $isDamaged === 'true',
+      ];
+
+      if ($isDamaged === 'true' && $damageDate) {
+        $payload['hasDamageDate'] = $damageDate;
+      }
+
+      if ($socialEnabled) {
+        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
+      }
+
+      $payload['hasSIRManagerEmail'] = \Drupal::currentUser()->getEmail();
+
+      $instanceJson = json_encode($payload);
 
       $api = \Drupal::service('rep.api_connector');
       $api->elementAdd($this->getElementType(),$instanceJson);

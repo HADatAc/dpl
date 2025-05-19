@@ -85,26 +85,26 @@ class EditInstanceForm extends FormBase {
       $this->setElementName("Platform Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
-      // $treepath = 'platform';
-      // $treename = 'Platform';
+      $treepath = 'platform';
+      $treename = 'Platform';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
       $this->setElementName("Instrument Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
-      // $treepath = 'instrument';
-      // $treename = 'Instrument';
+      $treepath = 'instrument';
+      $treename = 'Instrument';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::DETECTOR_INSTANCE) {
       $this->setElementName("Detector Instance");
       $this->setElementType("detectorinstance");
       $autocomplete = 'dpl.detector_autocomplete';
-      // $treepath = 'detector';
-      // $treename = 'Detector';
+      $treepath = 'detector';
+      $treename = 'Detector';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::ACTUATOR_INSTANCE) {
       $this->setElementName("Actuator Instance");
       $this->setElementType("actuatorinstance");
       $autocomplete = 'dpl.actuator_autocomplete';
-      // $treepath = 'actuator';
-      // $treename = 'Actuator';
+      $treepath = 'actuator';
+      $treename = 'Actuator';
     }
 
     if ($this->getElementName() == NULL) {
@@ -137,7 +137,7 @@ class EditInstanceForm extends FormBase {
       ],
       'main' => [
         '#type' => 'textfield',
-        '#title' => $this->getElementName(),
+        '#title' => $treename,
         '#name' => 'instance_type',
         '#default_value' => Utils::fieldToAutocomplete($this->getElement()->typeUri, $this->getElement()->type->label),
         '#id' => 'instance_type',
@@ -148,10 +148,10 @@ class EditInstanceForm extends FormBase {
           'data-dialog-options' => json_encode(['width' => 800]),
           'data-url' => Url::fromRoute('rep.tree_form', [
             'mode' => 'modal',
-            'elementtype' => $this->getElement()->hascoTypeUri,
+            'elementtype' => $treepath,
           ], ['query' => ['field_id' => 'instance_type']])->toString(),
           'data-field-id' => 'instance_type',
-          'data-elementtype' => $this->getElement()->hascoTypeUri,
+          'data-elementtype' => $treepath,
           'autocomplete' => 'off',
         ],
       ],

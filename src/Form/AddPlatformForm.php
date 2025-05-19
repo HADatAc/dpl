@@ -24,6 +24,41 @@ class AddPlatformForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    // MODAL
+    $form['#attached']['library'][] = 'rep/rep_modal';
+    $form['#attached']['library'][] = 'core/drupal.dialog';
+
+
+    $form['platform_type'] = [
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $this->t('Platform Type'),
+        '#name' => 'platform_type',
+        '#default_value' => '',
+        '#id' => 'platform_type',
+        '#parents' => ['platform_type'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => 'platform',
+          ], ['query' => ['field_id' => 'platform_type']])->toString(),
+          'data-field-id' => 'platform_type',
+          'data-elementtype' => 'platform',
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
+    ];
     $form['platform_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
@@ -89,8 +124,10 @@ class AddPlatformForm extends FormBase {
       $useremail = \Drupal::currentUser()->getEmail();
       $newPlatformUri = Utils::uriGen('platform');
       $platformJson = '{"uri":"'.$newPlatformUri.'",'.
-        '"superUri":"'.VSTOI::PLATFORM.'",'.
+        // '"superUri":"'.VSTOI::PLATFORM.'",'.
+        '"superUri":"'.Utils::uriFromAutocomplete($form_state->getValue('platform_type')).'",'.
         '"hascoTypeUri":"'.VSTOI::PLATFORM.'",'.
+        '"hasStatus":"'.VSTOI::CURRENT.'",'.
         '"label":"'.$form_state->getValue('platform_name').'",'.
         '"hasVersion":"'.$form_state->getValue('platform_version').'",'.
         '"comment":"'.$form_state->getValue('platform_description').'",'.

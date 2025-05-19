@@ -59,6 +59,37 @@ class EditPlatformForm extends FormBase {
       return;
     }
 
+    $form['platform_type'] = [
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $this->t('Platform Type'),
+        '#name' => 'platform_type',
+        '#default_value' => Utils::fieldToAutocomplete($this->getPlatform()->typeUri, $this->getPlatform()->label),
+        '#id' => 'platform_type',
+        '#parents' => ['platform_type'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => 'platform',
+          ], ['query' => ['field_id' => 'platform_type']])->toString(),
+          'data-field-id' => 'platform_type',
+          'data-elementtype' => 'platform',
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
+    ];
+
     $form['platform_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
@@ -132,11 +163,13 @@ class EditPlatformForm extends FormBase {
       $useremail = \Drupal::currentUser()->getEmail();
 
       $platformJson = '{"uri":"'.$this->getPlatformUri().'",'.
-        '"superUri":"'.VSTOI::PLATFORM.'",'.
+        // '"superUri":"'.VSTOI::PLATFORM.'",'.
+        '"superUri":"'.Utils::uriFromAutocomplete($form_state->getValue('platform_type')).'",'.
         '"hascoTypeUri":"'.VSTOI::PLATFORM.'",'.
         '"label":"'.$form_state->getValue('platform_name').'",'.
         '"hasVersion":"'.$form_state->getValue('platform_version').'",'.
         '"comment":"'.$form_state->getValue('platform_description').'",'.
+        '"hasStatus":"'.VSTOI::CURRENT.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       // UPDATE BY DELETING AND CREATING

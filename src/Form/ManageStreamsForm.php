@@ -216,9 +216,30 @@ class ManageStreamsForm extends FormBase {
       ],
     ];
 
+    $form['card']['card_body']['actions'] = [
+      '#type' => 'actions',
+      '#attributes' => [
+        // Use Bootstrap's btn-group to keep buttons inline
+        // and justify-content-start to align them to the left
+        'class' => ['btn-group', 'justify-content-start', 'mb-3'],
+        'style' => 'align-self: flex-start!important;',
+        // If you don't have Bootstrap, you can force flex layout:
+        // 'style' => 'display:flex; justify-content:flex-start;',
+      ],
+      '#weight' => -10,
+    ];
+
+    $form['card']['card_body']['actions']['add_element'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Create Deployment'),
+      '#name' => 'add_element',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],
+      ],
+    ];
 
     if ($this->getState() == 'design') {
-      $form['card']['card_body']['add_element'] = [
+      $form['card']['card_body']['actions']['add_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Create Stream'),
         '#name' => 'add_element',
@@ -226,7 +247,7 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'add-element-button'],
         ],
       ];
-      $form['card']['card_body']['edit_selected_element'] = [
+      $form['card']['card_body']['actions']['edit_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Edit Selected'),
         '#name' => 'edit_element',
@@ -234,7 +255,7 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'edit-element-button'],
         ],
       ];
-      $form['card']['card_body']['execute_selected_element'] = [
+      $form['card']['card_body']['actions']['execute_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Execute Selected'),
         '#name' => 'execute_element',
@@ -242,7 +263,7 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'play-button'],
         ],
       ];
-      $form['card']['card_body']['delete_selected_element'] = [
+      $form['card']['card_body']['actions']['delete_selected_element'] = [
         '#type' => 'submit',
         '#value' => $this->t('Delete Selected'),
         '#name' => 'delete_element',
@@ -253,7 +274,7 @@ class ManageStreamsForm extends FormBase {
       ];
     }
     if ($this->getState() == 'active') {
-      $form['card']['card_body']['close_selected'] = [
+      $form['card']['card_body']['actions']['close_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Close Selected'),
         '#name' => 'close_element',
@@ -261,12 +282,12 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'close-button'],
         ],
       ];
-      $form['card']['card_body']['modify_selected'] = [
+      $form['card']['card_body']['actions']['modify_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Modify Selected'),
         '#name' => 'modify_element',
         '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+          'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
         ],
       ];
     }

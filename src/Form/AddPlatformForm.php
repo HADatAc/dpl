@@ -66,6 +66,8 @@ class AddPlatformForm extends FormBase {
     $form['platform_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
+      '#value' => 1,
+      '#disabled' => true
     ];
     $form['platform_description'] = [
       '#type' => 'textarea',
@@ -129,7 +131,7 @@ class AddPlatformForm extends FormBase {
         '"hascoTypeUri":"'.VSTOI::PLATFORM.'",'.
         // '"hasStatus":"'.VSTOI::CURRENT.'",'.
         '"label":"'.$form_state->getValue('platform_name').'",'.
-        '"hasVersion":"'.$form_state->getValue('platform_version').'",'.
+        '"hasVersion":"'.($form_state->getValue('platform_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('platform_description').'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 

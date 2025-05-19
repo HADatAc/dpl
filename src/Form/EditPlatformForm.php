@@ -98,7 +98,8 @@ class EditPlatformForm extends FormBase {
     $form['platform_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
-      '#default_value' => $this->getPlatform()->hasVersion,
+      '#default_value' => $this->getPlatform()->hasVersion ?? 1,
+      '#disabled' => true
     ];
     $form['platform_description'] = [
       '#type' => 'textarea',

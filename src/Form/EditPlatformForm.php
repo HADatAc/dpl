@@ -169,7 +169,7 @@ class EditPlatformForm extends FormBase {
         '"label":"'.$form_state->getValue('platform_name').'",'.
         '"hasVersion":"'.$form_state->getValue('platform_version').'",'.
         '"comment":"'.$form_state->getValue('platform_description').'",'.
-        '"hasStatus":"'.VSTOI::CURRENT.'",'.
+        // '"hasStatus":"'.VSTOI::CURRENT.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       // UPDATE BY DELETING AND CREATING

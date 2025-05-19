@@ -127,7 +127,7 @@ class AddPlatformForm extends FormBase {
         // '"superUri":"'.VSTOI::PLATFORM.'",'.
         '"superUri":"'.Utils::uriFromAutocomplete($form_state->getValue('platform_type')).'",'.
         '"hascoTypeUri":"'.VSTOI::PLATFORM.'",'.
-        '"hasStatus":"'.VSTOI::CURRENT.'",'.
+        // '"hasStatus":"'.VSTOI::CURRENT.'",'.
         '"label":"'.$form_state->getValue('platform_name').'",'.
         '"hasVersion":"'.$form_state->getValue('platform_version').'",'.
         '"comment":"'.$form_state->getValue('platform_description').'",'.

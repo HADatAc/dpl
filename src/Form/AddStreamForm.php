@@ -106,11 +106,13 @@ class AddStreamForm extends FormBase {
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Study'),
+      '#autocomplete_route_name' => 'std.study_autocomplete',
       //'#required' => TRUE,
     ];
     $form['tabs']['tab_content']['tab1']['stream_schema'] = [
       '#type' => 'textfield',
       '#title' => $this->t('SDD'),
+      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
       //'#required' => TRUE,
     ];
     $form['tabs']['tab_content']['tab1']['stream_version'] = [

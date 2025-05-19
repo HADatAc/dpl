@@ -28,15 +28,75 @@ class AddDeploymentForm extends FormBase {
     //  '#type' => 'textfield',
     //  '#title' => $this->t('Name'),
     //];
+    // $form['deployment_platform_instance'] = [
+    //   '#type' => 'textfield',
+    //   '#title' => $this->t('Platform Instance'),
+    //   '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
+    // ];
     $form['deployment_platform_instance'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
-      '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $this->t('Platform Instance'),
+        '#name' => 'deployment_platform_instance',
+        '#default_value' => '',
+        '#id' => 'deployment_platform_instance',
+        '#parents' => ['deployment_platform_instance'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => 'platforminstance',
+          ], ['query' => ['field_id' => 'deployment_platform_instance']])->toString(),
+          'data-field-id' => 'deployment_platform_instance',
+          'data-elementtype' => 'platforminstance',
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
     ];
+    // $form['deployment_instrument_instance'] = [
+    //   '#type' => 'textfield',
+    //   '#title' => $this->t('Instrument Instance'),
+    //   '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
+    // ];
     $form['deployment_instrument_instance'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
-      '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $this->t('Instrument Instance'),
+        '#name' => 'deployment_instrument_instance',
+        '#default_value' => '',
+        '#id' => 'deployment_instrument_instance',
+        '#parents' => ['deployment_instrument_instance'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => 'instrumentinstance',
+          ], ['query' => ['field_id' => 'deployment_instrument_instance']])->toString(),
+          'data-field-id' => 'deployment_instrument_instance',
+          'data-elementtype' => 'instrumentinstance',
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
     ];
     //$form['deployment_detector_instance'] = [
     //  '#type' => 'textfield',

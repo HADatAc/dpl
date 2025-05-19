@@ -57,6 +57,10 @@ class EditInstanceForm extends FormBase {
     // Does the repo have a social network?
     $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
+    // MODAL
+    $form['#attached']['library'][] = 'rep/rep_modal';
+    $form['#attached']['library'][] = 'core/drupal.dialog';
+
     if ($instanceuri == NULL || $instanceuri == "") {
       \Drupal::messenger()->addError(t("No element uri has been provided"));
       self::backUrl();
@@ -81,18 +85,26 @@ class EditInstanceForm extends FormBase {
       $this->setElementName("Platform Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
+      // $treepath = 'platform';
+      // $treename = 'Platform';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
       $this->setElementName("Instrument Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
+      // $treepath = 'instrument';
+      // $treename = 'Instrument';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::DETECTOR_INSTANCE) {
       $this->setElementName("Detector Instance");
       $this->setElementType("detectorinstance");
       $autocomplete = 'dpl.detector_autocomplete';
+      // $treepath = 'detector';
+      // $treename = 'Detector';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::ACTUATOR_INSTANCE) {
       $this->setElementName("Actuator Instance");
       $this->setElementType("actuatorinstance");
       $autocomplete = 'dpl.actuator_autocomplete';
+      // $treepath = 'actuator';
+      // $treename = 'Actuator';
     }
 
     if ($this->getElementName() == NULL) {
@@ -112,12 +124,42 @@ class EditInstanceForm extends FormBase {
       '#type' => 'item',
       '#title' => $this->t('<h3>Edit ' . $this->getElementName() . '</h3>'),
     ];
+    // $form['instance_type'] = [
+    //   '#type' => 'textfield',
+    //   '#title' => $this->t('Type'),
+    //   '#autocomplete_route_name' => $autocomplete,
+    //   '#default_value' => $typeLabel,
+    // ];
     $form['instance_type'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Type'),
-      '#autocomplete_route_name' => $autocomplete,
-      '#default_value' => $typeLabel,
-  ];
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $this->getElementName(),
+        '#name' => 'instance_type',
+        '#default_value' => Utils::fieldToAutocomplete($this->getElement()->typeUri, $this->getElement()->type->label),
+        '#id' => 'instance_type',
+        '#parents' => ['instance_type'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => $this->getElement()->hascoTypeUri,
+          ], ['query' => ['field_id' => 'instance_type']])->toString(),
+          'data-field-id' => 'instance_type',
+          'data-elementtype' => $this->getElement()->hascoTypeUri,
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
+    ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('ID Number'),

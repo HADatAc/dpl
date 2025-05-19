@@ -84,6 +84,7 @@ class EditDeploymentForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
       '#default_value' => $this->getDeployment()->hasVersion,
+      '#disabled' => true
     ];
     $form['deployment_description'] = [
       '#type' => 'textarea',
@@ -170,7 +171,7 @@ class EditDeploymentForm extends FormBase {
         '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"label":"'.$finalLabel.'",'.
-        '"hasVersion":"'.$form_state->getValue('deployment_version').'",'.
+        '"hasVersion":"'.($form_state->getValue('deployment_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('deployment_description').'",'.
         '"platformInstanceUri":"'.$platformInstanceUri.'",'.
         '"instrumentInstanceUri":"'.$instrumentInstanceUri.'",'.

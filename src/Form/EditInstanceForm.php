@@ -306,7 +306,7 @@ class EditInstanceForm extends FormBase {
       $hascoTypeUri = $this->getElement()->hascoTypeUri;
     }
 
-        $label = "Instance of " . Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number: " . $form_state->getValue('instance_serial_number');
+        $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number (" . $form_state->getValue('instance_serial_number').")";
     // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
 
     try{

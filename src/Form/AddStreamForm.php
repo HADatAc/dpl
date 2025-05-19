@@ -118,6 +118,8 @@ class AddStreamForm extends FormBase {
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
+      '#value' => 1,
+      '#disabled' => true
     ];
     $form['tabs']['tab_content']['tab1']['stream_description'] = [
       '#type' => 'textarea',
@@ -245,7 +247,7 @@ class AddStreamForm extends FormBase {
         '"label":"'.$label.'",'.
         '"method":"'.$form_state->getValue('stream_method').'",'.
         '"deploymentUri":"'.$deployment.'",'.
-        '"hasVersion":"'.$form_state->getValue('stream_version').'",'.
+        '"hasVersion":"'.($form_state->getValue('stream_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('stream_description').'",'.
         '"messageProtocol":"'.$form_state->getValue('stream_protocol').'",'.
         '"messageIP":"'.$form_state->getValue('stream_ip').'",'.

@@ -292,7 +292,7 @@ class AddInstanceForm extends FormBase {
     }
 
     // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
-    $label = "Instance of " . Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number: " . $form_state->getValue('instance_serial_number');
+    $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number (" . $form_state->getValue('instance_serial_number').")";
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();

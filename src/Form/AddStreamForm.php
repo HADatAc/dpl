@@ -257,7 +257,7 @@ class AddStreamForm extends FormBase {
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
         '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
-        '"semanticDataDictionaryUri"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
+        '"semanticDataDictionaryUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

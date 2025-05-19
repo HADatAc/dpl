@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
+use Drupal\sem\Entity\SemanticDataDictionary;
 
 class AddStreamForm extends FormBase {
 
@@ -109,7 +110,7 @@ class AddStreamForm extends FormBase {
       '#autocomplete_route_name' => 'std.study_autocomplete',
       //'#required' => TRUE,
     ];
-    $form['tabs']['tab_content']['tab1']['stream_schema'] = [
+    $form['tabs']['tab_content']['tab1']['stream_semanticdatadictionary'] = [
       '#type' => 'textfield',
       '#title' => $this->t('SDD'),
       '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
@@ -255,6 +256,8 @@ class AddStreamForm extends FormBase {
         '"messageArchiveId":"'.$form_state->getValue('stream_archive_id').'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
+        '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
+        '"semanticDataDictionaryUri"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

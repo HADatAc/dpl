@@ -252,7 +252,7 @@ class ManageStreamsForm extends FormBase {
         '#value' => $this->t('Edit Selected'),
         '#name' => 'edit_element',
         '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+          'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
         ],
       ];
       $form['card']['card_body']['actions']['execute_selected_element'] = [
@@ -260,7 +260,7 @@ class ManageStreamsForm extends FormBase {
         '#value' => $this->t('Execute Selected'),
         '#name' => 'execute_element',
         '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'play-button'],
+          'class' => ['btn', 'btn-primary', 'play-button', 'ms-1'],
         ],
       ];
       $form['card']['card_body']['actions']['delete_selected_element'] = [
@@ -269,7 +269,7 @@ class ManageStreamsForm extends FormBase {
         '#name' => 'delete_element',
         '#attributes' => [
           'onclick' => 'if(!confirm("Really Delete?")){return false;}',
-          'class' => ['btn', 'btn-primary', 'delete-button'],
+          'class' => ['btn', 'btn-primary', 'delete-button', 'ms-1'],
         ],
       ];
     }

@@ -282,7 +282,7 @@ class EditInstanceForm extends FormBase {
         'uri'                 => $this->getElement()->uri,
         'typeUri'             => $typeUri,
         'hascoTypeUri'        => $hascoTypeUri,
-        'hasStatus'           => ($isDamaged === 'true' ? VSTOI::DAMAGED : VSTOI::DRAFT),
+        'hasStatus'           => ($isDamaged === 'true' ? VSTOI::DAMAGED : VSTOI::CURRENT),
         'label'               => $label,
         'hasSerialNumber'     => $form_state->getValue('instance_serial_number'),
         'comment'             => $form_state->getValue('instance_description'),

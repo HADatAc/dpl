@@ -63,26 +63,26 @@ class AddInstanceForm extends FormBase {
     if ($elementtype == 'platforminstance') {
       $this->setElementName("Platform Instance");
       $autocomplete = 'dpl.platform_autocomplete';
-      // $treepath = 'platform';
-      // $treename = 'Platform';
+      $treepath = 'platform';
+      $treename = 'Platform';
     }
     if ($elementtype == 'instrumentinstance') {
       $this->setElementName("Instrument Instance");
       $autocomplete = 'dpl.instrument_autocomplete';
-      // $treepath = 'instrument';
-      // $treename = 'Instrument';
+      $treepath = 'instrument';
+      $treename = 'Instrument';
     }
     if ($elementtype == 'detectorinstance') {
       $this->setElementName("Detector Instance");
       $autocomplete = 'dpl.detector_autocomplete';
-      // $treepath = 'detector';
-      // $treename = 'Detector';
+      $treepath = 'detector';
+      $treename = 'Detector';
     }
     if ($elementtype == 'actuatorinstance') {
       $this->setElementName("Actuator Instance");
       $autocomplete = 'dpl.actuator_autocomplete';
-      // $treepath = 'actuator';
-      // $treename = 'Actuator';
+      $treepath = 'actuator';
+      $treename = 'Actuator';
     }
 
     if ($this->getElementName() == NULL) {
@@ -109,7 +109,7 @@ class AddInstanceForm extends FormBase {
       ],
       'main' => [
         '#type' => 'textfield',
-        '#title' => $this->getElementName(),
+        '#title' => $treename,
         '#name' => 'instance_type',
         '#default_value' => '',
         '#id' => 'instance_type',
@@ -120,10 +120,10 @@ class AddInstanceForm extends FormBase {
           'data-dialog-options' => json_encode(['width' => 800]),
           'data-url' => Url::fromRoute('rep.tree_form', [
             'mode' => 'modal',
-            'elementtype' => $elementtype,
+            'elementtype' => $treepath,
           ], ['query' => ['field_id' => 'instance_type']])->toString(),
           'data-field-id' => 'instance_type',
-          'data-elementtype' => $elementtype,
+          'data-elementtype' => $treepath,
           'autocomplete' => 'off',
         ],
       ],

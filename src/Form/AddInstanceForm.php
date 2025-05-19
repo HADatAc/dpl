@@ -92,7 +92,7 @@ class AddInstanceForm extends FormBase {
   ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Serial Number'),
+      '#title' => $this->t('ID Number'),
     ];
     $form['instance_acquisition_date'] = [
       '#type' => 'date',
@@ -250,7 +250,7 @@ class AddInstanceForm extends FormBase {
     }
 
     // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
-    $label = "Instance of [" . Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . "] with Serial Number: [" . $form_state->getValue('instance_serial_number') . "].";
+    $label = "Instance of [" . Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . "] with #ID Number: [" . $form_state->getValue('instance_serial_number') . "].";
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();

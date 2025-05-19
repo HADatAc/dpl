@@ -71,7 +71,7 @@ class AddDeploymentForm extends FormBase {
     $form['deployment_instrument_instance'] = [
       'top' => [
         '#type' => 'markup',
-        '#markup' => '<div class="pt-3 col border border-white">',
+        '#markup' => '<div class="col border border-white">',
       ],
       'main' => [
         '#type' => 'textfield',

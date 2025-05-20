@@ -231,7 +231,7 @@ class ManageStreamsForm extends FormBase {
 
     $form['card']['card_body']['actions']['add_element'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Create Deployment'),
+      '#value' => $this->t('Create Stream'),
       '#name' => 'add_element',
       '#attributes' => [
         'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],

@@ -258,6 +258,7 @@ class AddStreamForm extends FormBase {
         '"designedAt":"'.$formattedNow.'",'.
         '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
         '"semanticDataDictionaryUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
+        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
@@ -290,8 +291,11 @@ class AddStreamForm extends FormBase {
     // cria a URL de rota já com parâmetros e converte em string
     $url = Url::fromRoute($route_name, $route_params)->toString();
 
+    $response = new RedirectResponse($url);
+    $response->send();
+
     // redireciona
-    return new RedirectResponse($url);
+    return;
   }
 
 }

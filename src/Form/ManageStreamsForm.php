@@ -171,19 +171,19 @@ class ManageStreamsForm extends FormBase {
           <div class="card-header">
               <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' .
+                      <a class="nav-link ' . ($state === 'design' ? 'active-dp2' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink($this->getDeployment()->uri, 'design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' .
+                      <a class="nav-link ' . ($state === 'active' ? 'active-dp2' : '') . '" id="pills-active-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'active', $page, $pagesize) . '" role="tab">Active Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' .
+                      <a class="nav-link ' . ($state === 'closed' ? 'active-dp2' : '') . '" id="pills-closed-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'closed', $page, $pagesize) . '" role="tab">Completed Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' .
+                      <a class="nav-link ' . ($state === 'all' ? 'active-dp2' : '') . '" id="pills-all-tab" href="' .
                       $this->stateLink($this->getDeployment()->uri, 'all', $page, $pagesize) . '" role="tab">All Streams</a>
                   </li>
               </ul>

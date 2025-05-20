@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Vocabulary\HASCO;
 
 class ExecuteCloseStreamForm extends FormBase {
 
@@ -17,6 +18,10 @@ class ExecuteCloseStreamForm extends FormBase {
   protected $streamUri;
 
   protected $stream;
+
+  protected $deployment;
+
+  protected $deploymentUri;
 
   public function getMode() {
     return $this->mode;
@@ -32,11 +37,25 @@ class ExecuteCloseStreamForm extends FormBase {
     return $this->streamUri = $uri;
   }
 
+  public function getStream() {
+    return $this->stream;
+  }
+  public function setStream($stream) {
+    return $this->deployment = $stream;
+  }
+
   public function getDeployment() {
     return $this->deployment;
   }
   public function setDeployment($deployment) {
     return $this->deployment = $deployment;
+  }
+
+  public function getDeploymentUri() {
+    return $this->deploymentUri;
+  }
+  public function setDeploymentUri($deploymentUri) {
+    return $this->deploymentUri = $deploymentUri;
   }
 
   /**
@@ -49,7 +68,7 @@ class ExecuteCloseStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $deploymenturi = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $streamUri = NULL) {
 
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
@@ -59,18 +78,18 @@ class ExecuteCloseStreamForm extends FormBase {
     }
     $this->setMode($mode);
 
-    $uri=$deploymenturi;
+    $uri=$streamUri;
     $uri_decode=base64_decode($uri);
-    $this->setDeploymentUri($uri_decode);
+    $this->setStreamUri($uri_decode);
 
     $api = \Drupal::service('rep.api_connector');
-    $rawresponse = $api->getUri($this->getDeploymentUri());
+    $rawresponse = $api->getUri($this->getStreamUri());
     $obj = json_decode($rawresponse);
 
     if ($obj->isSuccessful) {
-      $this->setDeployment($obj->body);
+      $this->setStreamUri($obj->body);
     } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve Deployment."));
+      \Drupal::messenger()->addError(t("Failed to retrieve Stream."));
       self::backUrl();
       return;
     }
@@ -110,13 +129,13 @@ class ExecuteCloseStreamForm extends FormBase {
     if ($this->getMode() == 'execute') {
       $form['page_title'] = [
         '#type' => 'item',
-        '#title' => $this->t('<h3>Execute Deployment</h3>'),
+        '#title' => $this->t('<h3>Execute Stream</h3>'),
       ];
     }
     if ($this->getMode() == 'close') {
       $form['page_title'] = [
         '#type' => 'item',
-        '#title' => $this->t('<h3>Close Deployment</h3>'),
+        '#title' => $this->t('<h3>Close Stream</h3>'),
       ];
     }
     $form['deployment_name'] = [
@@ -138,13 +157,13 @@ class ExecuteCloseStreamForm extends FormBase {
       '#disabled' => TRUE,
     ];
 
-    // DEPLOYMENT IS VALID
+    // STREAM IS VALID
     if ($validationError == NULL) {
       if ($this->getMode() == 'execute') {
-        $form['deployment_start_datetime'] = [
+        $form['stream_start_datetime'] = [
           '#type' => 'datetime',
           '#title' => $this->t('Starting Date/Time'),
-          '#default_value' => $this->getDeployment()->startedAt ? $this->getDeployment()->startedAt : '',
+          '#default_value' => $this->getStream()->startedAt ? $this->getStream()->startedAt : '',
           '#date_date_element' => 'date', // Use a date element
           '#date_time_element' => 'time', // Use a time element
           '#date_format' => 'Y-m-d', // Date format
@@ -160,10 +179,10 @@ class ExecuteCloseStreamForm extends FormBase {
         ];
         }
       if ($this->getMode() == 'close') {
-        $form['deployment_end_datetime'] = [
+        $form['stream_end_datetime'] = [
           '#type' => 'datetime',
           '#title' => $this->t('Ending Date/Time'),
-          '#default_value' => $this->getDeployment()->endedAt ? $this->getDeployment()->endedAt : '',
+          '#default_value' => $this->getStream()->endedAt ? $this->getStream()->endedAt : '',
           '#date_date_element' => 'date', // Use a date element
           '#date_time_element' => 'time', // Use a time element
           '#date_format' => 'Y-m-d', // Date format
@@ -187,11 +206,11 @@ class ExecuteCloseStreamForm extends FormBase {
         ],
       ];
 
-    // DEPLOYMENT IS INVALID
+    // STREAM IS INVALID
     } else {
       $form['validation_notification'] = [
         '#type' => 'item',
-        '#title' => $this->t('<br><ul><h2>Deployment cannot be executed</h2></ul>'),
+        '#title' => $this->t('<br><ul><h2>Stream cannot be executed</h2></ul>'),
       ];
       $form['validation_reason'] = [
         '#type' => 'item',
@@ -199,7 +218,7 @@ class ExecuteCloseStreamForm extends FormBase {
       ];
       $form['cancel_submit'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Back to Manage Deployments'),
+        '#value' => $this->t('Back to Manage Streams'),
         '#name' => 'back',
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'back-button'],
@@ -244,27 +263,46 @@ class ExecuteCloseStreamForm extends FormBase {
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
-        '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"label":"'.$this->getDeployment()->label.'",'.
-        '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
-        '"comment":"'.$this->getDeployment()->comment.'",'.
-        '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
-        '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
-        //'"detectorUri":"'.$detectorUri.'",'.
+      // $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
+      //   '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
+      //   '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
+      //   '"label":"'.$this->getDeployment()->label.'",'.
+      //   '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
+      //   '"comment":"'.$this->getDeployment()->comment.'",'.
+      //   '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
+      //   '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
+      //   //'"detectorUri":"'.$detectorUri.'",'.
+      //   '"canUpdate":["'.$useremail.'"],'.
+      //   '"designedAt":"'.$this->getDeployment()->designedAt.'",';
+      $streamJson = '{"uri":"'.$this->getStreamUri().'",'.
+        '"typeUri":"'.HASCO::STREAM.'",'.
+        '"hascoTypeUri":"'.HASCO::STREAM.'",'.
+        '"label":"'.$this->getStream()->label.'",'.
+        '"method":"'.$this->getStream()->method.'",'.
+        '"deploymentUri":"'.$this->getStream()->deploymentUri.'",'.
+        '"hasVersion":"'.$this->getStream()->hasVersion.'",'.
+        '"comment":"'.$this->getStream()->comment.'",'.
+        '"messageProtocol":"'.$this->getStream()->messageProtocol.'",'.
+        '"messageIP":"'.$this->getStream()->messageIP.'",'.
+        '"messagePort":"'.$this->getStream()->messagePort.'",'.
+        '"messageArchiveId":"'.$this->getStream()->messageArchiveId.'",'.
         '"canUpdate":["'.$useremail.'"],'.
-        '"designedAt":"'.$this->getDeployment()->designedAt.'",';
+        '"designedAt":"'.$this->getStream()->designedAt.'",'.
+        '"studyUri":"'.$this->getStream()->studyUri.'",'.
+        '"semanticDataDictionaryUri":"'.$this->getStream()->semanticDataDictionaryUri.'",';
+        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
+
         if ($this->getMode() == 'execute') {
-        $deploymentJson .=
-          '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
-      }
-      if ($this->getMode() == 'close') {
-        $deploymentJson .=
-          '"startedAt":"'.$this->getDeployment()->startedAt.'",'.
-          '"endedAt":"'.$form_state->getValue('deployment_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
-      }
-      $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
+          $streamJson .=
+            '"startedAt":"'.$this->getStream()->startedAt.'",';
+        }
+        if ($this->getMode() == 'close') {
+          $streamJson .=
+            '"startedAt":"'.$this->getStream()->startedAt.'",'.
+            '"endedAt":"'.$form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
+        }
+
+      $streamJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       //$updatedDeployment = clone $this->getDeployment();
       //$deploymentJson = json_encode($updatedDeployment);
@@ -273,10 +311,10 @@ class ExecuteCloseStreamForm extends FormBase {
 
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
-      $api->elementDel('deployment',$this->getDeploymentUri());
-      $api->elementAdd('deployment',$deploymentJson);
+      $api->elementDel('stream',$this->getStreamUri());
+      $api->elementAdd('stream',$streamJson);
 
-      \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
+      \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;
 

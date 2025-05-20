@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\dpl\Form\ListDeploymentStatePage;
 use Drupal\rep\Entity\Deployment;
 use Drupal\rep\Utils;
+use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\REPGUI;
 
 class ManageDeploymentsForm extends FormBase {
@@ -82,6 +83,24 @@ class ManageDeploymentsForm extends FormBase {
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
 
+    switch ($state) {
+      case 'active':
+        $apiState = rawurlencode(hasco::ACTIVE);
+        break;
+      case 'design':
+        $apiState = rawurlencode(hasco::DRAFT);
+        break;
+      case 'close':
+        $apiState = rawurlencode(hasco::CLOSED);
+        break;
+      case 'all':
+      default:
+        $apiState = rawurlencode(hasco::DRAFT);
+        break;
+    }
+
+    dd($apiState);
+
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());
@@ -93,7 +112,7 @@ class ManageDeploymentsForm extends FormBase {
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
-      $this->setListSize(ListDeploymentStatePage::total($this->getState(), $this->getManagerEmail()));
+      $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -108,24 +127,24 @@ class ManageDeploymentsForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $next_page, $pagesize);
+      $next_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $previous_page, $pagesize);
+      $previous_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListDeploymentStatePage::exec($this->getState(), $this->getManagerEmail(), $page, $pagesize));
+    $this->setList(ListDeploymentStatePage::exec($apiState, $this->getManagerEmail(), $page, $pagesize));
 
     //dpm($this->getList());
 
-    $header = Deployment::generateHeaderState($this->getState());
-    $output = Deployment::generateOutputState($this->getState(), $this->getList());
+    $header = Deployment::generateHeaderState($apiState);
+    $output = Deployment::generateOutputState($$apiState, $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [

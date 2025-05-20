@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Vocabulary\HASCO;
 
 class AddDeploymentForm extends FormBase {
 
@@ -145,6 +146,7 @@ class AddDeploymentForm extends FormBase {
         //'"detectorInstanceUri":"'.$detectorInstanceUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
+        // '"hasDeploymentStatus":"'. HASCO::DRAFT . '",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

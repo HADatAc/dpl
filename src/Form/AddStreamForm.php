@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
+use Drupal\rep\Vocabulary\VSTOI;
 use Drupal\sem\Entity\SemanticDataDictionary;
 
 class AddStreamForm extends FormBase {
@@ -103,6 +104,16 @@ class AddStreamForm extends FormBase {
         'messages' => $this->t('Messages'),
       ],
       '#default_value' => 'files',
+    ];
+    $form['tabs']['tab_content']['tab1']['permission_uri'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Permission'),
+      '#required' => TRUE,
+      '#options' => [
+        VSTOI::PUBLIC => $this->t('Public'),
+        VSTOI::PRIVATE => $this->t('Private'),
+      ],
+      '#default_value' => VSTOI::PUBLIC,
     ];
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
@@ -247,6 +258,7 @@ class AddStreamForm extends FormBase {
         '"hascoTypeUri":"'.HASCO::STREAM.'",'.
         '"label":"'.$label.'",'.
         '"method":"'.$form_state->getValue('stream_method').'",'.
+        '"permissionUri":"'.$form_state->getValue('permission_uri').'",'.
         '"deploymentUri":"'.$deployment.'",'.
         '"hasVersion":"'.($form_state->getValue('stream_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('stream_description').'",'.

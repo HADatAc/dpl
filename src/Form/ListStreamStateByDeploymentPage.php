@@ -11,6 +11,7 @@ class ListStreamStateByDeploymentPage {
         $resp = array();
         return $resp;
     }
+    dpm($state);
     $offset = -1;
     if ($page <= 1) {
       $offset = 0;

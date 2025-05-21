@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Vocabulary\HASCO;
 
 class ExecuteCloseStreamForm extends FormBase {
 
@@ -272,44 +273,101 @@ class ExecuteCloseStreamForm extends FormBase {
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
-        '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"label":"'.$this->getDeployment()->label.'",'.
-        '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
-        '"comment":"'.$this->getDeployment()->comment.'",'.
-        '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
-        '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
-        //'"detectorUri":"'.$detectorUri.'",'.
-        '"canUpdate":["'.$useremail.'"],'.
-        '"designedAt":"'.$this->getDeployment()->designedAt.'",';
-        if ($this->getMode() == 'execute') {
-        $deploymentJson .=
-          '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
+      $orig = $this->getStream();
+
+      $clone = [
+        'uri'                       => $this->getStreamUri(),
+        'typeUri'                   => HASCO::STREAM,
+        'hascoTypeUri'              => HASCO::STREAM,
+        'label'                     => $orig->label,
+        'comment'                   => $orig->comment,
+        'method'                    => $orig->method,
+        'messageProtocol'           => $orig->messageProtocol,
+        'messageIP'                 => $orig->messageIP,
+        'messagePort'               => $orig->messagePort,
+        'messageArchiveId'          => $orig->messageArchiveId,
+        'canUpdate'                 => $orig->canUpdate,
+        'designedAt'                => $orig->designedAt,
+        'hasVersion'                => $orig->hasVersion,
+        'studyUri'                  => $orig->studyUri,
+        'semanticDataDictionaryUri' => $orig->semanticDataDictionaryUri,
+        'deploymentUri'             => $orig->deploymentUri,
+        'triggeringEvent'           => $orig->triggeringEvent,
+        'numberDataPoints'          => $orig->numberDataPoints,
+        'datasetPattern'            => $orig->datasetPattern,
+        'datasetUri'                => $orig->datasetUri,
+      ];
+
+      // $clone['deployment'] = [
+      //   'uri'                   => $orig->deployment->uri,
+      //   'typeUri'               => $orig->deployment->typeUri,
+      //   'hascoTypeUri'          => $orig->deployment->hascoTypeUri,
+      //   'label'                 => $orig->deployment->label,
+      //   'comment'               => $orig->deployment->comment,
+      //   'hasImageUri'           => $orig->deployment->hasImageUri,
+      //   'hasWebDocument'        => $orig->deployment->hasWebDocument,
+      //   'designedAt'            => $orig->deployment->designedAt,
+      //   'startedAt'             => $orig->deployment->startedAt,
+      //   'endedAt'               => $orig->deployment->endedAt,
+      //   'instrumentInstanceUri' => $orig->deployment->instrumentInstanceUri,
+      //   'platformInstanceUri'   => $orig->deployment->platformInstanceUri,
+      //   'hasVersion'            => $orig->deployment->hasVersion,
+      // ];
+
+      // $clone['study'] = [
+      //   'uri'             => $orig->study->uri,
+      //   'typeUri'         => $orig->study->typeUri,
+      //   'hascoTypeUri'    => $orig->study->hascoTypeUri,
+      //   'label'           => $orig->study->label,
+      //   'comment'         => $orig->study->comment,
+      //   'hasImageUri'     => $orig->study->hasImageUri,
+      //   'hasWebDocument'  => $orig->study->hasWebDocument,
+      //   'status'          => $orig->study->status,
+      // ];
+
+      // $clone['semanticDataDictionary'] = [
+      //   'uri'             => $orig->semanticDataDictionary->uri,
+      //   'typeUri'         => $orig->semanticDataDictionary->typeUri,
+      //   'hascoTypeUri'    => $orig->semanticDataDictionary->hascoTypeUri,
+      //   'label'           => $orig->semanticDataDictionary->label,
+      //   'comment'         => $orig->semanticDataDictionary->comment,
+      //   'hasImageUri'     => $orig->semanticDataDictionary->hasImageUri,
+      //   'hasWebDocument'  => $orig->semanticDataDictionary->hasWebDocument,
+      //   'hasStatus'       => $orig->semanticDataDictionary->hasStatus,
+      //   'hasVersion'      => $orig->semanticDataDictionary->hasVersion,
+      // ];
+
+      if ($this->getMode() === 'execute') {
+        $clone['startedAt']       = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        // $clone['hasStreamStatus'] = HASCO::ACTIVE;
       }
-      if ($this->getMode() == 'close') {
-        $deploymentJson .=
-          '"startedAt":"'.$this->getDeployment()->startedAt.'",'.
-          '"endedAt":"'.$form_state->getValue('deployment_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
+      elseif ($this->getMode() === 'close') {
+        $clone['startedAt']       = $orig->startedAt;
+        $clone['endedAt']         = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        // $clone['hasStreamStatus'] = HASCO::CLOSED;
       }
-      $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
-      //$updatedDeployment = clone $this->getDeployment();
-      //$deploymentJson = json_encode($updatedDeployment);
+      // $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES);
 
-      //dpm($deploymentJson);
+      $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 
-      // UPDATE BY DELETING AND CREATING
+      dpm($streamJson);
+      if (json_last_error() !== JSON_ERROR_NONE) {
+        \Drupal::messenger()->addError('Erro no JSON: '. json_last_error_msg());
+        \Drupal::messenger()->addError($streamJson);
+        return;
+      }
+
       $api = \Drupal::service('rep.api_connector');
-      $api->elementDel('deployment',$this->getDeploymentUri());
-      $api->elementAdd('deployment',$deploymentJson);
+      $api->elementDel('stream', $this->getStreamUri());
+      $api->elementAdd('stream', $streamJson);
 
-      \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
+      \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;
 
     } catch(\Exception $e) {
-      \Drupal::messenger()->addError(t("An error occurred while updating the Deployment: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t("An error occurred while updating the Stream: ".$e->getMessage()));
       self::backUrl();
       return;
     }

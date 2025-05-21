@@ -252,7 +252,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
       }
       $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
-      //dpm($deploymentJson);
+      // dpm($deploymentJson);return false;
 
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
@@ -280,7 +280,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
     // }
 
     // Change made to after execute a deployment it goes directly to ACTIVE pill.
-    $route_name = 'dpl.manage_streams_route';
+    $route_name = 'dpl.manage_deployments_route';
     $route_params = [
       'deploymenturi' => base64_encode($this->getDeployment()->uri),
       'state'         => 'active',

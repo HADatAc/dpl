@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\dpl\Form\ListDeploymentStatePage;
 use Drupal\rep\Entity\Deployment;
 use Drupal\rep\Utils;
+use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\REPGUI;
 
 class ManageDeploymentsForm extends FormBase {
@@ -82,6 +83,23 @@ class ManageDeploymentsForm extends FormBase {
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
 
+    // FIND Deployment State Related to URL State
+    switch ($state) {
+      case 'active':
+        $apiState = rawurlencode(HASCO::ACTIVE);
+        break;
+      case 'closed':
+        $apiState = rawurlencode(HASCO::CLOSED);
+        break;
+      case 'design':
+        $apiState = rawurlencode(HASCO::DRAFT);
+        break;
+      case 'all':
+      default:
+        $apiState = rawurlencode(HASCO::ALL_STATUSES);
+        break;
+    }
+
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());
@@ -90,10 +108,17 @@ class ManageDeploymentsForm extends FormBase {
 
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setState($state);
+
+    // FOR TESTING
+    // $message = "HASCO: {$apiState}\nSTATE FORM: {$this->getState()}";
+    // dpm($message, 'Debug HASCO', 'status', FALSE);
+    // $apiState = $this->getState();
+
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
-      $this->setListSize(ListDeploymentStatePage::total($this->getState(), $this->getManagerEmail()));
+      // $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
+      $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -108,24 +133,24 @@ class ManageDeploymentsForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $next_page, $pagesize);
+      $next_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $previous_page, $pagesize);
+      $previous_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListDeploymentStatePage::exec($this->getState(), $this->getManagerEmail(), $page, $pagesize));
+    $this->setList(ListDeploymentStatePage::exec($apiState, $this->getManagerEmail(), $page, $pagesize));
 
     //dpm($this->getList());
 
-    $header = Deployment::generateHeaderState($this->getState());
-    $output = Deployment::generateOutputState($this->getState(), $this->getList());
+    $header = Deployment::generateHeaderState($apiState);
+    $output = Deployment::generateOutputState($apiState, $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -144,19 +169,19 @@ class ManageDeploymentsForm extends FormBase {
           <div class="card-header">
               <ul class="nav nav-pills nav-justified mb-0" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'design' ? 'active' : '') . '" id="pills-design-tab"  href="' .
+                      <a class="nav-link ' . ($state === 'design' ? 'active-dp2' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink('design',$page,$pagesize) . '" role="tab">Upcoming Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'active' ? 'active' : '') . '" id="pills-active-tab" href="' .
+                      <a class="nav-link ' . ($state === 'active' ? 'active-dp2' : '') . '" id="pills-active-tab" href="' .
                       $this->stateLink('active',$page,$pagesize) . '" role="tab">Active Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'closed' ? 'active' : '') . '" id="pills-closed-tab" href="' .
+                      <a class="nav-link ' . ($state === 'closed' ? 'active-dp2' : '') . '" id="pills-closed-tab" href="' .
                       $this->stateLink('closed',$page,$pagesize) . '" role="tab">Completed Deployments</a>
                   </li>
                   <li class="nav-item" role="presentation">
-                      <a class="nav-link ' . ($state === 'all' ? 'active' : '') . '" id="pills-all-tab" href="' .
+                      <a class="nav-link ' . ($state === 'all' ? 'active-dp2' : '') . '" id="pills-all-tab" href="' .
                       $this->stateLink('all',$page,$pagesize) . '" role="tab">All Deployments</a>
                   </li>
               </ul>

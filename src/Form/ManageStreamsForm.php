@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\dpl\Form\ListStreamStateByDeploymentPage;
 use Drupal\rep\Entity\Stream;
 use Drupal\rep\Utils;
+use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\REPGUI;
 
 class ManageStreamsForm extends FormBase {
@@ -91,7 +92,22 @@ class ManageStreamsForm extends FormBase {
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
 
-    //comment
+    // FIND Stream State Related to URL State
+    switch ($state) {
+      case 'active':
+        $apiState = rawurlencode(HASCO::ACTIVE);
+        break;
+      case 'closed':
+        $apiState = rawurlencode(HASCO::CLOSED);
+        break;
+      case 'design':
+        $apiState = rawurlencode(HASCO::DRAFT);
+        break;
+      case 'all':
+      default:
+        $apiState = rawurlencode(HASCO::ALL_STATUSES);
+        break;
+    }
 
     // RETRIEVE DEPLOYMENT
     $api = \Drupal::service('rep.api_connector');
@@ -114,10 +130,16 @@ class ManageStreamsForm extends FormBase {
 
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setState($state);
+
+    // FOR TESTING
+    // $message = "HASCO: {$apiState}\nSTATE FORM: {$this->getState()}";
+    // dpm($message, 'Debug HASCO', 'status', FALSE);
+    // $apiState = $this->getState();
+
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
-      $this->setListSize(ListStreamStateByDeploymentPage::total($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri));
+      $this->setListSize(ListStreamStateByDeploymentPage::total($apiState, $this->getManagerEmail(), $this->getDeployment()->uri));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -132,23 +154,23 @@ class ManageStreamsForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $next_page, $pagesize);
+      $next_page_link = ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListStreamStatePage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $previous_page, $pagesize);
+      $previous_page_link = ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListStreamStateByDeploymentPage::exec($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $page, $pagesize));
+    $this->setList(ListStreamStateByDeploymentPage::exec($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $page, $pagesize));
 
     //dpm($this->getList());
-    $header = Stream::generateHeaderState($this->getState());
-    $output = Stream::generateOutputState($this->getState(), $this->getList());
+    $header = Stream::generateHeaderState($apiState);
+    $output = Stream::generateOutputState($apiState, $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -169,7 +191,7 @@ class ManageStreamsForm extends FormBase {
       '#markup' => '
       <div class="card">
           <div class="card-header">
-              <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
+              <ul class="nav nav-pills nav-justified mb-0" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'design' ? 'active-dp2' : '') . '" id="pills-design-tab"  href="' .
                       $this->stateLink($this->getDeployment()->uri, 'design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
@@ -231,7 +253,7 @@ class ManageStreamsForm extends FormBase {
 
     $form['card']['card_body']['actions']['add_element'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Create Deployment'),
+      '#value' => $this->t('Create Stream'),
       '#name' => 'add_element',
       '#attributes' => [
         'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],
@@ -302,8 +324,8 @@ class ManageStreamsForm extends FormBase {
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, 1, $pagesize),
-        'last' => ListStreamStateByDeploymentPage::link($this->getState(), $this->getManagerEmail(), $this->getDeployment()->uri, $total_pages, $pagesize),
+        'first' => ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, 1, $pagesize),
+        'last' => ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),

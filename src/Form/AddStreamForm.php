@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
-use Drupal\sem\Entity\SemanticDataDictionary;
 
 class AddStreamForm extends FormBase {
 
@@ -269,6 +268,7 @@ class AddStreamForm extends FormBase {
         '"designedAt":"'.$formattedNow.'",'.
         '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
         '"semanticDataDictionaryUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
+        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
@@ -284,25 +284,15 @@ class AddStreamForm extends FormBase {
   }
 
   function backUrl() {
-    // $uid = \Drupal::currentUser()->id();
-    // $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.add_stream');
-    // if ($previousUrl) {
-    //   $response = new RedirectResponse($previousUrl);
-    //   $response->send();
-    //   return;
-    // }
-    $route_name = 'dpl.manage_streams_route';
-    $route_params = [
-      'deploymenturi' => base64_encode($this->getDeployment()->uri),
-      'state'         => HASCO::ACTIVE,
-      'page'          => '1',
-      'pagesize'      => '10',
-    ];
-    // cria a URL de rota já com parâmetros e converte em string
-    $url = Url::fromRoute($route_name, $route_params)->toString();
 
-    // redireciona
-    return new RedirectResponse($url);
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.add_stream');
+    if ($previousUrl) {
+      $response = new RedirectResponse($previousUrl);
+      $response->send();
+      return;
+    }
+    return false;
   }
 
 }

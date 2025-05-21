@@ -252,7 +252,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
       }
       $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
-      //dpm($deploymentJson);
+      // dpm($deploymentJson);return false;
 
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
@@ -271,13 +271,27 @@ class ExecuteCloseDeploymentForm extends FormBase {
   }
 
   function backUrl() {
-    $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_deployment');
-    if ($previousUrl) {
-      $response = new RedirectResponse($previousUrl);
-      $response->send();
-      return;
-    }
+    // $uid = \Drupal::currentUser()->id();
+    // $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_deployment');
+    // if ($previousUrl) {
+    //   $response = new RedirectResponse($previousUrl);
+    //   $response->send();
+    //   return;
+    // }
+
+    // Change made to after execute a deployment it goes directly to ACTIVE pill.
+    $route_name = 'dpl.manage_deployments_route';
+    $route_params = [
+      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+      'state'         => 'active',
+      'page'          => '1',
+      'pagesize'      => '10',
+    ];
+    // cria a URL de rota já com parâmetros e converte em string
+    $url = Url::fromRoute($route_name, $route_params)->toString();
+
+    $response = new RedirectResponse($url);
+    $response->send();
   }
 
 }

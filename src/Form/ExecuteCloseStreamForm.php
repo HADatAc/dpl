@@ -299,65 +299,15 @@ class ExecuteCloseStreamForm extends FormBase {
         'datasetUri'                => $orig->datasetUri,
       ];
 
-      // $clone['deployment'] = [
-      //   'uri'                   => $orig->deployment->uri,
-      //   'typeUri'               => $orig->deployment->typeUri,
-      //   'hascoTypeUri'          => $orig->deployment->hascoTypeUri,
-      //   'label'                 => $orig->deployment->label,
-      //   'comment'               => $orig->deployment->comment,
-      //   'hasImageUri'           => $orig->deployment->hasImageUri,
-      //   'hasWebDocument'        => $orig->deployment->hasWebDocument,
-      //   'designedAt'            => $orig->deployment->designedAt,
-      //   'startedAt'             => $orig->deployment->startedAt,
-      //   'endedAt'               => $orig->deployment->endedAt,
-      //   'instrumentInstanceUri' => $orig->deployment->instrumentInstanceUri,
-      //   'platformInstanceUri'   => $orig->deployment->platformInstanceUri,
-      //   'hasVersion'            => $orig->deployment->hasVersion,
-      // ];
-
-      // $clone['study'] = [
-      //   'uri'             => $orig->study->uri,
-      //   'typeUri'         => $orig->study->typeUri,
-      //   'hascoTypeUri'    => $orig->study->hascoTypeUri,
-      //   'label'           => $orig->study->label,
-      //   'comment'         => $orig->study->comment,
-      //   'hasImageUri'     => $orig->study->hasImageUri,
-      //   'hasWebDocument'  => $orig->study->hasWebDocument,
-      //   'status'          => $orig->study->status,
-      // ];
-
-      // $clone['semanticDataDictionary'] = [
-      //   'uri'             => $orig->semanticDataDictionary->uri,
-      //   'typeUri'         => $orig->semanticDataDictionary->typeUri,
-      //   'hascoTypeUri'    => $orig->semanticDataDictionary->hascoTypeUri,
-      //   'label'           => $orig->semanticDataDictionary->label,
-      //   'comment'         => $orig->semanticDataDictionary->comment,
-      //   'hasImageUri'     => $orig->semanticDataDictionary->hasImageUri,
-      //   'hasWebDocument'  => $orig->semanticDataDictionary->hasWebDocument,
-      //   'hasStatus'       => $orig->semanticDataDictionary->hasStatus,
-      //   'hasVersion'      => $orig->semanticDataDictionary->hasVersion,
-      // ];
-
       if ($this->getMode() === 'execute') {
         $clone['startedAt']       = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
-        // $clone['hasStreamStatus'] = HASCO::ACTIVE;
       }
       elseif ($this->getMode() === 'close') {
         $clone['startedAt']       = $orig->startedAt;
         $clone['endedAt']         = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
-        // $clone['hasStreamStatus'] = HASCO::CLOSED;
       }
-
-      // $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES);
 
       $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
-
-      // dpm($streamJson);
-      if (json_last_error() !== JSON_ERROR_NONE) {
-        \Drupal::messenger()->addError('Erro no JSON: '. json_last_error_msg());
-        \Drupal::messenger()->addError($streamJson);
-        return;
-      }
 
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('stream', $this->getStreamUri());

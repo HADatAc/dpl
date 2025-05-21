@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
-use Drupal\rep\Vocabulary\VSTOI;
 use Drupal\sem\Entity\SemanticDataDictionary;
 
 class AddStreamForm extends FormBase {
@@ -110,10 +109,10 @@ class AddStreamForm extends FormBase {
       '#title' => $this->t('Permission'),
       '#required' => TRUE,
       '#options' => [
-        VSTOI::PUBLIC => $this->t('Public'),
-        VSTOI::PRIVATE => $this->t('Private'),
+        HASCO::PUBLIC => $this->t('Public'),
+        HASCO::PRIVATE => $this->t('Private'),
       ],
-      '#default_value' => VSTOI::PUBLIC,
+      '#default_value' => HASCO::PUBLIC,
     ];
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
@@ -295,7 +294,7 @@ class AddStreamForm extends FormBase {
     $route_name = 'dpl.manage_streams_route';
     $route_params = [
       'deploymenturi' => base64_encode($this->getDeployment()->uri),
-      'state'         => 'active',
+      'state'         => HASCO::ACTIVE,
       'page'          => '1',
       'pagesize'      => '10',
     ];

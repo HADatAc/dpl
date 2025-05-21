@@ -104,7 +104,7 @@ dpl.manage_deployments:
   description: Manage Deployments
   route_name: dpl.manage_deployments_route
   route_parameters:
-    state: 'active'
+    state: ''
     page: '1'
     pagesize: '9'
   parent: dpl.manage_top_level

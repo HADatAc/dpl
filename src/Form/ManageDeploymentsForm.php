@@ -99,8 +99,6 @@ class ManageDeploymentsForm extends FormBase {
         break;
     }
 
-    dd($apiState);
-
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());
@@ -109,9 +107,15 @@ class ManageDeploymentsForm extends FormBase {
 
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setState($state);
+
+    // FOR TESTING
+    dpm("HASCO: " . $apiState . "\nSTATE FORM: " . $this->getState());
+    $apiState = $this->getState();
+
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
+      // $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
       $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
     }
     if (gettype($this->list_size) == 'string') {
@@ -144,7 +148,7 @@ class ManageDeploymentsForm extends FormBase {
     //dpm($this->getList());
 
     $header = Deployment::generateHeaderState($apiState);
-    $output = Deployment::generateOutputState($$apiState, $this->getList());
+    $output = Deployment::generateOutputState($apiState, $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [

@@ -83,17 +83,16 @@ class ManageDeploymentsForm extends FormBase {
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
 
+    // FIND Deployment State Related to URL State
     switch ($state) {
       case 'active':
         $apiState = rawurlencode(hasco::ACTIVE);
         break;
-      case 'design':
-        $apiState = rawurlencode(hasco::DRAFT);
-        break;
-      case 'close':
+      case 'closed':
         $apiState = rawurlencode(hasco::CLOSED);
         break;
       case 'all':
+      case 'design':
       default:
         $apiState = rawurlencode(hasco::DRAFT);
         break;
@@ -109,7 +108,8 @@ class ManageDeploymentsForm extends FormBase {
     $this->setState($state);
 
     // FOR TESTING
-    dpm("HASCO: " . $apiState . "\nSTATE FORM: " . $this->getState());
+    $message = "HASCO: {$apiState}\nSTATE FORM: {$this->getState()}";
+    dpm($message, 'Debug HASCO', 'status', FALSE);
     $apiState = $this->getState();
 
     $this->setPageSize($pagesize);

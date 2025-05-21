@@ -86,15 +86,17 @@ class ManageDeploymentsForm extends FormBase {
     // FIND Deployment State Related to URL State
     switch ($state) {
       case 'active':
-        $apiState = rawurlencode(hasco::ACTIVE);
+        $apiState = rawurlencode(HASCO::ACTIVE);
         break;
       case 'closed':
-        $apiState = rawurlencode(hasco::CLOSED);
+        $apiState = rawurlencode(HASCO::CLOSED);
+        break;
+      case 'design':
+        $apiState = rawurlencode(HASCO::DRAFT);
         break;
       case 'all':
-      case 'design':
       default:
-        $apiState = rawurlencode(hasco::DRAFT);
+        $apiState = rawurlencode(HASCO::ALL_STATUSES);
         break;
     }
 
@@ -108,9 +110,9 @@ class ManageDeploymentsForm extends FormBase {
     $this->setState($state);
 
     // FOR TESTING
-    $message = "HASCO: {$apiState}\nSTATE FORM: {$this->getState()}";
-    dpm($message, 'Debug HASCO', 'status', FALSE);
-    $apiState = $this->getState();
+    // $message = "HASCO: {$apiState}\nSTATE FORM: {$this->getState()}";
+    // dpm($message, 'Debug HASCO', 'status', FALSE);
+    // $apiState = $this->getState();
 
     $this->setPageSize($pagesize);
     $this->setListSize(-1);

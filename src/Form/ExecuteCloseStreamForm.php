@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
-use Drupal\rep\Vocabulary\HASCO;
 
 class ExecuteCloseStreamForm extends FormBase {
 
@@ -30,18 +29,18 @@ class ExecuteCloseStreamForm extends FormBase {
     return $this->mode = $mode;
   }
 
+  public function getStream() {
+    return $this->stream;
+  }
+  public function setStream($stream) {
+    return $this->stream = $stream;
+  }
+
   public function getStreamUri() {
     return $this->streamUri;
   }
   public function setStreamUri($uri) {
     return $this->streamUri = $uri;
-  }
-
-  public function getStream() {
-    return $this->stream;
-  }
-  public function setStream($stream) {
-    return $this->deployment = $stream;
   }
 
   public function getDeployment() {
@@ -68,7 +67,10 @@ class ExecuteCloseStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $streamUri = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $streamuri = NULL) {
+
+    // Globals
+    $api = \Drupal::service('rep.api_connector');
 
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
@@ -78,50 +80,57 @@ class ExecuteCloseStreamForm extends FormBase {
     }
     $this->setMode($mode);
 
-    $uri=$streamUri;
+    // GET STREAM FROM API
+    $uri=$streamuri;
     $uri_decode=base64_decode($uri);
     $this->setStreamUri($uri_decode);
 
-    $api = \Drupal::service('rep.api_connector');
     $rawresponse = $api->getUri($this->getStreamUri());
     $obj = json_decode($rawresponse);
 
     if ($obj->isSuccessful) {
-      $this->setStreamUri($obj->body);
+      $this->setStream($obj->body);
+      $this->setDeployment($this->getStream()->deployment);
+      $this->setDeploymentUri($this->getStream()->deployment->uri);
     } else {
       \Drupal::messenger()->addError(t("Failed to retrieve Stream."));
       self::backUrl();
       return;
     }
 
-    $platformLabel = ' ';
-    if (isset($this->getDeployment()->platform) &&
-        isset($this->getDeployment()->platform->uri) &&
-        isset($this->getDeployment()->platform->label)) {
-      $platformLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platform->uri,
-        $this->getDeployment()->platform->label
+    kint([
+      'Stream' => $this->getStream(),
+      'Deployment' => $this->getDeployment(),
+    ]);
+
+    $studyLabel = ' ';
+    if (isset($this->getStream()->study) &&
+        isset($this->getStream()->study->uri) &&
+        isset($this->getStream()->study->label)) {
+      $studyLabel = Utils::fieldToAutocomplete(
+        $this->getStream()->study->uri,
+        $this->getStream()->study->label
       );
     }
-    $instrumentLabel = ' ';
-    if (isset($this->getDeployment()->platform) &&
-        isset($this->getDeployment()->platform->uri) &&
-        isset($this->getDeployment()->platform->label)) {
-      $instrumentLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrument->uri,
-        $this->getDeployment()->instrument->label
+    $sddLabel = ' ';
+    if (isset($this->getStream()->semanticDataDictionary) &&
+        isset($this->getStream()->semanticDataDictionary->uri) &&
+        isset($this->getStream()->semanticDataDictionary->label)) {
+      $sddLabel = Utils::fieldToAutocomplete(
+        $this->getStream()->semanticDataDictionary->uri,
+        $this->getStream()->semanticDataDictionary->label
       );
     }
 
     $validationError = NULL;
-    if (!isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing both PLATFORM instance and INSTRUMENT instance.";
+    if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+      $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
     }
-    if (!isset($this->getDeployment()->platform) && isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing associated PLATFORM instance.";
+    if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
+      $validationError = "Stream is missing associated STUDY.";
     }
-    if (isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing associated INSTRUMENT instance.";
+    if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+      $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
     }
 
     //dpm($this->getDeployment());
@@ -135,29 +144,29 @@ class ExecuteCloseStreamForm extends FormBase {
     if ($this->getMode() == 'close') {
       $form['page_title'] = [
         '#type' => 'item',
-        '#title' => $this->t('<h3>Close Stream</h3>'),
+        '#title' => $this->t('<h3>Close Streamt</h3>'),
       ];
     }
-    $form['deployment_name'] = [
+    $form['stream_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
-      '#default_value' => $this->getDeployment()->label,
+      '#default_value' => $this->getStream()->label,
       '#disabled' => TRUE,
     ];
-    $form['deployment_platform_instance'] = [
+    $form['stream_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
-      '#default_value' => $platformLabel,
+      '#title' => $this->t('Study'),
+      '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];
-    $form['deployment_instrument_instance'] = [
+    $form['stream_instrument_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
-      '#default_value' => $instrumentLabel,
+      '#title' => $this->t('Semantic Data Dictionary (SDD)'),
+      '#default_value' => $sddLabel,
       '#disabled' => TRUE,
     ];
 
-    // STREAM IS VALID
+    // DEPLOYMENT IS VALID
     if ($validationError == NULL) {
       if ($this->getMode() == 'execute') {
         $form['stream_start_datetime'] = [
@@ -206,11 +215,11 @@ class ExecuteCloseStreamForm extends FormBase {
         ],
       ];
 
-    // STREAM IS INVALID
+    // DEPLOYMENT IS INVALID
     } else {
       $form['validation_notification'] = [
         '#type' => 'item',
-        '#title' => $this->t('<br><ul><h2>Stream cannot be executed</h2></ul>'),
+        '#title' => $this->t('<br><ul><h2>Streamt cannot be executed</h2></ul>'),
       ];
       $form['validation_reason'] = [
         '#type' => 'item',
@@ -240,8 +249,8 @@ class ExecuteCloseStreamForm extends FormBase {
     $button_name = $triggering_element['#name'];
 
     if ($button_name != 'back') {
-      if(strlen($form_state->getValue('deployment_name')) < 1) {
-        $form_state->setErrorByName('deployment_name', $this->t('Please enter a valid name'));
+      if(strlen($form_state->getValue('stream_name')) < 1) {
+        $form_state->setErrorByName('stream_name', $this->t('Please enter a valid name'));
       }
     }
   }
@@ -263,46 +272,27 @@ class ExecuteCloseStreamForm extends FormBase {
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
-      // $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
-      //   '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
-      //   '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
-      //   '"label":"'.$this->getDeployment()->label.'",'.
-      //   '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
-      //   '"comment":"'.$this->getDeployment()->comment.'",'.
-      //   '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
-      //   '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
-      //   //'"detectorUri":"'.$detectorUri.'",'.
-      //   '"canUpdate":["'.$useremail.'"],'.
-      //   '"designedAt":"'.$this->getDeployment()->designedAt.'",';
-      $streamJson = '{"uri":"'.$this->getStreamUri().'",'.
-        '"typeUri":"'.HASCO::STREAM.'",'.
-        '"hascoTypeUri":"'.HASCO::STREAM.'",'.
-        '"label":"'.$this->getStream()->label.'",'.
-        '"method":"'.$this->getStream()->method.'",'.
-        '"deploymentUri":"'.$this->getStream()->deploymentUri.'",'.
-        '"hasVersion":"'.$this->getStream()->hasVersion.'",'.
-        '"comment":"'.$this->getStream()->comment.'",'.
-        '"messageProtocol":"'.$this->getStream()->messageProtocol.'",'.
-        '"messageIP":"'.$this->getStream()->messageIP.'",'.
-        '"messagePort":"'.$this->getStream()->messagePort.'",'.
-        '"messageArchiveId":"'.$this->getStream()->messageArchiveId.'",'.
+      $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
+        '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
+        '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
+        '"label":"'.$this->getDeployment()->label.'",'.
+        '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
+        '"comment":"'.$this->getDeployment()->comment.'",'.
+        '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
+        '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
+        //'"detectorUri":"'.$detectorUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
-        '"designedAt":"'.$this->getStream()->designedAt.'",'.
-        '"studyUri":"'.$this->getStream()->studyUri.'",'.
-        '"semanticDataDictionaryUri":"'.$this->getStream()->semanticDataDictionaryUri.'",';
-        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
-
+        '"designedAt":"'.$this->getDeployment()->designedAt.'",';
         if ($this->getMode() == 'execute') {
-          $streamJson .=
-            '"startedAt":"'.$this->getStream()->startedAt.'",';
-        }
-        if ($this->getMode() == 'close') {
-          $streamJson .=
-            '"startedAt":"'.$this->getStream()->startedAt.'",'.
-            '"endedAt":"'.$form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
-        }
-
-      $streamJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
+        $deploymentJson .=
+          '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
+      }
+      if ($this->getMode() == 'close') {
+        $deploymentJson .=
+          '"startedAt":"'.$this->getDeployment()->startedAt.'",'.
+          '"endedAt":"'.$form_state->getValue('deployment_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
+      }
+      $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       //$updatedDeployment = clone $this->getDeployment();
       //$deploymentJson = json_encode($updatedDeployment);
@@ -311,10 +301,10 @@ class ExecuteCloseStreamForm extends FormBase {
 
       // UPDATE BY DELETING AND CREATING
       $api = \Drupal::service('rep.api_connector');
-      $api->elementDel('stream',$this->getStreamUri());
-      $api->elementAdd('stream',$streamJson);
+      $api->elementDel('deployment',$this->getDeploymentUri());
+      $api->elementAdd('deployment',$deploymentJson);
 
-      \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
+      \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
       self::backUrl();
       return;
 
@@ -327,7 +317,7 @@ class ExecuteCloseStreamForm extends FormBase {
 
   function backUrl() {
     $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_deployment');
+    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_stream');
     if ($previousUrl) {
       $response = new RedirectResponse($previousUrl);
       $response->send();

@@ -146,7 +146,6 @@ class AddDeploymentForm extends FormBase {
         //'"detectorInstanceUri":"'.$detectorInstanceUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
-        // '"hasDeploymentStatus":"'. HASCO::DRAFT . '",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');

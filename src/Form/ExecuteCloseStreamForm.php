@@ -99,10 +99,11 @@ class ExecuteCloseStreamForm extends FormBase {
       return;
     }
 
-    kint([
-      'Stream' => $this->getStream(),
-      'Deployment' => $this->getDeployment(),
-    ]);
+    // DEBBUG
+    // kint([
+    //   'Stream' => $this->getStream(),
+    //   'Deployment' => $this->getDeployment(),
+    // ]);
 
     $studyLabel = ' ';
     if (isset($this->getStream()->study) &&
@@ -351,7 +352,7 @@ class ExecuteCloseStreamForm extends FormBase {
 
       $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 
-      dpm($streamJson);
+      // dpm($streamJson);
       if (json_last_error() !== JSON_ERROR_NONE) {
         \Drupal::messenger()->addError('Erro no JSON: '. json_last_error_msg());
         \Drupal::messenger()->addError($streamJson);
@@ -374,13 +375,20 @@ class ExecuteCloseStreamForm extends FormBase {
   }
 
   function backUrl() {
-    $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_stream');
-    if ($previousUrl) {
-      $response = new RedirectResponse($previousUrl);
-      $response->send();
-      return;
-    }
+    $route_name = 'dpl.manage_streams_route';
+    $route_params = [
+      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+      'state'         => 'active',
+      'page'          => '1',
+      'pagesize'      => '10',
+    ];
+    // cria a URL de rota já com parâmetros e converte em string
+    $url = Url::fromRoute($route_name, $route_params)->toString();
+
+    $response = new RedirectResponse($url);
+    $response->send();
+
+    return;
   }
 
 

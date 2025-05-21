@@ -284,15 +284,20 @@ class AddStreamForm extends FormBase {
   }
 
   function backUrl() {
+    $route_name = 'dpl.manage_streams_route';
+    $route_params = [
+      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+      'state'         => 'design',
+      'page'          => '1',
+      'pagesize'      => '10',
+    ];
+    // cria a URL de rota já com parâmetros e converte em string
+    $url = Url::fromRoute($route_name, $route_params)->toString();
 
-    $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.add_stream');
-    if ($previousUrl) {
-      $response = new RedirectResponse($previousUrl);
-      $response->send();
-      return;
-    }
-    return false;
+    $response = new RedirectResponse($url);
+    $response->send();
+
+    return;
   }
 
 }

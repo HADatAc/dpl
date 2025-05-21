@@ -11,7 +11,7 @@ class ListStreamStateByDeploymentPage {
         $resp = array();
         return $resp;
     }
-    dpm($state);
+    // dpm($state);
     $offset = -1;
     if ($page <= 1) {
       $offset = 0;
@@ -48,13 +48,13 @@ class ListStreamStateByDeploymentPage {
   public static function link($state, $deploymenturi, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
     if ($page > 0 && $pagesize > 0) {
-     return $root_url . REPGUI::MANAGE_STREAMS . 
+     return $root_url . REPGUI::MANAGE_STREAMS .
           $state . '/' .
           base64_encode($deploymenturi) . '/' .
-          strval($page) . '/' . 
+          strval($page) . '/' .
           strval($pagesize);
     }
-    return ''; 
+    return '';
   }
 
 }

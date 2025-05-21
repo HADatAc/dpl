@@ -292,6 +292,8 @@ class ExecuteCloseDeploymentForm extends FormBase {
 
     $response = new RedirectResponse($url);
     $response->send();
+
+    return;
   }
 
 }

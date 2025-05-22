@@ -103,19 +103,33 @@ class AddStreamForm extends FormBase {
       ],
       '#default_value' => 'files',
     ];
+    $form['tabs']['tab_content']['tab1']['permission_uri'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Permission'),
+      '#required' => TRUE,
+      '#options' => [
+        HASCO::PUBLIC => $this->t('Public'),
+        HASCO::PRIVATE => $this->t('Private'),
+      ],
+      '#default_value' => HASCO::PUBLIC,
+    ];
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Study'),
+      '#autocomplete_route_name' => 'std.study_autocomplete',
       //'#required' => TRUE,
     ];
-    $form['tabs']['tab_content']['tab1']['stream_schema'] = [
+    $form['tabs']['tab_content']['tab1']['stream_semanticdatadictionary'] = [
       '#type' => 'textfield',
       '#title' => $this->t('SDD'),
+      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
       //'#required' => TRUE,
     ];
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
+      '#value' => 1,
+      '#disabled' => true
     ];
     $form['tabs']['tab_content']['tab1']['stream_description'] = [
       '#type' => 'textarea',
@@ -188,7 +202,7 @@ class AddStreamForm extends FormBase {
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
       '#attributes' => [
-        'class' => ['btn', 'btn-primary', 'back-button'],
+        'class' => ['btn', 'btn-danger', 'back-button'],
       ],
     ];
     $form['bottom_space'] = [
@@ -242,8 +256,9 @@ class AddStreamForm extends FormBase {
         '"hascoTypeUri":"'.HASCO::STREAM.'",'.
         '"label":"'.$label.'",'.
         '"method":"'.$form_state->getValue('stream_method').'",'.
+        '"permissionUri":"'.$form_state->getValue('permission_uri').'",'.
         '"deploymentUri":"'.$deployment.'",'.
-        '"hasVersion":"'.$form_state->getValue('stream_version').'",'.
+        '"hasVersion":"'.($form_state->getValue('stream_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('stream_description').'",'.
         '"messageProtocol":"'.$form_state->getValue('stream_protocol').'",'.
         '"messageIP":"'.$form_state->getValue('stream_ip').'",'.
@@ -251,6 +266,9 @@ class AddStreamForm extends FormBase {
         '"messageArchiveId":"'.$form_state->getValue('stream_archive_id').'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
+        '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
+        '"semanticDataDictionaryUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
+        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
@@ -266,13 +284,20 @@ class AddStreamForm extends FormBase {
   }
 
   function backUrl() {
-    $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.add_stream');
-    if ($previousUrl) {
-      $response = new RedirectResponse($previousUrl);
-      $response->send();
-      return;
-    }
+    $route_name = 'dpl.manage_streams_route';
+    $route_params = [
+      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+      'state'         => 'design',
+      'page'          => '1',
+      'pagesize'      => '10',
+    ];
+    // cria a URL de rota já com parâmetros e converte em string
+    $url = Url::fromRoute($route_name, $route_params)->toString();
+
+    $response = new RedirectResponse($url);
+    $response->send();
+
+    return;
   }
 
 }

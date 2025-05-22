@@ -57,6 +57,10 @@ class EditInstanceForm extends FormBase {
     // Does the repo have a social network?
     $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
+    // MODAL
+    $form['#attached']['library'][] = 'rep/rep_modal';
+    $form['#attached']['library'][] = 'core/drupal.dialog';
+
     if ($instanceuri == NULL || $instanceuri == "") {
       \Drupal::messenger()->addError(t("No element uri has been provided"));
       self::backUrl();
@@ -81,18 +85,26 @@ class EditInstanceForm extends FormBase {
       $this->setElementName("Platform Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
+      $treepath = 'platform';
+      $treename = 'Platform';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
       $this->setElementName("Instrument Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
+      $treepath = 'instrument';
+      $treename = 'Instrument';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::DETECTOR_INSTANCE) {
       $this->setElementName("Detector Instance");
       $this->setElementType("detectorinstance");
       $autocomplete = 'dpl.detector_autocomplete';
+      $treepath = 'detector';
+      $treename = 'Detector';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::ACTUATOR_INSTANCE) {
       $this->setElementName("Actuator Instance");
       $this->setElementType("actuatorinstance");
       $autocomplete = 'dpl.actuator_autocomplete';
+      $treepath = 'actuator';
+      $treename = 'Actuator';
     }
 
     if ($this->getElementName() == NULL) {
@@ -112,15 +124,45 @@ class EditInstanceForm extends FormBase {
       '#type' => 'item',
       '#title' => $this->t('<h3>Edit ' . $this->getElementName() . '</h3>'),
     ];
+    // $form['instance_type'] = [
+    //   '#type' => 'textfield',
+    //   '#title' => $this->t('Type'),
+    //   '#autocomplete_route_name' => $autocomplete,
+    //   '#default_value' => $typeLabel,
+    // ];
     $form['instance_type'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Type'),
-      '#autocomplete_route_name' => $autocomplete,
-      '#default_value' => $typeLabel,
-  ];
+      'top' => [
+        '#type' => 'markup',
+        '#markup' => '<div class="pt-3 col border border-white">',
+      ],
+      'main' => [
+        '#type' => 'textfield',
+        '#title' => $treename,
+        '#name' => 'instance_type',
+        '#default_value' => Utils::fieldToAutocomplete($this->getElement()->typeUri, $this->getElement()->type->label),
+        '#id' => 'instance_type',
+        '#parents' => ['instance_type'],
+        '#attributes' => [
+          'class' => ['open-tree-modal'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => json_encode(['width' => 800]),
+          'data-url' => Url::fromRoute('rep.tree_form', [
+            'mode' => 'modal',
+            'elementtype' => $treepath,
+          ], ['query' => ['field_id' => 'instance_type']])->toString(),
+          'data-field-id' => 'instance_type',
+          'data-elementtype' => $treepath,
+          'autocomplete' => 'off',
+        ],
+      ],
+      'bottom' => [
+        '#type' => 'markup',
+        '#markup' => '</div>',
+      ],
+    ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Serial Number'),
+      '#title' => $this->t('ID Number'),
       '#default_value' => $this->getElement()->hasSerialNumber,
     ];
     $form['instance_acquisition_date'] = [
@@ -155,6 +197,48 @@ class EditInstanceForm extends FormBase {
         ],
       ];
     }
+    // --- DAMAGE FIELDS INLINE ---
+    // 1) Container flex/Bootstrap row
+    $form['damage_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['row', 'g-3', 'mb-4'],
+      ],
+    ];
+
+    // 2) isDamaged como switch
+    $form['damage_wrapper']['is_damaged'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Damaged?'),
+      '#title_display' => 'after',
+      '#default_value' => !empty($this->getElement()->isDamaged === 'true' ? 1:0),
+      '#attributes' => [
+        'class' => ['form-check-input','me-2', 'ms-2'],
+      ],
+      '#wrapper_attributes' => [
+        'class' => ['col-auto', 'form-check', 'form-switch', 'd-flex', 'align-items-center'],
+        'style' => 'padding-left:0!important;margin-top:0;'
+      ],
+    ];
+
+    // 3) Damage Date só visível se is_damaged == TRUE
+    $form['damage_wrapper']['has_damage_date'] = [
+      '#type' => 'date',
+      '#title' => $this->t('Damage Date'),
+      '#default_value' => $this->getElement()->hasDamageDate ?? '',
+      '#attributes' => [
+        'class' => ['form-control'],
+      ],
+      '#wrapper_attributes' => [
+        'class' => ['col-auto'],
+      ],
+      '#states' => [
+        'visible' => [
+          // dispara quando a checkbox is_damaged estiver checked
+          ':input[name="is_damaged"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
     $form['instance_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -222,22 +306,44 @@ class EditInstanceForm extends FormBase {
       $hascoTypeUri = $this->getElement()->hascoTypeUri;
     }
 
-    $label = "Instance of [" . Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . "] with Serial Number: [" . $form_state->getValue('instance_serial_number') . "].";
+        $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number (" . $form_state->getValue('instance_serial_number').")";
     // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();
-      // $newInstanceUri = Utils::uriGen($this->getElementType());
-      $instanceJson = '{"uri":"'.$this->getElement()->uri.'",' .
-        '"typeUri":"'.$typeUri.'",'.
-        '"hascoTypeUri":"'.$hascoTypeUri.'",'.
-        '"hasStatus":"' . VSTOI::DRAFT . '",' .
-        '"label":"'.$label.'",'.
-        '"hasSerialNumber":"'.$form_state->getValue('instance_serial_number').'",'.
-        '"comment":"'.$form_state->getValue('instance_description').'",'.
-        '"hasOwnerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_owner')).'",'.
-        '"hasMaintainerUri":"'.Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer')).'",'.
-        '"hasSIRManagerEmail":"'.$useremail.'"}';
+
+      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
+      $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
+      $damageDate = $form_state->getValue('has_damage_date') ?: '';
+      $acquisitionDate = '';
+      if ($form_state->getValue('instance_acquisition_date') != NULL && $form_state->getValue('instance_acquisition_date') != '') {
+        $acquisitionDate = $form_state->getValue('instance_acquisition_date');
+      }
+
+      $payload = [
+        'uri'                 => $this->getElement()->uri,
+        'typeUri'             => $typeUri,
+        'hascoTypeUri'        => $hascoTypeUri,
+        'hasStatus'           => ($isDamaged === 'true' ? VSTOI::DAMAGED : VSTOI::CURRENT),
+        'label'               => $label,
+        'hasSerialNumber'     => $form_state->getValue('instance_serial_number'),
+        'comment'             => $form_state->getValue('instance_description'),
+        'hasAcquisitionDate'  => $acquisitionDate,
+        'isDamaged'           => $isDamaged,
+      ];
+
+      if ($isDamaged === 'true' && $damageDate) {
+        $payload['hasDamageDate'] = $damageDate;
+      }
+
+      if ($socialEnabled) {
+        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
+      }
+
+      $payload['hasSIRManagerEmail'] = \Drupal::currentUser()->getEmail();
+
+      $instanceJson = json_encode($payload);
 
       $api = \Drupal::service('rep.api_connector');
       $api->elementAdd($this->getElementType(),$instanceJson);

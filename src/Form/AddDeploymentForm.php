@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Vocabulary\HASCO;
 
 class AddDeploymentForm extends FormBase {
 
@@ -46,6 +47,8 @@ class AddDeploymentForm extends FormBase {
     $form['deployment_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
+      '#value' => 1,
+      '#disabled' => true
     ];
     $form['deployment_description'] = [
       '#type' => 'textarea',
@@ -136,7 +139,7 @@ class AddDeploymentForm extends FormBase {
         '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"label":"'.$finalLabel.'",'.
-        '"hasVersion":"'.$form_state->getValue('deployment_version').'",'.
+        '"hasVersion":"'.($form_state->getValue('deployment_version') ?? 1).'",'.
         '"comment":"'.$form_state->getValue('deployment_description').'",'.
         '"platformInstanceUri":"'.$platformInstanceUri.'",'.
         '"instrumentInstanceUri":"'.$instrumentInstanceUri.'",'.

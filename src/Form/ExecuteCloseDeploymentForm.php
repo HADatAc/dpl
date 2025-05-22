@@ -227,9 +227,11 @@ class ExecuteCloseDeploymentForm extends FormBase {
     }
 
     try{
+      $api = \Drupal::service('rep.api_connector');
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
+      // DEPLOYMENT RELATED
       $deploymentJson = '{"uri":"'.$this->getDeployment()->uri.'",'.
         '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
         '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
@@ -252,10 +254,48 @@ class ExecuteCloseDeploymentForm extends FormBase {
       }
       $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
 
-      // dpm($deploymentJson);return false;
+      // INSTRUMENT INSTANCE RELATED
+      $rawresponse = $api->getUri($this->getDeployment()->instrumentInstanceUri);
+      $obj = json_decode($rawresponse);
+      if ($obj->isSuccessful) {
+        $orig = $obj->body;
 
-      // UPDATE BY DELETING AND CREATING
-      $api = \Drupal::service('rep.api_connector');
+        $iiClone = [
+          'uri'                 => $orig->uri,
+          'typeUri'             => $orig->typeUri,
+          'hascoTypeUri'        => $orig->hascoTypeUri,
+          'label'               => $orig->label,
+          'comment'             => $orig->comment,
+          'hasImageUri'         => $orig->hasImageUri,
+          'hasWebDocument'      => $orig->hasWebDocument,
+          'hasSerialNumber'     => $orig->hasSerialNumber,
+          'hasAcquisitionDate'  => $orig->hasAcquisitionDate,
+          'isDamaged'           => $orig->isDamaged,
+          'hasDamageDate'       => $orig->hasDamageDate,
+          'hasOwnerUri'         => $orig->hasOwnerUri,
+          'hasMaintainerUri'    => $orig->hasMaintainerUri,
+          'hasSIRManagerEmail'  => $orig->hasSIRManagerEmail
+        ];
+
+        if ($this->getMode() == 'execute') {
+          $iiClone['hasStatus'] = VSTOI::DEPLOYED;
+        }
+
+        if ($this->getMode() == 'close') {
+          $iiClone['hasStatus'] = VSTOI::CURRENT;
+        }
+
+        // UPDATE BY DELETING AND CREATING THE INSTRUMENT INSTANCE
+        $api->elementDel('instrumentinstance', $orig->uri);
+        $api->elementAdd('instrumentinstance', json_encode($iiClone, JSON_UNESCAPED_SLASHES));
+
+      } else {
+        \Drupal::messenger()->addError(t("Failed to Execute, could not retrieve Instrument Instance."));
+        self::backUrl();
+        return false;
+      }
+
+      // UPDATE BY DELETING AND CREATING THE DEPLOYMENT
       $api->elementDel('deployment',$this->getDeployment()->uri);
       $api->elementAdd('deployment',$deploymentJson);
 

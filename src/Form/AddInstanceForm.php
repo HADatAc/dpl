@@ -307,7 +307,7 @@ class AddInstanceForm extends FormBase {
         'uri'               => $newInstanceUri,
         'typeUri'           => $typeUri,
         'hascoTypeUri'      => $hascoType,
-        'hasStatus'         => VSTOI::CURRENT,
+        'hasStatus'         => VSTOI::DEPLOYED,
         'label'             => $label,
         'hasSerialNumber'   => $form_state->getValue('instance_serial_number'),
         'hasAcquisitionDate'=> $acquisitionDate,

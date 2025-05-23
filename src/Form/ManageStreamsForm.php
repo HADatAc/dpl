@@ -505,14 +505,13 @@ class ManageStreamsForm extends FormBase {
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.mqtt_messages_form');
-        $url = Url::fromRoute('dpl.mqtt_messages_form', [
-          'streamuri' => base64_encode($first),
-          'state' => $apiState,
-          'email' => $this->getManagerEmail(),
-          'deploymenturi' => base64_encode($this->getDeployment()->uri),
-          'page' => $page,
-          'pagesize' => $pagesize,
-        ]);
+        $url = Url::fromRoute('dpl.mqtt_messages_form');
+        $url->setRouteParameter('streamuri', base64_encode($first));
+        $url->setRouteParameter('state', 'active');
+        $url->setRouteParameter('email' , $this->getManagerEmail());
+        $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
+        $url->setRouteParameter('page', '1');
+        $url->setRouteParameter('pagesize', $this->getPageSize());
         $form_state->setRedirectUrl($url);
       }
     }

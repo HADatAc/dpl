@@ -103,16 +103,33 @@ class MqttMessagesForm extends FormBase {
   }
 
   private function readMqttMessages($ip, $port, $topic) {
-    $tmux_session = 'mqtt';
+    $cmd = "tmux capture-pane -pt mqtt -S -100 -e 2>&1";
+    $output = shell_exec($cmd);
   
-    $output = shell_exec("tmux capture-pane -pt $tmux_session -S -100 && tmux show-buffer");
+    $debug_info = "<pre><strong>Comando executado:</strong> $cmd\n\n";
+    $debug_info .= "<strong>Output bruto:</strong>\n" . htmlspecialchars($output) . "</pre>";
   
-    if ($output === null) {
-      \Drupal::logger('mqtt')->error('Falha ao capturar mensagens da sessão tmux.');
-      return [];
+    if (empty(trim($output))) {
+      return [$debug_info . '<em>Sem mensagens (output vazio).</em>'];
     }
   
     $lines = explode("\n", trim($output));
-    return array_slice($lines, -100);
+    $messages = [];
+  
+    foreach ($lines as $line) {
+      if (strpos($line, $topic) !== false) {
+        $messages[] = htmlspecialchars($line);
+      }
+    }
+  
+    if (empty($messages)) {
+      return [$debug_info . '<em>Nenhuma mensagem com o tópico encontrado.</em>'];
+    }
+  
+    array_unshift($messages, $debug_info); // Adiciona o debug no topo
+  
+    return $messages;
   }
+  
+  
 }

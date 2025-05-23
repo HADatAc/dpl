@@ -103,27 +103,16 @@ class MqttMessagesForm extends FormBase {
   }
 
   private function readMqttMessages($ip, $port, $topic) {
-    $client_id = 'drupal_' . uniqid();
-    $mqtt = new phpMQTT($ip, (int) $port, $client_id);
-    $messages = [];
-
-    if ($mqtt->connect(true, NULL, '', '')) {
-      $mqtt->subscribe([$topic => ['qos' => 0, 'function' => function($topic, $msg) use (&$messages) {
-        $messages[] = $msg;
-      }]]);
-
-      // Processa mensagens por 2 segundos
-      $start = time();
-      while (time() - $start < 2) {
-        $mqtt->proc();
-      }
-
-      $mqtt->close();
+    $tmux_session = 'mqtt';
+  
+    $output = shell_exec("tmux capture-pane -pt $tmux_session -S -100 && tmux show-buffer");
+  
+    if ($output === null) {
+      \Drupal::logger('mqtt')->error('Falha ao capturar mensagens da sessão tmux.');
+      return [];
     }
-
-    // Guardar no state para uso posterior
-    \Drupal::service('tempstore.private')->get('mqtt')->set('last_messages', $messages);
-
-    return $messages;
+  
+    $lines = explode("\n", trim($output));
+    return array_slice($lines, -100);
   }
 }

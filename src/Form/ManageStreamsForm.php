@@ -506,7 +506,7 @@ class ManageStreamsForm extends FormBase {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.mqtt_messages_form');
 
-        $state = rawurlencode('http://hadatac.org/ont/hasco/Active');
+        $state = base64_encode('http://hadatac.org/ont/hasco/Active');
         $email = $this->getManagerEmail();
         $deploymenturi = base64_encode($this->getDeployment()->uri);
 

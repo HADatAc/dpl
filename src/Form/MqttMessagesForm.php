@@ -23,14 +23,14 @@ class MqttMessagesForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $streamuri = NULL, $state = NULL, $email = NULL, $deploymenturi = NULL, $page = NULL, $pagesize = NULL) {
     $stream_uri = base64_decode($streamuri);
   
-    $streams = ListStreamStateByDeploymentPage::exec($state, $email, $deployment_uri, $page, $pagesize);
+    $streams = ListStreamStateByDeploymentPage::exec($state, $email, $deploymenturi, $page, $pagesize);
 
     if (empty($streams) || !is_iterable($streams)) {
         \Drupal::messenger()->addError($this->t("No streams found (or error fetching from API)."));
         \Drupal::logger('mqtt')->error('Streams list is null or not iterable. Input: state=@state, email=@email, deployment_uri=@uri, page=@page, pagesize=@pagesize', [
           '@state' => $state,
           '@email' => $email,
-          '@uri' => $deployment_uri,
+          '@uri' => $deploymenturi,
           '@page' => $page,
           '@pagesize' => $pagesize,
         ]);

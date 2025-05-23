@@ -508,7 +508,7 @@ class ManageStreamsForm extends FormBase {
 
         $state = rawurlencode('http://hadatac.org/ont/hasco/Active');
         $email = $this->getManagerEmail();
-        $deploymenturi = $this->getDeployment()->uri;
+        $deploymenturi = base64_encode($this->getDeployment()->uri);
 
         $url = Url::fromRoute('dpl.mqtt_messages_form');
         $url->setRouteParameter('streamuri', base64_encode($first));

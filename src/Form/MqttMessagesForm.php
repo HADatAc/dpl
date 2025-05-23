@@ -22,7 +22,8 @@ class MqttMessagesForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $streamuri = NULL, $state = NULL, $email = NULL, $deploymenturi = NULL, $page = NULL, $pagesize = NULL) {
     $stream_uri = base64_decode($streamuri);
-  
+    $deploymenturi = base64_decode($deploymenturi);
+
     $streams = ListStreamStateByDeploymentPage::exec($state, $email, $deploymenturi, $page, $pagesize);
 
     if (empty($streams) || !is_iterable($streams)) {

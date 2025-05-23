@@ -14,3 +14,14 @@ dpl_accordion:
       css/dpl_accordion.css: {}
   js:
     js/dpl_accordion.js: {}
+dpl_onlytabs:
+  version: VERSION
+  css:
+    css/dpl_tabs.css: {}
+  js:
+    js/tabs.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.states
+    - core/drupal.ajax
+    - core/jquery.once

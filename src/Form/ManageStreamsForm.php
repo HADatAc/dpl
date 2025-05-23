@@ -122,6 +122,8 @@ class ManageStreamsForm extends FormBase {
       return;
     }
 
+    dpm($apiState, 'Debug API State', 'status', FALSE);
+
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());

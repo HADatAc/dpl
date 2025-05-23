@@ -90,6 +90,17 @@ dpl.execute_close_stream:
   options:
     no_cache: 'TRUE'
 
+dpl.mqtt_messages_form:
+  path: '/dpl/manage/messages/{streamuri}/{state}/{email}/{deploymenturi}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\MqttMessagesForm'
+    _title: 'View MQTT Messages'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
 # Deployment CRUD options
 
 dpl.add_deployment:

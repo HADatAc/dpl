@@ -211,7 +211,7 @@ class ManageStreamsForm extends FormBase {
               </ul>
           </div>
       </div>',
-  ];
+    ];
 
     $form['break_line'] = [
       '#type' => 'item',
@@ -310,6 +310,14 @@ class ManageStreamsForm extends FormBase {
         '#name' => 'modify_element',
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
+        ],
+      ];
+      $form['card']['card_body']['actions']['view_messages'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('View Messages'),
+        '#name' => 'view_messages',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'ms-1'],
         ],
       ];
     }
@@ -489,6 +497,25 @@ class ManageStreamsForm extends FormBase {
       }
     }
 
+    if ($button_name === 'view_messages') {
+      if (sizeof($rows) < 1) {
+        \Drupal::messenger()->addWarning(t("Select the exact stream to view messages."));
+      } elseif ((sizeof($rows) > 1)) {
+        \Drupal::messenger()->addWarning(t("No more than one stream can be viewed at once."));
+      } else {
+        $first = array_shift($rows);
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.mqtt_messages_form');
+        $url = Url::fromRoute('dpl.mqtt_messages_form', [
+          'streamuri' => base64_encode($first),
+          'state' => $apiState,
+          'email' => $this->getManagerEmail(),
+          'deploymenturi' => base64_encode($this->getDeployment()->uri),
+          'page' => $page,
+          'pagesize' => $pagesize,
+        ]);
+        $form_state->setRedirectUrl($url);
+      }
+    }
     // BACK TO LANDING PAGE
     if ($button_name === 'back') {
       $this->backUrl();

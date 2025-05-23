@@ -59,35 +59,32 @@ class MqttMessagesForm extends FormBase {
       '#markup' => "<p><strong>IP:</strong> $ip<br><strong>Port:</strong> $port<br><strong>Topic:</strong> $topic</p>",
     ];
 
-    // 2. Obter mensagens MQTT
-    $messages = $this->readMqttMessages($ip, $port, $topic);
+    $results = $this->readMqttMessages($ip, $port, $topic);
+    $debug_info = $results['debug'];
+    $messages = $results['messages'];
     $form_state->set('mqtt_messages', $messages);
-
+    
+    $output = '<div class="mqtt-messages">';
+    $output .= $debug_info;
+    
     if (empty($messages)) {
-        $output = '<em>No messages received.</em>';
+      $output .= '<em>No messages received.</em>';
     } else {
-        $output = '<div class="mqtt-messages">';
-        foreach ($messages as $msg) {
-          if (strpos($msg, '{') !== false) {
-            $json_part = substr($msg, strpos($msg, '{'));
-            $decoded = json_decode($json_part, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-              $output .= '<div class="mqtt-card" style="border:1px solid #ccc; margin-bottom:10px; padding:10px; border-radius:5px;">';
-              $output .= '<pre style="margin:0;"><strong>Tópico:</strong> ' . htmlspecialchars($topic) . '</pre>';
-              foreach ($decoded as $key => $value) {
-                $output .= '<div><strong>' . htmlspecialchars($key) . ':</strong> ' . htmlspecialchars((string) $value) . '</div>';
-              }
-              $output .= '</div>';
-            } else {
-              // fallback: não era JSON
-              $output .= '<div class="mqtt-raw">' . htmlspecialchars($msg) . '</div>';
-            }
-          } else {
-            $output .= '<div class="mqtt-raw">' . htmlspecialchars($msg) . '</div>';
+      foreach ($messages as $msg) {
+        $decoded = json_decode($msg, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $output .= '<div class="mqtt-card" style="border:1px solid #ccc; margin-bottom:10px; padding:10px; border-radius:5px;">';
+          $output .= '<pre style="margin:0;"><strong>Tópico:</strong> ' . htmlspecialchars($topic) . '</pre>';
+          foreach ($decoded as $key => $value) {
+            $output .= '<div><strong>' . htmlspecialchars($key) . ':</strong> ' . htmlspecialchars((string) $value) . '</div>';
           }
+          $output .= '</div>';
+        } else {
+          $output .= '<div class="mqtt-raw">' . htmlspecialchars($msg) . '</div>';
         }
-        $output .= '</div>';
+      }
     }
+    $output .= '</div>';
 
     $form['messages'] = [
       '#type' => 'markup',
@@ -130,22 +127,14 @@ class MqttMessagesForm extends FormBase {
     $debug_info .= "<strong>Output bruto:</strong>\n" . htmlspecialchars($output) . "</pre>";
   
     if (empty(trim($output))) {
-      return [$debug_info . '<em>Sem mensagens (output vazio).</em>'];
-    }
-  
-    // Extrair JSONs: encontra padrões como { ... }
-    preg_match_all('/\{.*?\}/s', $output, $matches);
-
-    if (empty($matches[0])) {
-    return [$debug_info . '<em>Nenhuma mensagem JSON encontrada.</em>'];
-    }
-
-    // Adiciona debug + mensagens JSON brutas
-    $messages = array_map('trim', $matches[0]);
-    array_unshift($messages, $debug_info);
-
-  
-    array_unshift($messages, $debug_info);
-    return $messages;
+        return ['debug' => $debug_info, 'messages' => []];
+      }
+    
+      preg_match_all('/\{.*?\}/s', $output, $matches);
+    
+      return [
+        'debug' => $debug_info,
+        'messages' => $matches[0] ?? []
+      ];
   }
 }

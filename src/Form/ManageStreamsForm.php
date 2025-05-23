@@ -505,12 +505,17 @@ class ManageStreamsForm extends FormBase {
       } else {
         $first = array_shift($rows);
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.mqtt_messages_form');
+
+        $state = rawurlencode('http://hadatac.org/ont/hasco/Active');
+        $email = $this->getManagerEmail();
+        $deploymenturi = rawurlencode($this->getDeployment()->uri);
+
         $url = Url::fromRoute('dpl.mqtt_messages_form');
         $url->setRouteParameter('streamuri', base64_encode($first));
-        $url->setRouteParameter('state', 'active');
-        $url->setRouteParameter('email' , $this->getManagerEmail());
-        $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
-        $url->setRouteParameter('page', '1');
+        $url->setRouteParameter('state', $state);
+        $url->setRouteParameter('email' , $email);
+        $url->setRouteParameter('deploymenturi', $deploymenturi);
+        $url->setRouteParameter('page', '0');
         $url->setRouteParameter('pagesize', $this->getPageSize());
         $form_state->setRedirectUrl($url);
       }

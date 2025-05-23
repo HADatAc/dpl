@@ -103,10 +103,14 @@ class MqttMessagesForm extends FormBase {
   }
 
   private function readMqttMessages($ip, $port, $topic) {
-    $cmd = "tmux capture-pane -pt mqtt -S -100 -e 2>&1";
-    $output = shell_exec($cmd);
+    $private_key = '/root/.ssh/graxiom_main.pem';
+    $ssh_user = 'ubuntu';
+    $remote_cmd = 'tmux capture-pane -pt mqtt -S -100 -e';
+    $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
   
-    $debug_info = "<pre><strong>Comando executado:</strong> $cmd\n\n";
+    $output = shell_exec($ssh_cmd);
+  
+    $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
     $debug_info .= "<strong>Output bruto:</strong>\n" . htmlspecialchars($output) . "</pre>";
   
     if (empty(trim($output))) {
@@ -118,7 +122,7 @@ class MqttMessagesForm extends FormBase {
   
     foreach ($lines as $line) {
       if (strpos($line, $topic) !== false) {
-        $messages[] = htmlspecialchars($line);
+        $messages[] = $line;
       }
     }
   
@@ -126,10 +130,7 @@ class MqttMessagesForm extends FormBase {
       return [$debug_info . '<em>Nenhuma mensagem com o tópico encontrado.</em>'];
     }
   
-    array_unshift($messages, $debug_info); // Adiciona o debug no topo
-  
+    array_unshift($messages, $debug_info);
     return $messages;
   }
-  
-  
 }

@@ -133,18 +133,17 @@ class MqttMessagesForm extends FormBase {
       return [$debug_info . '<em>Sem mensagens (output vazio).</em>'];
     }
   
-    $lines = explode("\n", trim($output));
-    $messages = [];
-  
-    foreach ($lines as $line) {
-      if (strpos($line, $topic) !== false) {
-        $messages[] = $line;
-      }
+    // Extrair JSONs: encontra padrões como { ... }
+    preg_match_all('/\{.*?\}/s', $output, $matches);
+
+    if (empty($matches[0])) {
+    return [$debug_info . '<em>Nenhuma mensagem JSON encontrada.</em>'];
     }
-  
-    if (empty($messages)) {
-      return [$debug_info . '<em>Nenhuma mensagem com o tópico encontrado.</em>'];
-    }
+
+    // Adiciona debug + mensagens JSON brutas
+    $messages = array_map('trim', $matches[0]);
+    array_unshift($messages, $debug_info);
+
   
     array_unshift($messages, $debug_info);
     return $messages;

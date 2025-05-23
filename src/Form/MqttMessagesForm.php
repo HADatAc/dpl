@@ -64,13 +64,29 @@ class MqttMessagesForm extends FormBase {
     $form_state->set('mqtt_messages', $messages);
 
     if (empty($messages)) {
-      $output = '<em>No messages received.</em>';
+        $output = '<em>No messages received.</em>';
     } else {
-      $output = '<ul>';
-      foreach ($messages as $msg) {
-        $output .= '<li>' . htmlspecialchars($msg) . '</li>';
-      }
-      $output .= '</ul>';
+        $output = '<div class="mqtt-messages">';
+        foreach ($messages as $msg) {
+          if (strpos($msg, '{') !== false) {
+            $json_part = substr($msg, strpos($msg, '{'));
+            $decoded = json_decode($json_part, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+              $output .= '<div class="mqtt-card" style="border:1px solid #ccc; margin-bottom:10px; padding:10px; border-radius:5px;">';
+              $output .= '<pre style="margin:0;"><strong>Tópico:</strong> ' . htmlspecialchars($topic) . '</pre>';
+              foreach ($decoded as $key => $value) {
+                $output .= '<div><strong>' . htmlspecialchars($key) . ':</strong> ' . htmlspecialchars((string) $value) . '</div>';
+              }
+              $output .= '</div>';
+            } else {
+              // fallback: não era JSON
+              $output .= '<div class="mqtt-raw">' . htmlspecialchars($msg) . '</div>';
+            }
+          } else {
+            $output .= '<div class="mqtt-raw">' . htmlspecialchars($msg) . '</div>';
+          }
+        }
+        $output .= '</div>';
     }
 
     $form['messages'] = [

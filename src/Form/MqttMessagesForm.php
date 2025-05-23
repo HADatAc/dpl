@@ -27,25 +27,24 @@ class MqttMessagesForm extends FormBase {
     $deployment_uri = base64_decode($deploymenturi);
   
     $streams = ListStreamStateByDeploymentPage::exec($state, $email, $deployment_uri, $page, $pagesize);
-  
+
+    if (empty($streams) || !is_iterable($streams)) {
+        \Drupal::messenger()->addError($this->t("No streams found (or error fetching from API)."));
+        \Drupal::logger('mqtt')->error('Streams list is null or not iterable. Input: state=@state, email=@email, deployment_uri=@uri, page=@page, pagesize=@pagesize', [
+          '@state' => $state,
+          '@email' => $email,
+          '@uri' => $deployment_uri,
+          '@page' => $page,
+          '@pagesize' => $pagesize,
+        ]);
+        return $form;
+    }
     $stream = NULL;
     foreach ($streams as $s) {
-        \Drupal::logger('mqtt')->debug('Loop URI: @loop_uri | Length: @len1 | Hex: @hex1', [
-            '@loop_uri' => $s->uri,
-            '@len1' => strlen($s->uri),
-            '@hex1' => bin2hex($s->uri),
-        ]);
-          
-        \Drupal::logger('mqtt')->debug('Decoded URI: @decoded_uri | Length: @len2 | Hex: @hex2', [
-            '@decoded_uri' => $stream_uri,
-            '@len2' => strlen($stream_uri),
-            '@hex2' => bin2hex($stream_uri),
-        ]);
-        
-        if ($s->uri == $stream_uri) {
-            $stream = $s;
-            break;
-        }
+      if ($s->uri == $stream_uri) {
+        $stream = $s;
+        break;
+      }
     }
   
     if (!$stream) {

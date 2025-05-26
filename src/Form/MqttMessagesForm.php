@@ -65,7 +65,7 @@ class MqttMessagesForm extends FormBase {
     $form_state->set('mqtt_messages', $messages);
     
     $output = '<div class="mqtt-messages">';
-    // $output .= $debug_info;
+    $output .= $debug_info;
     
     if (empty($messages)) {
       $output .= '<em>No messages received.</em>';
@@ -135,7 +135,7 @@ class MqttMessagesForm extends FormBase {
     $output = shell_exec($ssh_cmd);
   
     $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
-    $debug_info .= "<strong>Output bruto:</strong>\n" . htmlspecialchars($output) . "</pre>";
+    //$debug_info .= "<strong>Output bruto:</strong>\n" . htmlspecialchars($output) . "</pre>";
   
     if (empty(trim($output))) {
         return ['debug' => $debug_info, 'messages' => []];

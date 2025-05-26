@@ -371,6 +371,7 @@ class AddStreamForm extends FormBase {
       'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
       'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
       'hasSIRManagerEmail'        => $email,
+      'hasStreamStatus'           => HASCO::DRAFT,
     ];
 
     if ($method === 'files') {

@@ -301,10 +301,12 @@ class ExecuteCloseStreamForm extends FormBase {
 
       if ($this->getMode() === 'execute') {
         $clone['startedAt']       = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']  = HASCO::ACTIVE;
       }
       elseif ($this->getMode() === 'close') {
         $clone['startedAt']       = $orig->startedAt;
         $clone['endedAt']         = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']  = HASCO::CLOSED;
       }
 
       $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);

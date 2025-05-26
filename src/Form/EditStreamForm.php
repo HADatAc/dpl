@@ -352,6 +352,7 @@ class EditStreamForm extends FormBase {
       'canUpdate'                 => [$email],
       'designedAt'                => $this->stream->designedAt,
       'hasSIRManagerEmail'        => $email,
+      'hasStreamStatus'           => $this->stream->hasStreamStatus,
     ];
 
     if ($form_state->getValue('stream_method') === 'files') {

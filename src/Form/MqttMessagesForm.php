@@ -142,10 +142,11 @@ class MqttMessagesForm extends FormBase {
       }
     
       preg_match_all('/\{.*?\}/s', $output, $matches);
-      $messages = array_slice($matches[0] ?? [], 0, 2);
+      $all_messages = $matches[0] ?? [];
+      $latest_two = array_slice($all_messages, -2); 
       return [
         'debug' => $debug_info,
-        'messages' => $messages
+        'messages' => $latest_two,
       ];
   }
 }

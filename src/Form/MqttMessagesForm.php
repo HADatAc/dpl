@@ -65,7 +65,7 @@ class MqttMessagesForm extends FormBase {
     $form_state->set('mqtt_messages', $messages);
     
     $output = '<div class="mqtt-messages">';
-    $output .= $debug_info;
+    // $output .= $debug_info;
     
     if (empty($messages)) {
       $output .= '<em>No messages received.</em>';

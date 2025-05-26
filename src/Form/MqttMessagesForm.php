@@ -90,8 +90,19 @@ class MqttMessagesForm extends FormBase {
       '#type' => 'markup',
       '#markup' => "<h3>MQTT Messages</h3>$output",
     ];
+    
+    $form['#attached']['html_head'][] = [
+      [
+        '#tag' => 'script',
+        '#value' => "
+          setTimeout(function() {
+            location.reload();
+          }, 20000); // 20 segundos = 20000 ms
+        ",
+      ],
+      'mqtt_auto_refresh',
+    ];
 
-    // 3. Botão para guardar (opcional)
     $form['save'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save Raw Messages'),
@@ -118,7 +129,7 @@ class MqttMessagesForm extends FormBase {
   private function readMqttMessages($ip, $port, $topic) {
     $private_key = '/var/www/.ssh/graxiom_main.pem';
     $ssh_user = 'ubuntu';
-    $remote_cmd = 'tmux capture-pane -pt mqtt -S -100 -e';
+    $remote_cmd = 'tmux capture-pane -pt mqtt -S -2 -e';
     $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
   
     $output = shell_exec($ssh_cmd);
@@ -134,7 +145,7 @@ class MqttMessagesForm extends FormBase {
     
       return [
         'debug' => $debug_info,
-        'messages' => $matches[0] ?? []
+        'messages' => $matches[0] ?? [], 0, 2
       ];
   }
 }

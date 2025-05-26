@@ -129,7 +129,7 @@ class MqttMessagesForm extends FormBase {
   private function readMqttMessages($ip, $port, $topic) {
     $private_key = '/var/www/.ssh/graxiom_main.pem';
     $ssh_user = 'ubuntu';
-    $remote_cmd = 'tmux capture-pane -pt mqtt -S -2 -e';
+    $remote_cmd = 'tmux capture-pane -pt mqtt -S -0 -e';
     $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
   
     $output = shell_exec($ssh_cmd);

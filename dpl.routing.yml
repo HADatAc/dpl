@@ -294,3 +294,13 @@ dpl.stream_stop:
     _title: 'Stream Stop'
   requirements:
     _permission: 'access content'
+
+
+dpl.stream_data_ajax:
+  path: '/dpl/stream-data-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\JsonDataController::streamDataAjax'
+  requirements:
+    _permission: 'access content'
+
+# similarly for play, pause, stop...

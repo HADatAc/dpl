@@ -25,3 +25,11 @@ dpl_onlytabs:
     - core/drupal.states
     - core/drupal.ajax
     - core/jquery.once
+
+stream_selection:
+  version: 1.0
+  js:
+    js/stream_selection.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal

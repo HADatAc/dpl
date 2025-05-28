@@ -271,35 +271,11 @@ dpl.stream_record:
   requirements:
     _permission: 'access content'
 
-dpl.stream_play:
-  path: '/dpl/stream/{streamUri}'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamPlay'
-    _title: 'Stream Play'
-  requirements:
-    _permission: 'access content'
-
-dpl.stream_pause:
-  path: '/dpl/stream/{streamUri}'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamPause'
-    _title: 'Stream Pause'
-  requirements:
-    _permission: 'access content'
-
 dpl.stream_stop:
   path: '/dpl/stream/{streamUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamStop'
     _title: 'Stream Stop'
-  requirements:
-    _permission: 'access content'
-
-
-dpl.stream_data_ajax:
-  path: '/dpl/stream-data-ajax'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\JsonDataController::streamDataAjax'
   requirements:
     _permission: 'access content'
 

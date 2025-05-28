@@ -320,6 +320,22 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'ms-1'],
         ],
       ];
+      $form['card']['card_body']['actions']['record_messages'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Record'),
+        '#name' => 'record_messages',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'ms-1'],
+        ],
+      ];
+      $form['card']['card_body']['actions']['stop_record_messages'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Stop Record'),
+        '#name' => 'stop_record_messages',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'ms-1'],
+        ],
+      ];
     }
     $form['card']['card_body']['element_table'] = [
       '#type' => 'tableselect',
@@ -518,6 +534,39 @@ class ManageStreamsForm extends FormBase {
         $url->setRouteParameter('page', '0');
         $url->setRouteParameter('pagesize', $this->getPageSize());
         $form_state->setRedirectUrl($url);
+      }
+    }
+
+    if ($button_name === 'record_messages') {
+      if (sizeof($rows) < 1) {
+        \Drupal::messenger()->addWarning(t("Select the exact stream to record messages."));
+      } elseif ((sizeof($rows) > 1)) {
+        \Drupal::messenger()->addWarning(t("No more than one stream can be recorded at once."));
+      } else {
+        $first = array_shift($rows);
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.mqtt_messages_record_form');
+
+        $state = base64_encode('http://hadatac.org/ont/hasco/Active');
+        $email = $this->getManagerEmail();
+        $deploymenturi = base64_encode($this->getDeployment()->uri);
+
+        $url = Url::fromRoute('dpl.mqtt_messages_record_form');
+        $url->setRouteParameter('streamuri', base64_encode($first));
+        $url->setRouteParameter('state', $state);
+        $url->setRouteParameter('email' , $email);
+        $url->setRouteParameter('deploymenturi', $deploymenturi);
+        $url->setRouteParameter('page', '0');
+        $url->setRouteParameter('pagesize', $this->getPageSize());
+        $form_state->setRedirectUrl($url);
+      }
+    }
+    if ($button_name === 'stop_record_messages') {
+      if (sizeof($rows) < 1) {
+        \Drupal::messenger()->addWarning(t("Select the exact stream to stop record messages."));
+      } elseif ((sizeof($rows) > 1)) {
+        \Drupal::messenger()->addWarning(t("No more than one stream can be stoped to record at once."));
+      } else {
+
       }
     }
     // BACK TO LANDING PAGE

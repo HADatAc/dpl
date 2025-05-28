@@ -101,6 +101,25 @@ dpl.mqtt_messages_form:
   options:
     no_cache: 'TRUE'
 
+dpl.mqtt_messages_record_form:
+  path: '/dpl/manage/messages/{streamuri}/{state}/{email}/{deploymenturi}/{page}/{pagesize}'
+  defaults:
+    _form: '\Drupal\dpl\Form\MqttMessagesRecordForm'
+    _title: 'Record MQTT Messages'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+    
+dpl.mqtt_record_ajax:
+  path: '/dpl/mqtt/record/ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\MqttMessageAjaxController::recordMessageAjax'
+    _title: 'MQTT Record AJAX'
+  requirements:
+    _permission: 'access content'
+
 # Deployment CRUD options
 
 dpl.add_deployment:

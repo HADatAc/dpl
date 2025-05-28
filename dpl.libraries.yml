@@ -14,3 +14,11 @@ dpl_accordion:
       css/dpl_accordion.css: {}
   js:
     js/dpl_accordion.js: {}
+    
+mqtt_polling:
+  version: 1.x
+  js:
+    js/mqtt_polling.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings

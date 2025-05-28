@@ -58,4 +58,7 @@ class MqttMessagesRecordForm extends FormBase {
 
     return $form;
   }
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    \Drupal::messenger()->addWarning($this->t('Message to save.'));
+  }
 }

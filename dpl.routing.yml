@@ -279,4 +279,20 @@ dpl.stream_stop:
   requirements:
     _permission: 'access content'
 
+dpl.file_ingest_ajax:
+  path: '/dpl/file-ingest-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::fileIngestAjax'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+dpl.file_uningest_ajax:
+  path: '/dpl/file-uningest-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::fileUningestAjax'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
 # similarly for play, pause, stop...

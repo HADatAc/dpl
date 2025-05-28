@@ -102,7 +102,7 @@ dpl.mqtt_messages_form:
     no_cache: 'TRUE'
 
 dpl.mqtt_messages_record_form:
-  path: '/dpl/manage/messages/{streamuri}/{state}/{email}/{deploymenturi}/{page}/{pagesize}'
+  path: '/dpl/manage/messages/record/{streamuri}/{state}/{email}/{deploymenturi}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\MqttMessagesRecordForm'
     _title: 'Record MQTT Messages'
@@ -111,7 +111,7 @@ dpl.mqtt_messages_record_form:
     _custom_access_check: 'TRUE'
   options:
     no_cache: 'TRUE'
-    
+
 dpl.mqtt_record_ajax:
   path: '/dpl/mqtt/record/ajax'
   defaults:

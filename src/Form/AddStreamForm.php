@@ -6,10 +6,17 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
 
+/**
+ * Form AddStreamForm.
+ *
+ * Provides a form to create a Stream entity with two dynamic tabs:
+ * - File‐Method Properties (only when method = 'files')
+ * - Message‐Method Properties (only when method = 'messages')
+ * Uses server-side #access to conditionally render tabs.
+ */
 class AddStreamForm extends FormBase {
 
   /**
@@ -19,285 +26,409 @@ class AddStreamForm extends FormBase {
     return 'add_stream_form';
   }
 
+  /**
+   * Deployment object retrieved from API.
+   *
+   * @var object
+   */
   protected $deployment;
 
+  /**
+   * Getter for deployment.
+   *
+   * @return object
+   */
   public function getDeployment() {
     return $this->deployment;
   }
+
+  /**
+   * Setter for deployment.
+   *
+   * @param object $deployment
+   *   Deployment data returned from the API.
+   */
   public function setDeployment($deployment) {
-    return $this->deployment = $deployment;
+    $this->deployment = $deployment;
   }
 
   /**
    * {@inheritdoc}
+   *
+   * Build the form with three tabs:
+   * - Basic Properties: always visible
+   * - File-Method Properties: visible when method = 'files'
+   * - Message-Method Properties: visible when method = 'messages'
+   *
+   * Uses #ajax to rebuild on method change and #access to include/exclude tabs.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi=NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi = NULL) {
+    // Attach libraries for custom tabs and Drupal States.
+    $form['#attached']['library'][] = 'dpl/dpl_onlytabs';
+    $form['#attached']['library'][] = 'core/drupal.states';
+    $form['#attached']['library'][] = 'core/jquery.once';
 
-    $form['#attached']['library'][] = 'dpl/dpl_tabs';
-
-    // RETRIEVE DEPLOYMENT
+    // Load deployment via API.
     $api = \Drupal::service('rep.api_connector');
-    $uri_decode=base64_decode($deploymenturi);
-    $rawresponse = $api->getUri($uri_decode);
-    $obj = json_decode($rawresponse);
-    if ($obj->isSuccessful) {
-      $this->setDeployment($obj->body);
-    } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve Deployment."));
-      self::backUrl();
-      return;
+    $decoded = base64_decode($deploymenturi);
+    $response = json_decode($api->getUri($decoded));
+    if (empty($response->isSuccessful)) {
+      \Drupal::messenger()->addError($this->t('Failed to retrieve Deployment.'));
+      $this->backUrl();
+      return [];
     }
+    $this->setDeployment($response->body);
 
-    $deploymentLabel = ' ';
-    if (($this->getDeployment() != NULL) &&
-        isset($this->getDeployment()->uri) &&
-        isset($this->getDeployment()->label)) {
+    // Prepare deployment autocomplete label.
+    $deploymentLabel = '';
+    if (isset($this->deployment->uri, $this->deployment->label)) {
       $deploymentLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->uri,
-        $this->getDeployment()->label
+        $this->deployment->uri,
+        $this->deployment->label
       );
     }
 
-    // Add tabs to the form.
+    // Determine selected method or default to 'files'.
+    $method = $form_state->getValue('stream_method', 'files');
+
+    // AJAX wrapper for tabs.
     $form['tabs'] = [
       '#type' => 'container',
+      '#prefix' => '<div id="method-properties-wrapper">',
+      '#suffix' => '</div>',
       '#attributes' => ['class' => ['tabs']],
     ];
 
-    // Add the tab links.
+    // Build tab links.
     $form['tabs']['tab_links'] = [
-      '#type' => 'markup',
-      '#markup' => '<ul class="nav nav-tabs">
-        <li class="nav-item"><a class="nav-link active" href="#edit-tab1">Basic Properties</a></li>
-        <li class="nav-item"><a class="nav-link" href="#edit-tab2">File-Method Properties</a></li>
-        <li class="nav-item"><a class="nav-link" href="#edit-tab3">Message-Method Properties</a></li>
-      </ul>',
+      '#type' => 'container',
+      '#attributes' => ['class' => ['nav', 'nav-tabs']],
     ];
 
-    // Tab content container.
+    // Tab 1: Basic Properties link (always rendered).
+    $form['tabs']['tab_links']['basic'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'li',
+      '#attributes' => ['class' => ['nav-item']],
+      '#value' => '<a class="nav-link active" data-toggle="tab" href="#edit-tab1">'
+        . $this->t('Basic Properties') .
+        '</a>',
+    ];
+
+    // Tab 2: File-Method Properties link (render only if method = files).
+    $form['tabs']['tab_links']['file'] = [
+      '#type'   => 'html_tag',
+      '#tag'    => 'li',
+      '#access' => ($method === 'files'),
+      '#attributes' => ['class' => ['nav-item']],
+      '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab2">'
+        . $this->t('File-Method Properties') .
+        '</a>',
+    ];
+
+    // Tab 3: Message-Method Properties link (render only if method = messages).
+    $form['tabs']['tab_links']['message'] = [
+      '#type'   => 'html_tag',
+      '#tag'    => 'li',
+      '#access' => ($method === 'messages'),
+      '#attributes' => ['class' => ['nav-item']],
+      '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab3">'
+        . $this->t('Message-Method Properties') .
+        '</a>',
+    ];
+
+    // Build tab content container.
     $form['tabs']['tab_content'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['tab-content']],
     ];
 
-    // Add content for Tab 1.
+    //
+    // TAB 1 CONTENT: Basic Properties (always rendered and always active).
+    //
     $form['tabs']['tab_content']['tab1'] = [
       '#type' => 'container',
-      '#attributes' => ['class' => ['tab-pane', 'active']],
+      '#attributes' => [
+        'class' => ['tab-pane', 'active', 'p-3', 'border', 'border-light'],
+        'id'    => 'edit-tab1',
+      ],
     ];
-
+    // Deployment field (autocomplete, disabled).
     $form['tabs']['tab_content']['tab1']['stream_deployment'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Deployment'),
       '#default_value' => $deploymentLabel,
-      '#required' => TRUE,
       '#disabled' => TRUE,
+      '#required' => TRUE,
     ];
+    // Method select triggers AJAX rebuild.
     $form['tabs']['tab_content']['tab1']['stream_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Method'),
-      '#required' => TRUE,
       '#options' => [
-        'files' => $this->t('Files'),
+        'files'    => $this->t('Files'),
         'messages' => $this->t('Messages'),
       ],
-      '#default_value' => 'files',
+      '#default_value' => $method,
+      '#required' => TRUE,
+      '#ajax' => [
+        'callback' => '::updateMethodProperties',
+        'event'    => 'change',
+        'wrapper'  => 'method-properties-wrapper',
+      ],
     ];
+    // Permission select.
     $form['tabs']['tab_content']['tab1']['permission_uri'] = [
       '#type' => 'select',
       '#title' => $this->t('Permission'),
-      '#required' => TRUE,
       '#options' => [
-        HASCO::PUBLIC => $this->t('Public'),
+        HASCO::PUBLIC  => $this->t('Public'),
         HASCO::PRIVATE => $this->t('Private'),
       ],
       '#default_value' => HASCO::PUBLIC,
+      '#required' => TRUE,
     ];
+    // Study and SDD autocompletes.
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Study'),
       '#autocomplete_route_name' => 'std.study_autocomplete',
-      //'#required' => TRUE,
     ];
     $form['tabs']['tab_content']['tab1']['stream_semanticdatadictionary'] = [
       '#type' => 'textfield',
       '#title' => $this->t('SDD'),
       '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
-      //'#required' => TRUE,
     ];
+    // Version (fixed) and Description.
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
       '#value' => 1,
-      '#disabled' => true
+      '#disabled' => TRUE,
     ];
     $form['tabs']['tab_content']['tab1']['stream_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
     ];
 
-    // Add content for Tab 2.
+    //
+    // TAB 2 CONTENT: File-Method Properties (render only if method = files).
+    //
     $form['tabs']['tab_content']['tab2'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['tab-pane']],
+      '#type'   => 'container',
+      '#access' => ($method === 'files'),
+      '#attributes' => [
+        'class' => ['tab-pane', 'p-3', 'border', 'border-light'],
+        'id'    => 'edit-tab2',
+      ],
     ];
-
+    // Datafile Pattern.
     $form['tabs']['tab_content']['tab2']['stream_datafile_pattern'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Datafile Pattern'),
+      '#required' => ($method === 'files'),
     ];
+    // Cell Scope URI.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_uri'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Cell Scope URI'),
+      '#required' => ($method === 'files'),
     ];
+    // Cell Scope Name.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_name'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Cell Scope Name'),
+      '#required' => ($method === 'files'),
     ];
 
-    // Add content for Tab 3.
+    //
+    // TAB 3 CONTENT: Message-Method Properties (render only if method = messages).
+    //
     $form['tabs']['tab_content']['tab3'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['tab-pane']],
+      '#type'   => 'container',
+      '#access' => ($method === 'messages'),
+      '#attributes' => [
+        'class' => ['tab-pane', 'p-3', 'border', 'border-light'],
+        'id'    => 'edit-tab3',
+      ],
     ];
-
+    // Protocol select.
     $form['tabs']['tab_content']['tab3']['stream_protocol'] = [
       '#type' => 'select',
       '#title' => $this->t('Protocol'),
-      '#required' => TRUE,
-      '#options' => [
-        'MQTT' => $this->t('MQTT'),
-        'HTML' => $this->t('HTML'),
-        'ROS' => $this->t('ROS'),
-      ],
+      '#options' => ['MQTT' => 'MQTT', 'HTML' => 'HTML', 'ROS' => 'ROS'],
       '#default_value' => 'MQTT',
+      '#required' => ($method === 'messages'),
     ];
-    $form['tabs']['tab_content']['tab3']['stream_ip'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('IP'),
-    ];
-    $form['tabs']['tab_content']['tab3']['stream_port'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Port'),
-    ];
+    // IP, Port, Header, Archive ID.
+    foreach ([
+      'stream_ip'         => $this->t('IP'),
+      'stream_port'       => $this->t('Port'),
+      // 'stream_header'     => $this->t('Header'),
+      'stream_archive_id' => $this->t('Archive ID'),
+    ] as $field => $label) {
+      $form['tabs']['tab_content']['tab3'][$field] = [
+        '#type' => 'textfield',
+        '#title' => $label,
+        '#required' => ($method === 'messages'),
+      ];
+    }
+
+    // Header
     $form['tabs']['tab_content']['tab3']['stream_header'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Header'),
-    ];
-    $form['tabs']['tab_content']['tab3']['stream_archive_id'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Archive ID'),
+      // '#required' => ($method === 'messages'),
     ];
 
+    // Action buttons.
     $form['save_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
-      '#name' => 'save',
-      '#attributes' => [
-        'class' => ['btn', 'btn-primary', 'save-button'],
-      ],
+      '#attributes' => ['class' => ['btn', 'btn-primary', 'save-button']],
     ];
     $form['cancel_submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
-      '#name' => 'back',
-      '#attributes' => [
-        'class' => ['btn', 'btn-danger', 'back-button'],
-      ],
+      '#submit' => ['::backUrl'],
+      '#limit_validation_errors' => [],
+      '#attributes' => ['class' => ['btn', 'btn-danger', 'cancel-button']],
     ];
-    $form['bottom_space'] = [
+
+    $form['space_0'] = [
       '#type' => 'item',
-      '#title' => t('<br><br>'),
+      '#markup' => '<br><br>',
     ];
 
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   *
+   * Validate required fields based on selected method.
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $submitted_values = $form_state->cleanValues()->getValues();
-    $triggering_element = $form_state->getTriggeringElement();
-    $button_name = $triggering_element['#name'];
-
-    //if ($button_name != 'back') {
-    //  if(strlen($form_state->getValue('stream_name')) < 1) {
-    //    $form_state->setErrorByName('stream_name', $this->t('Please enter a valid name'));
-    //  }
-    //}
+    $method = $form_state->getValue('stream_method');
+    if ($method === 'files') {
+      foreach ([
+        'stream_datafile_pattern' => $this->t('Datafile Pattern'),
+        'stream_cell_scope_uri'   => $this->t('Cell Scope URI'),
+        'stream_cell_scope_name'  => $this->t('Cell Scope Name'),
+      ] as $key => $label) {
+        if (empty($form_state->getValue($key))) {
+          $form_state->setErrorByName($key, $this->t('@label is mandatory for Files method.', ['@label' => $label]));
+        }
+      }
+    }
+    elseif ($method === 'messages') {
+      foreach ([
+        'stream_protocol'    => $this->t('Protocol'),
+        'stream_ip'          => $this->t('IP'),
+        'stream_port'        => $this->t('Port'),
+        // 'stream_header'      => $this->t('Header'),
+        'stream_archive_id'  => $this->t('Archive ID'),
+      ] as $key => $label) {
+        if (empty($form_state->getValue($key))) {
+          $form_state->setErrorByName($key, $this->t('@label is mandatory for Messages method.', ['@label' => $label]));
+        }
+      }
+    }
   }
 
   /**
    * {@inheritdoc}
+   *
+   * Submit handler: processes Save or Cancel.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $submitted_values = $form_state->cleanValues()->getValues();
-    $triggering_element = $form_state->getTriggeringElement();
-    $button_name = $triggering_element['#name'];
-
-    if ($button_name === 'back') {
-      self::backUrl();
+    $trigger = $form_state->getTriggeringElement()['#name'];
+    $method = $form_state->getValue('stream_method');
+    if ($trigger === 'back') {
+      $this->backUrl();
       return;
     }
 
-    $dateTime = new \DateTime();
-    $formattedNow = $dateTime->format('Y-m-d\TH:i:s') . '.' . $dateTime->format('v') . $dateTime->format('O');
+    // Build payload.
+    $now = new \DateTime();
+    $timestamp = $now->format('Y-m-d\TH:i:s') . '.' . $now->format('v') . $now->format('O');
+    $deployment = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment'));
+    $email = \Drupal::currentUser()->getEmail();
+    $uri = Utils::uriGen('stream');
 
-    $deployment = '';
-    if ($form_state->getValue('stream_deployment') != NULL && $form_state->getValue('stream_deployment') != '') {
-      $deployment = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment'));
+    $stream = [
+      'uri'                       => $uri,
+      'typeUri'                   => HASCO::STREAM,
+      'hascoTypeUri'              => HASCO::STREAM,
+      'label'                     => 'Stream',
+      'method'                    => $form_state->getValue('stream_method'),
+      'permissionUri'             => $form_state->getValue('permission_uri'),
+      'deploymentUri'             => $deployment,
+      'hasVersion'                => $form_state->getValue('stream_version') ?? 1,
+      'comment'                   => $form_state->getValue('stream_description'),
+      'canUpdate'                 => [$email],
+      'designedAt'                => $timestamp,
+      'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
+      'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
+      'hasSIRManagerEmail'        => $email,
+      'hasStreamStatus'           => HASCO::DRAFT,
+    ];
+
+    if ($method === 'files') {
+      $stream['datasetPattern'] = $form_state->getValue('stream_datafile_pattern');
+      $stream['cellScopeUri']    = [$form_state->getValue('stream_cell_scope_uri')];
+      $stream['cellScopeName']   = [$form_state->getValue('stream_cell_scope_name')];
+      $stream['messageProtocol']  = '';
+      $stream['messageIP']        = '';
+      $stream['messagePort']      = '';
+      $stream['messageArchiveId'] = '';
+      // $stream['messageHeader']    = '';
+    }
+    else {
+      $stream['messageProtocol']   = $form_state->getValue('stream_protocol');
+      $stream['messageIP']         = $form_state->getValue('stream_ip');
+      $stream['messagePort']       = $form_state->getValue('stream_port');
+      $stream['messageArchiveId']  = $form_state->getValue('stream_archive_id');
+      // $stream['messageHeader']     = $form_state->getValue('stream_header');
+      $stream['datasetPattern']   = '';
+      $stream['cellScopeUri']      = [];
+      $stream['cellScopeName']     = [];
+      $stream['hasMessageStatus']  = HASCO::INACTIVE;
     }
 
-    $label = "Stream";
+    // dpm(json_encode($stream));return false;
 
-    try{
-      $useremail = \Drupal::currentUser()->getEmail();
-      $newStreamUri = Utils::uriGen('stream');
-      $streamJson = '{"uri":"'.$newStreamUri.'",'.
-        '"typeUri":"'.HASCO::STREAM.'",'.
-        '"hascoTypeUri":"'.HASCO::STREAM.'",'.
-        '"label":"'.$label.'",'.
-        '"method":"'.$form_state->getValue('stream_method').'",'.
-        '"permissionUri":"'.$form_state->getValue('permission_uri').'",'.
-        '"deploymentUri":"'.$deployment.'",'.
-        '"hasVersion":"'.($form_state->getValue('stream_version') ?? 1).'",'.
-        '"comment":"'.$form_state->getValue('stream_description').'",'.
-        '"messageProtocol":"'.$form_state->getValue('stream_protocol').'",'.
-        '"messageIP":"'.$form_state->getValue('stream_ip').'",'.
-        '"messagePort":"'.$form_state->getValue('stream_port').'",'.
-        '"messageArchiveId":"'.$form_state->getValue('stream_archive_id').'",'.
-        '"canUpdate":["'.$useremail.'"],'.
-        '"designedAt":"'.$formattedNow.'",'.
-        '"studyUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_study')).'",'.
-        '"semanticDataDictionaryUri":"'.Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')).'",'.
-        // '"hasStreamStatus":"' . HASCO::DRAFT.'",'.
-        '"hasSIRManagerEmail":"'.$useremail.'"}';
-
-      $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('stream',$streamJson);
-      \Drupal::messenger()->addMessage(t("Stream has been added successfully."));
-      self::backUrl();
-      return;
-    }catch(\Exception $e){
-      \Drupal::messenger()->addMessage(t("An error occurred while adding stream: ".$e->getMessage()));
-      self::backUrl();
-      return;
+    try {
+      \Drupal::service('rep.api_connector')->elementAdd('stream', json_encode($stream));
+      \Drupal::messenger()->addMessage($this->t('Stream has been added successfully.'));
     }
+    catch (\Exception $e) {
+      \Drupal::messenger()->addError($this->t('Error adding Stream: @msg', ['@msg' => $e->getMessage()]));
+    }
+
+    // Redirect back.
+    $this->backUrl();
   }
 
-  function backUrl() {
-    $route_name = 'dpl.manage_streams_route';
-    $route_params = [
-      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+  /**
+   * Redirect helper to the manage_streams_route.
+   */
+  public function backUrl() {
+    $params = [
+      'deploymenturi' => base64_encode($this->deployment->uri),
       'state'         => 'design',
       'page'          => '1',
       'pagesize'      => '10',
     ];
-    // cria a URL de rota já com parâmetros e converte em string
-    $url = Url::fromRoute($route_name, $route_params)->toString();
+    $url = Url::fromRoute('dpl.manage_streams_route', $params)->toString();
+    (new RedirectResponse($url))->send();
+  }
 
-    $response = new RedirectResponse($url);
-    $response->send();
-
-    return;
+  /**
+   * AJAX callback to rebuild the tabs container when method changes.
+   */
+  public function updateMethodProperties(array &$form, FormStateInterface $form_state) {
+    return $form['tabs'];
   }
 
 }

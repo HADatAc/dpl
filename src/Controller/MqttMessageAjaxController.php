@@ -12,6 +12,11 @@ use Drupal\Core\File\FileSystemInterface;
 class MqttMessageAjaxController extends ControllerBase {
 
   public function recordMessageAjax(Request $request) {
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
     $archive_id = $request->query->get('archive_id');
     $ip = $request->query->get('ip');
     $port = $request->query->get('port');
@@ -28,6 +33,12 @@ class MqttMessageAjaxController extends ControllerBase {
     preg_match_all('/\{.*?\}/s', $output, $matches);
     $messages = $matches[0] ?? [];
     $last_msg = end($messages);
+
+    if (isset($_SESSION['last_mqtt_message']) && $_SESSION['last_mqtt_message'] === $last_msg) {
+        return new JsonResponse(['status' => 'duplicate']);
+    }
+    
+    $_SESSION['last_mqtt_message'] = $last_msg;
 
     // Gravar no Excel (append)
     $directory = 'private://streams/messageFiles/';

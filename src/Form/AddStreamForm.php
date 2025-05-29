@@ -393,6 +393,7 @@ class AddStreamForm extends FormBase {
       $stream['datasetPattern']   = '';
       $stream['cellScopeUri']      = [];
       $stream['cellScopeName']     = [];
+      $stream['hasMessageStatus']  = HASCO::INACTIVE;
     }
 
     // dpm(json_encode($stream));return false;

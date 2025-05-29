@@ -149,8 +149,8 @@ class ManageDeploymentsForm extends FormBase {
 
     //dpm($this->getList());
 
-    $header = Deployment::generateHeaderState($apiState);
-    $output = Deployment::generateOutputState($apiState, $this->getList());
+    $header = Deployment::generateHeaderState($state);
+    $output = Deployment::generateOutputState($state, $this->getList());
 
     // PUT FORM TOGETHER
     $form['page_title'] = [
@@ -305,6 +305,7 @@ class ManageDeploymentsForm extends FormBase {
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
         ],
+        '#disabled' => true,
       ];
       $form['card']['card_body']['actions']['stream_selected'] = [
         '#type' => 'submit',

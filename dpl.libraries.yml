@@ -22,3 +22,15 @@ mqtt_polling:
   dependencies:
     - core/drupal
     - core/drupalSettings
+
+dpl_onlytabs:
+  version: VERSION
+  css:
+    css/dpl_tabs.css: {}
+  js:
+    js/tabs.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.states
+    - core/drupal.ajax
+    - core/jquery.once

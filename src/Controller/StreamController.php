@@ -6,17 +6,114 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\rep\Vocabulary\VSTOI;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\rep\Vocabulary\HASCO;
 
 class StreamController extends ControllerBase {
 
   use StringTranslationTrait;
 
+
   public function streamRecord($streamUri) {
     // Your logic to handle the stream record display.
+    // $payload = [
+    //   'uri'                       => $this->stream->uri,
+    //   'typeUri'                   => HASCO::STREAM,
+    //   'hascoTypeUri'              => HASCO::STREAM,
+    //   'label'                     => 'Stream',
+    //   'method'                    => $form_state->getValue('stream_method'),
+    //   'deploymentUri'             => $this->stream->deploymentUri,
+    //   'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
+    //   'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
+    //   'hasVersion'                => $form_state->getValue('stream_version') ?? $this->stream->hasVersion,
+    //   'comment'                   => $form_state->getValue('stream_description'),
+    //   'canUpdate'                 => [$email],
+    //   'designedAt'                => $this->stream->designedAt,
+    //   'hasSIRManagerEmail'        => $email,
+    //   'hasStreamStatus'           => $this->stream->hasStreamStatus,
+    // ];
+
+    // if ($form_state->getValue('stream_method') === 'files') {
+    //   $payload['datasetPattern'] = $form_state->getValue('stream_datafile_pattern');
+    //   $payload['cellScopeUri']    = [$form_state->getValue('stream_cell_scope_uri')];
+    //   $payload['cellScopeName']   = [$form_state->getValue('stream_cell_scope_name')];
+    //   $payload['messageProtocol']  = '';
+    //   $payload['messageIP']        = '';
+    //   $payload['messagePort']      = '';
+    //   $payload['messageArchiveId'] = '';
+    //   // $payload['messageHeader']    = '';
+    // }
+    // else {
+    //   $payload['messageProtocol']   = $form_state->getValue('stream_protocol');
+    //   $payload['messageIP']         = $form_state->getValue('stream_ip');
+    //   $payload['messagePort']       = $form_state->getValue('stream_port');
+    //   $payload['messageArchiveId']  = $form_state->getValue('stream_archive_id');
+    //   // $payload['messageHeader']     = $form_state->getValue('stream_header');
+    //   $payload['datasetPattern']   = '';
+    //   $payload['cellScopeUri']      = [];
+    //   $payload['cellScopeName']     = [];
+    //   $payload['hasMessageStatus']  = HASCO::RECORDING;
+    // }
+
+    // try {
+    //   $api = \Drupal::service('rep.api_connector');
+    //   // Delete and re-create to perform update.
+    //   $api->elementDel('stream', $this->stream->uri);
+    //   $api->elementAdd('stream', json_encode($payload));
+    //   \Drupal::messenger()->addMessage($this->t('Stream has been updated successfully.'));
+    // }
+    // catch (\Exception $e) {
+    //   \Drupal::messenger()->addError($this->t('An error occurred while updating the Stream: @msg', ['@msg' => $e->getMessage()]));
+    // }
   }
 
   public function streamSuspend($streamUri) {
     // Your logic to handle suspending the stream.
+    // Status do messageStream passa a Inactive
+    // Enviar para a API o ficheiro DA
+
+
+    // CRIAR E ENVIAR FICHEIRO DA NA API
+    //  Procura função processDAFile em JsonDataController.php (std)
+    // 3) Build JSON with json_encode (avoids precedence bugs in ??)
+    // $newDataFileUri = Utils::uriGen('datafile');
+    // $datafileArr = [
+    //     'uri'               => $newDataFileUri,
+    //     'typeUri'           => HASCO::DATAFILE,
+    //     'hascoTypeUri'      => HASCO::DATAFILE,
+    //     'label'             => $filename,
+    //     'filename'          => $filename,
+    //     'id'                => $fileId,
+    //     'studyUri'          => base64_decode($studyuri),
+    //     'streamUri'         => $streamUri,
+    //     'fileStatus'        => Constant::FILE_STATUS_UNPROCESSED,
+    //     'hasSIRManagerEmail'=> $useremail,
+    // ];
+    // $datafileJSON = json_encode($datafileArr);
+    // // \Drupal::logger('debug')->debug('DATAFILE JSON: @json', ['@json' => $datafileJSON]);
+
+    // // Mount the MT JSON
+    // $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
+    // $mtArr = [
+    //     'uri'             => $newMTUri,
+    //     'typeUri'         => HASCO::DATA_ACQUISITION,
+    //     'hascoTypeUri'    => HASCO::DATA_ACQUISITION,
+    //     'isMemberOfUri'   => base64_decode($studyuri),
+    //     'label'           => $filename,
+    //     'hasDataFileUri'  => $newDataFileUri,
+    //     'hasVersion'      => '',
+    //     'comment'         => '',
+    //     'hasSIRManagerEmail'=> $useremail,
+    // ];
+    // $mtJSON = json_encode($mtArr);
+    // // \Drupal::logger('debug')->debug('MT JSON: @json', ['@json' => $mtJSON]);
+
+    // // 4) Call API and log responses
+    // $msg1 = $api->parseObjectResponse($api->datafileAdd($datafileJSON), 'datafileAdd');
+    // // \Drupal::logger('debug')->debug('Response datafileAdd: @resp', [
+    // //     '@resp' => print_r($msg1, TRUE),
+    // // ]);
+
+    // $msg2 = $api->parseObjectResponse($api->elementAdd('da', $mtJSON), 'elementAdd');
   }
 
   public function streamIngest($streamUri) {

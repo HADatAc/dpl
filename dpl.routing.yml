@@ -271,14 +271,24 @@ dpl.stream_record:
   requirements:
     _permission: 'access content'
 
-dpl.stream_stop:
+# STREAM MESSAGES
+dpl.stream_suspend:
   path: '/dpl/stream/{streamUri}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamStop'
-    _title: 'Stream Stop'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamSuspend'
+    _title: 'Stream Suspend'
   requirements:
     _permission: 'access content'
 
+dpl.stream_ingest:
+  path: '/dpl/stream/{streamUri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
+    _title: 'Stream Ingest'
+  requirements:
+    _permission: 'access content'
+
+# STREAM FILES (and messages when applicable)
 dpl.file_ingest_ajax:
   path: '/dpl/file-ingest-ajax'
   defaults:
@@ -294,5 +304,3 @@ dpl.file_uningest_ajax:
   methods: [GET]
   requirements:
     _permission: 'access content'
-
-# similarly for play, pause, stop...

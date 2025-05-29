@@ -15,8 +15,12 @@ class StreamController extends ControllerBase {
     // Your logic to handle the stream record display.
   }
 
-  public function streamStop($streamUri) {
-    // Your logic to handle stopping the stream.
+  public function streamSuspend($streamUri) {
+    // Your logic to handle suspending the stream.
+  }
+
+  public function streamIngest($streamUri) {
+    // Your logic to handle ingesting the stream.
   }
 
   /**

@@ -374,6 +374,7 @@ class EditStreamForm extends FormBase {
       $payload['datasetPattern']   = '';
       $payload['cellScopeUri']      = [];
       $payload['cellScopeName']     = [];
+      $payload['hasMessageStatus']  = $this->stream->hasMessageStatus ?? HASCO::INACTIVE;
     }
 
     try {

@@ -12,7 +12,7 @@ class StreamController extends ControllerBase {
 
   use StringTranslationTrait;
 
-
+  
   public function streamRecord($streamUri) {
     // Your logic to handle the stream record display.
     // $payload = [
@@ -211,6 +211,30 @@ class StreamController extends ControllerBase {
       'status' => 'success',
       'message' => $this->t('The file was successfully submitted for uningestion.'),
     ]);
+  }
+
+  public static function readMessages($ip, $port, $topic) {
+    $private_key = '/var/www/.ssh/graxiom_main.pem';
+    $ssh_user = 'ubuntu';
+    $remote_cmd = 'tmux capture-pane -pt mqtt -S -1 -e';
+    $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
+
+    $output = shell_exec($ssh_cmd);
+
+    $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
+
+    if (empty(trim($output))) {
+      return ['debug' => $debug_info, 'messages' => []];
+    }
+
+    preg_match_all('/\{.*?\}/s', $output, $matches);
+    $all_messages = $matches[0] ?? [];
+    $latest_one = array_slice($all_messages, -1);
+
+    return [
+      'debug' => $debug_info,
+      'messages' => $latest_one,
+    ];
   }
 
 }

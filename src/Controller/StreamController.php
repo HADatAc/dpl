@@ -64,6 +64,7 @@ class StreamController extends ControllerBase {
     // catch (\Exception $e) {
     //   \Drupal::messenger()->addError($this->t('An error occurred while updating the Stream: @msg', ['@msg' => $e->getMessage()]));
     // }
+    return new Response('Página placeholder para streamRecord.');
   }
 
   public function streamSuspend($streamUri) {
@@ -114,10 +115,12 @@ class StreamController extends ControllerBase {
     // // ]);
 
     // $msg2 = $api->parseObjectResponse($api->elementAdd('da', $mtJSON), 'elementAdd');
+    return new Response('Página placeholder para streamSuspend.');
   }
 
   public function streamIngest($streamUri) {
     // Your logic to handle ingesting the stream.
+    return new Response('Página placeholder para streamIngest.');
   }
 
   /**

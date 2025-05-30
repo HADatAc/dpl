@@ -219,7 +219,7 @@ class StreamController extends ControllerBase {
   public static function readMessages($ip, $port, $topic) {
     $private_key = '/var/www/.ssh/graxiom_main.pem';
     $ssh_user = 'ubuntu';
-    $remote_cmd = 'tmux capture-pane -pt mqtt -S -1 -e';
+    $remote_cmd = 'tmux capture-pane -pt mqtt -S -2 -e';
     $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
 
     $output = shell_exec($ssh_cmd);
@@ -232,11 +232,11 @@ class StreamController extends ControllerBase {
 
     preg_match_all('/\{.*?\}/s', $output, $matches);
     $all_messages = $matches[0] ?? [];
-    $latest_one = array_slice($all_messages, -1);
+    $latest_two = array_slice($all_messages, -2);
 
     return [
       'debug' => $debug_info,
-      'messages' => $latest_one,
+      'messages' => $latest_two,
     ];
   }
 

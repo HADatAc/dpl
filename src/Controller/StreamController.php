@@ -213,7 +213,7 @@ class StreamController extends ControllerBase {
     ]);
   }
 
-  public function readMessages($ip, $port, $topic) {
+  public static function readMessages($ip, $port, $topic) {
     $private_key = '/var/www/.ssh/graxiom_main.pem';
     $ssh_user = 'ubuntu';
     $remote_cmd = 'tmux capture-pane -pt mqtt -S -1 -e';

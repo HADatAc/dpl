@@ -1,7 +1,8 @@
 dpl_tabs:
   version: VERSION
   css:
-    css/dpl_tabs.css: {}
+    component:
+      css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}
     js/dpl.js: {}

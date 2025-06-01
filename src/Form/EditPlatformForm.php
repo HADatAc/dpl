@@ -43,6 +43,10 @@ class EditPlatformForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $platformuri = NULL) {
+
+    $form['#attached']['library'][] = 'rep/rep_modal';
+    $form['#attached']['library'][] = 'core/drupal.dialog';
+
     $uri=$platformuri;
     $uri_decode=base64_decode($uri);
     $this->setPlatformUri($uri_decode);
@@ -59,6 +63,9 @@ class EditPlatformForm extends FormBase {
       return;
     }
 
+    // DEBBUG
+    // dpm($this->getPlatform(), 'Platform Object');
+
     $form['platform_type'] = [
       'top' => [
         '#type' => 'markup',
@@ -68,7 +75,7 @@ class EditPlatformForm extends FormBase {
         '#type' => 'textfield',
         '#title' => $this->t('Platform Type'),
         '#name' => 'platform_type',
-        '#default_value' => Utils::fieldToAutocomplete($this->getPlatform()->typeUri, $this->getPlatform()->label),
+        '#default_value' => Utils::fieldToAutocomplete($this->getPlatform()->superUri, $this->getPlatform()->label),
         '#id' => 'platform_type',
         '#parents' => ['platform_type'],
         '#attributes' => [

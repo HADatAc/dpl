@@ -172,8 +172,14 @@ class EditInstanceForm extends FormBase {
     ];
     if ($socialEnabled) {
       $api = \Drupal::service('rep.api_connector');
-      $ownerUri = $api->getUri($this->getElement()->hasOwnerUri);
-      $maintainerUri = $api->getUri($this->getElement()->hasMaintainerUri);
+      $ownerUri = '';
+      if (isset($this->getElement()->hasOwnerUri) && $this->getElement()->hasOwnerUri != NULL) {
+        $ownerUri = $api->getUri($this->getElement()->hasOwnerUri);
+      }
+      $maintainerUri = '';
+      if (isset($this->getElement()->hasMaintainerUri) && $this->getElement()->hasMaintainerUri != NULL) {
+        $maintainerUri = $api->getUri($this->getElement()->hasMaintainerUri);
+      }
       $form['instance_owner'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Owner'),

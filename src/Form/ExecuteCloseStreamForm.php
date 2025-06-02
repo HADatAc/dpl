@@ -318,7 +318,7 @@ class ExecuteCloseStreamForm extends FormBase {
       $api->elementAdd('stream', $streamJson);
 
       // RENAME to execute because new end-points are still not working
-      if ($this->getMode() === 'NEWexecute' && $this->getStream()->method === 'files') {
+      if ($this->getMode() === 'execute' && $this->getStream()->method === 'files') {
 
         $useremail = \Drupal::currentUser()->getEmail();
         $streamUri = $this->getStreamUri();
@@ -326,65 +326,60 @@ class ExecuteCloseStreamForm extends FormBase {
         $pattern   = $this->getStream()->datasetPattern;
 
         // 2.1) Get all Data Acquisitions (DAs) from the study:
-        $response = $api->getDataAcquisitionByStudy($studyUri);
-        $data = $api->parseObjectResponse($response, 'getDataAcquisitionByStudy');
-        // Assuming $data->body is an array of “DataAcquisition” objects
-        $allDAs = is_array($data->body) ? $data->body : [];
+        $allItems = $api->parseObjectResponse($api->getStudyDAsByStudy($studyUri, 99999, 0),'getStudyDAsByStudy');
 
-        foreach ($allDAs as $da) {
+        $unassociated = array_filter($allItems, function ($item) {
+          return empty($item->hasDataFile->streamUri);
+        });
+
+        foreach ($unassociated as $da) {
           // 2.2) Only interested in those whose streamUri is still empty/null:
-          if (empty($da->streamUri)) {
-            // 2.3) We need the filename: let's fetch the DataFile for this DA
-            $dfResponse = $api->getUri($da->hasDataFileUri);
-            $dfData = $api->parseObjectResponse($dfResponse, 'getUri');
-            $datafileObj = $dfData->body;
+          $filename = $da->hasDataFile->filename;
 
-            $filename = $datafileObj->filename;
-            // 2.4) If the filename matches (at the beginning) the datasetPattern, then recycle:
-            if (preg_match('/^' . $pattern . '/', $filename)) {
-              // Store some old values to copy
-              $oldDataFileUri = $da->hasDataFileUri;
-              $oldDAUri       = $da->uri;
-              $oldFileId      = $datafileObj->id;
+          // 2.4) If the filename matches (at the beginning) the datasetPattern, then recycle:
+          if (preg_match('/^' . $pattern . '/', $filename)) {
+            // Store some old values to copy
+            $oldDataFileUri = $da->hasDataFile->uri;
+            $oldDAUri       = $da->uri;
+            $oldFileId      = $da->hasDataFile->id;
 
-              // 2.5) Delete the original DA and DataFile:
-              $api->elementDel('da', $oldDAUri);
-              $api->elementDel('datafile', $oldDataFileUri);
+            // 2.5) Delete the original DA and DataFile:
+            $api->elementDel('da', $oldDAUri);
+            $api->elementDel('datafile', $oldDataFileUri);
 
-              // 2.6) Recreate a new DataFile with the same name and id, but linking to the current stream:
-              //     (this is exactly the snippet you already sent, just adapted for these variables):
-              $newDataFileUri = Utils::uriGen('datafile');
-              $datafileArr = [
-                'uri'                => $newDataFileUri,
-                'typeUri'            => HASCO::DATAFILE,
-                'hascoTypeUri'       => HASCO::DATAFILE,
-                'label'              => $filename,
-                'filename'           => $filename,
-                'id'                 => $oldFileId,
-                'studyUri'           => $studyUri,
-                'streamUri'          => $streamUri,
-                'fileStatus'         => Constant::FILE_STATUS_UNPROCESSED,
-                'hasSIRManagerEmail' => $useremail,
-              ];
-              $datafileJSON = json_encode($datafileArr);
-              $api->datafileAdd($datafileJSON);
+            // 2.6) Recreate a new DataFile with the same name and id, but linking to the current stream:
+            //     (this is exactly the snippet you already sent, just adapted for these variables):
+            $newDataFileUri = Utils::uriGen('datafile');
+            $datafileArr = [
+              'uri'                => $newDataFileUri,
+              'typeUri'            => HASCO::DATAFILE,
+              'hascoTypeUri'       => HASCO::DATAFILE,
+              'label'              => $filename,
+              'filename'           => $filename,
+              'id'                 => $oldFileId,
+              'studyUri'           => $studyUri,
+              'streamUri'          => $streamUri,
+              'fileStatus'         => Constant::FILE_STATUS_UNPROCESSED,
+              'hasSIRManagerEmail' => $useremail,
+            ];
+            $datafileJSON = json_encode($datafileArr);
+            $api->datafileAdd($datafileJSON);
 
-              // 2.7) Recreate the Data Acquisition (DA) pointing to the new DataFile:
-              $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
-              $mtArr = [
-                'uri'               => $newMTUri,
-                'typeUri'           => HASCO::DATA_ACQUISITION,
-                'hascoTypeUri'      => HASCO::DATA_ACQUISITION,
-                'isMemberOfUri'     => $studyUri,
-                'label'             => $filename,
-                'hasDataFileUri'    => $newDataFileUri,
-                'hasVersion'        => '',
-                'comment'           => '',
-                'hasSIRManagerEmail'=> $useremail,
-              ];
-              $mtJSON = json_encode($mtArr);
-              $api->elementAdd('da', $mtJSON);
-            }
+            // 2.7) Recreate the Data Acquisition (DA) pointing to the new DataFile:
+            $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
+            $mtArr = [
+              'uri'               => $newMTUri,
+              'typeUri'           => HASCO::DATA_ACQUISITION,
+              'hascoTypeUri'      => HASCO::DATA_ACQUISITION,
+              'isMemberOfUri'     => $studyUri,
+              'label'             => $filename,
+              'hasDataFileUri'    => $newDataFileUri,
+              'hasVersion'        => '',
+              'comment'           => '',
+              'hasSIRManagerEmail'=> $useremail,
+            ];
+            $mtJSON = json_encode($mtArr);
+            $api->elementAdd('da', $mtJSON);
           }
         }
       }

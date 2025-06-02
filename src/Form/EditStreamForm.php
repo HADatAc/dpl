@@ -240,14 +240,14 @@ class EditStreamForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Cell Scope URI'),
       '#default_value' => $this->stream->cellScopeUri ?? '',
-      '#required' => ($method === 'files'),
+      // '#required' => ($method === 'files'),
     ];
     // Cell Scope Name.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_name'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Cell Scope Name'),
       '#default_value' => $this->stream->cellScopeName ?? '',
-      '#required' => ($method === 'files'),
+      // '#required' => ($method === 'files'),
     ];
 
     //

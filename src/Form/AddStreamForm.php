@@ -232,13 +232,13 @@ class AddStreamForm extends FormBase {
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_uri'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Cell Scope URI'),
-      '#required' => ($method === 'files'),
+      // '#required' => ($method === 'files'),
     ];
     // Cell Scope Name.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_name'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Cell Scope Name'),
-      '#required' => ($method === 'files'),
+      // '#required' => ($method === 'files'),
     ];
 
     //
@@ -313,8 +313,8 @@ class AddStreamForm extends FormBase {
     if ($method === 'files') {
       foreach ([
         'stream_datafile_pattern' => $this->t('Datafile Pattern'),
-        'stream_cell_scope_uri'   => $this->t('Cell Scope URI'),
-        'stream_cell_scope_name'  => $this->t('Cell Scope Name'),
+        // 'stream_cell_scope_uri'   => $this->t('Cell Scope URI'),
+        // 'stream_cell_scope_name'  => $this->t('Cell Scope Name'),
       ] as $key => $label) {
         if (empty($form_state->getValue($key))) {
           $form_state->setErrorByName($key, $this->t('@label is mandatory for Files method.', ['@label' => $label]));

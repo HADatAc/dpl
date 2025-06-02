@@ -305,6 +305,8 @@ class StreamController extends ControllerBase {
     $output = shell_exec($ssh_cmd);
 
     $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
+    \Drupal::logger('stream_debug')->debug($ssh_cmd);
+
 
     if (empty(trim($output))) {
       return ['debug' => $debug_info, 'messages' => []];

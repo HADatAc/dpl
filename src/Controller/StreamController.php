@@ -6,66 +6,144 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\rep\Vocabulary\VSTOI;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\MessageCommand;
 use Drupal\rep\Vocabulary\HASCO;
 
 class StreamController extends ControllerBase {
 
   use StringTranslationTrait;
 
-  
+
   public function streamRecord($streamUri) {
-    // Your logic to handle the stream record display.
-    // $payload = [
-    //   'uri'                       => $this->stream->uri,
-    //   'typeUri'                   => HASCO::STREAM,
-    //   'hascoTypeUri'              => HASCO::STREAM,
-    //   'label'                     => 'Stream',
-    //   'method'                    => $form_state->getValue('stream_method'),
-    //   'deploymentUri'             => $this->stream->deploymentUri,
-    //   'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
-    //   'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
-    //   'hasVersion'                => $form_state->getValue('stream_version') ?? $this->stream->hasVersion,
-    //   'comment'                   => $form_state->getValue('stream_description'),
-    //   'canUpdate'                 => [$email],
-    //   'designedAt'                => $this->stream->designedAt,
-    //   'hasSIRManagerEmail'        => $email,
-    //   'hasStreamStatus'           => $this->stream->hasStreamStatus,
-    // ];
+    $response = new AjaxResponse();
+    $streamUri = base64_decode($streamUri);
+  
+    try {
+      $api = \Drupal::service('rep.api_connector');
+  
+      $stream = $api->parseObjectResponse(
+        $api->getUri($streamUri),
+        'getUri'
+      );
+  
+      if (!$stream) {
+        return $response->addCommand(new MessageCommand('Stream not found.', NULL, ['type' => 'error']));
+      }
+  
+      // Atualizar o estado da stream
+      $stream->hasMessageStatus = HASCO::RECORDING;
+  
+      // Reconstruir o payload com os dados existentes + atualização
+      $payload = [
+        'uri' => $stream->uri,
+        'typeUri' => HASCO::STREAM,
+        'hascoTypeUri' => HASCO::STREAM,
+        'label' => $stream->label ?? 'Stream',
+        'deploymentUri' => $stream->deploymentUri ?? '',
+        'studyUri' => $stream->studyUri ?? '',
+        'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
+        'method' => $stream->method ?? '',
+        'datasetPattern' => $stream->datasetPattern ?? '',
+        'cellScopeUri' => $stream->cellScopeUri ?? [],
+        'cellScopeName' => $stream->cellScopeName ?? [],
+        'messageProtocol' => $stream->messageProtocol ?? '',
+        'messageIP' => $stream->messageIP ?? '',
+        'messagePort' => $stream->messagePort ?? '',
+        'messageArchiveId' => $stream->messageArchiveId ?? '',
+        'hasVersion' => $stream->hasVersion ?? '',
+        'comment' => $stream->comment ?? '',
+        'canUpdate' => $stream->canUpdate ?? [],
+        'designedAt' => $stream->designedAt ?? '',
+        'hasSIRManagerEmail' => $stream->hasSIRManagerEmail ?? '',
+        'hasStreamStatus' => $stream->hasStreamStatus ?? '',
+        'hasMessageStatus' => HASCO::RECORDING,
+      ];
+  
+      // Atualizar a stream (delete + add)
+      $api->elementDel('stream', $stream->uri);
+      $api->elementAdd('stream', json_encode($payload));
+  
+      $filename = 'Messages_' . ($stream->messageArchiveId ?? 'unknown') . '.xlsx';
+      $msg = $this->t('The Stream Messages started to record on file "@file".', ['@file' => $filename]);
+      $response->addCommand(new MessageCommand($msg, NULL, ['type' => 'status']));
 
-    // if ($form_state->getValue('stream_method') === 'files') {
-    //   $payload['datasetPattern'] = $form_state->getValue('stream_datafile_pattern');
-    //   $payload['cellScopeUri']    = [$form_state->getValue('stream_cell_scope_uri')];
-    //   $payload['cellScopeName']   = [$form_state->getValue('stream_cell_scope_name')];
-    //   $payload['messageProtocol']  = '';
-    //   $payload['messageIP']        = '';
-    //   $payload['messagePort']      = '';
-    //   $payload['messageArchiveId'] = '';
-    //   // $payload['messageHeader']    = '';
-    // }
-    // else {
-    //   $payload['messageProtocol']   = $form_state->getValue('stream_protocol');
-    //   $payload['messageIP']         = $form_state->getValue('stream_ip');
-    //   $payload['messagePort']       = $form_state->getValue('stream_port');
-    //   $payload['messageArchiveId']  = $form_state->getValue('stream_archive_id');
-    //   // $payload['messageHeader']     = $form_state->getValue('stream_header');
-    //   $payload['datasetPattern']   = '';
-    //   $payload['cellScopeUri']      = [];
-    //   $payload['cellScopeName']     = [];
-    //   $payload['hasMessageStatus']  = HASCO::RECORDING;
-    // }
+      $response->addCommand(new SettingsCommand([
+        'dplStreamRecorder' => [
+          'ip' => $stream->messageIP,
+          'port' => $stream->messagePort,
+          'topic' => $stream->datasetPattern,
+          'archiveId' => $stream->messageArchiveId,
+        ]
+      ]));
+      $response->addCommand(new InvokeCommand(NULL, 'dplStartPolling', []));
+      // Anexa o JS
+      $response->setAttachments([
+        'library' => ['dpl/stream_recorder'],
+      ]);
 
-    // try {
-    //   $api = \Drupal::service('rep.api_connector');
-    //   // Delete and re-create to perform update.
-    //   $api->elementDel('stream', $this->stream->uri);
-    //   $api->elementAdd('stream', json_encode($payload));
-    //   \Drupal::messenger()->addMessage($this->t('Stream has been updated successfully.'));
-    // }
-    // catch (\Exception $e) {
-    //   \Drupal::messenger()->addError($this->t('An error occurred while updating the Stream: @msg', ['@msg' => $e->getMessage()]));
-    // }
-    return new Response('Página placeholder para streamRecord.');
+    }
+    catch (\Exception $e) {
+      $error = $this->t('An error occurred: @msg', ['@msg' => $e->getMessage()]);
+      $response->addCommand(new MessageCommand($error, NULL, ['type' => 'error']));
+    }
+  
+    return $response;
   }
+
+  public function recordMessageAjax(Request $request) {
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
+    $archive_id = $request->query->get('archive_id');
+    $ip = $request->query->get('ip');
+    $port = $request->query->get('port');
+    $topic = $request->query->get('topic');
+
+    // Ler nova mensagem (adaptar o comando SSH como no teu Form)
+    $ssh_cmd = "ssh -i /var/www/.ssh/graxiom_main.pem -o StrictHostKeyChecking=no ubuntu@$ip 'tmux capture-pane -pt " . escapeshellarg($topic) . " -S -1 -e'";
+    $output = shell_exec($ssh_cmd);
+
+    if (empty(trim($output))) {
+      return new JsonResponse(['status' => 'no-message']);
+    }
+
+    preg_match_all('/\{.*?\}/s', $output, $matches);
+    $messages = $matches[0] ?? [];
+    $last_msg = end($messages);
+
+    if (isset($_SESSION['last_mqtt_message']) && $_SESSION['last_mqtt_message'] === $last_msg) {
+        return new JsonResponse(['status' => 'duplicate']);
+    }
+    
+    $_SESSION['last_mqtt_message'] = $last_msg;
+
+    // Gravar no Excel (append)
+    $directory = 'private://streams/messageFiles/';
+    \Drupal::service('file_system')->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
+    $filepath = \Drupal::service('file_system')->realpath($directory . "Messages{$archive_id}_0.xlsx");
+
+    if (file_exists($filepath)) {
+      $spreadsheet = IOFactory::load($filepath);
+    } else {
+      $spreadsheet = new Spreadsheet();
+      $spreadsheet->getActiveSheet()->fromArray(['Timestamp', 'Raw JSON'], NULL, 'A1');
+    }
+
+    $sheet = $spreadsheet->getActiveSheet();
+    $row = $sheet->getHighestRow() + 1;
+    $sheet->setCellValue("A$row", date('Y-m-d H:i:s'));
+    $sheet->setCellValue("B$row", $last_msg);
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->save($filepath);
+
+    return new JsonResponse(['status' => 'ok', 'row' => $row]);
+  }
+
+
 
   public function streamSuspend($streamUri) {
     // Your logic to handle suspending the stream.
@@ -219,7 +297,9 @@ class StreamController extends ControllerBase {
   public static function readMessages($ip, $port, $topic) {
     $private_key = '/var/www/.ssh/graxiom_main.pem';
     $ssh_user = 'ubuntu';
-    $remote_cmd = 'tmux capture-pane -pt mqtt -S -2 -e';
+    $escaped_topic = escapeshellarg($topic);
+    $remote_cmd = "tmux capture-pane -pt $escaped_topic -S -2 -e";
+  
     $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
 
     $output = shell_exec($ssh_cmd);

@@ -264,13 +264,21 @@ dpl.platform_edit:
 
 # STREAM RELATED ROUTES
 dpl.stream_record:
-  path: '/dpl/stream/{streamUri}'
+  path: '/dpl/stream/record/{streamUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamRecord'
-    _title: 'Stream Record'
+  methods: [POST]
   requirements:
     _permission: 'access content'
 
+dpl.record_message_ajax:
+  path: '/dpl/record-message-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::recordMessageAjax'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+  
 # STREAM MESSAGES
 dpl.stream_suspend:
   path: '/dpl/stream/{streamUri}'

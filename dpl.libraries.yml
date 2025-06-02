@@ -25,3 +25,13 @@ dpl_onlytabs:
     - core/drupal.states
     - core/drupal.ajax
     - core/jquery.once
+
+stream_recorder:
+  version: 1.x
+  js:
+    js/stream_recorder.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupal.dialog
+

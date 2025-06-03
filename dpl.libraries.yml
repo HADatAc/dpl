@@ -32,8 +32,8 @@ stream_recorder:
     js/stream_recorder.js: {}
   dependencies:
     - core/jquery
+    - core/jquery.once
     - core/drupal
     - core/drupalSettings
     - core/drupal.states
     - core/drupal.ajax
-    - core/jquery.once

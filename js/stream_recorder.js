@@ -63,17 +63,17 @@
           });
         });
 
-      // Botão STOP RECORD
-      $('.dpl-stop-record', context)
-        .once('dplStopRecord')
-        .on('click', function (e) {
-          e.preventDefault();
-          if (recordingInterval) {
-            clearInterval(recordingInterval);
-            recordingInterval = null;
-            alert('Gravação parada.');
-          }
-        });
+      // // Botão STOP RECORD
+      // $('.dpl-stop-record', context)
+      //   .once('dplStopRecord')
+      //   .on('click', function (e) {
+      //     e.preventDefault();
+      //     if (recordingInterval) {
+      //       clearInterval(recordingInterval);
+      //       recordingInterval = null;
+      //       alert('Gravação parada.');
+      //     }
+      //   });
     }
   };
 })(jQuery, Drupal, drupalSettings);

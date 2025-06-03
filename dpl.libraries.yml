@@ -34,5 +34,5 @@ stream_recorder:
     - core/jquery
     - core/drupal
     - core/drupalSettings
-    - core/once
+    - core/jquery.once
 

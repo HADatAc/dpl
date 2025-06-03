@@ -39,6 +39,7 @@
       });
     }, 5000);
   };
+  window.dplStartPolling = Drupal.dplStartPolling;
 
   Drupal.behaviors.dplStreamRecorder = {
     attach: function (context, settings) {

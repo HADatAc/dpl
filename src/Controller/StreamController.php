@@ -74,7 +74,7 @@ class StreamController extends ControllerBase {
         'dplStreamRecorder' => [
           'ip' => $stream->messageIP,
           'port' => $stream->messagePort,
-          'topic' => $stream->datasetPattern,
+          'topic' => 'wsaheadin',
           'archiveId' => $stream->messageArchiveId,
         ]
       ]));

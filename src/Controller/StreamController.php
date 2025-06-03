@@ -76,9 +76,10 @@ class StreamController extends ControllerBase {
           'port' => $stream->messagePort,
           'topic' => 'wsaheadin',
           'archiveId' => $stream->messageArchiveId,
+          'shouldStartPolling' => TRUE,
         ]
       ]));
-      $response->addCommand(new InvokeCommand(NULL, 'dplStartPolling', []));
+      //$response->addCommand(new InvokeCommand(NULL, 'dplStartPolling', []));
       // Anexa o JS
       $response->setAttachments([
         'library' => ['dpl/stream_recorder'],

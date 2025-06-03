@@ -104,16 +104,19 @@
 
   Drupal.behaviors.dplPollingInit = {
     attach: function (context, settings) {
+      const recorderSettings = settings.dplStreamRecorder || {};
       if (
         typeof Drupal.dplStartPolling === 'function' &&
         settings.dplStreamRecorder &&
         settings.dplStreamRecorder.ip &&
         settings.dplStreamRecorder.port &&
         settings.dplStreamRecorder.topic &&
-        settings.dplStreamRecorder.archiveId
+        settings.dplStreamRecorder.archiveId &&
+        recorderSettings.shouldStartPolling
       ) {
         console.log('[dplPollingInit] Iniciando polling via behavior (fallback)');
         Drupal.dplStartPolling();
+        recorderSettings.shouldStartPolling = false;
       } else {
         console.log('[dplPollingInit] Settings incompletos ou função não disponível ainda.');
       }

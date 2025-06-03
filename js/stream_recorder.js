@@ -90,14 +90,21 @@
       // });
     }
   };
-  
+
   Drupal.behaviors.dplPollingInit = {
-    attach: function () {
-      if (typeof Drupal.dplStartPolling === 'function') {
-        console.log('[dplPollingInit] Iniciando polling via behavior');
+    attach: function (context, settings) {
+      if (
+        typeof Drupal.dplStartPolling === 'function' &&
+        settings.dplStreamRecorder &&
+        settings.dplStreamRecorder.ip &&
+        settings.dplStreamRecorder.port &&
+        settings.dplStreamRecorder.topic &&
+        settings.dplStreamRecorder.archiveId
+      ) {
+        console.log('[dplPollingInit] Iniciando polling via behavior (fallback)');
         Drupal.dplStartPolling();
       } else {
-        console.error('dplStartPolling não definida ainda');
+        console.log('[dplPollingInit] Settings incompletos ou função não disponível ainda.');
       }
     }
   };

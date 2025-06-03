@@ -33,5 +33,5 @@ stream_recorder:
   dependencies:
     - core/jquery
     - core/drupal
-    - core/drupal.dialog
+    - core/drupalSettings
 

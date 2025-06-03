@@ -4,6 +4,8 @@
   Drupal.dplStartPolling = function () {
     const settings = drupalSettings.dplStreamRecorder || {};
     const { ip, port, topic, archiveId } = settings;
+    console.log('[dplStartPolling] Configuração:', settings);
+
 
     if (!ip || !port || !topic || !archiveId) {
       console.error('Dados incompletos para iniciar o polling.');
@@ -12,9 +14,13 @@
 
     console.log('Iniciando gravação com polling a cada 5s...');
 
-    if (recordingInterval) clearInterval(recordingInterval);
+    if (recordingInterval) {
+      console.log('[dplStartPolling] Limpando intervalo anterior');
+      clearInterval(recordingInterval);
+    }
 
     recordingInterval = setInterval(() => {
+      console.log('[dplStartPolling] Requisição AJAX ao endpoint de escrita');
       $.ajax({
         url: `/dpl/record-message-ajax?archive_id=${archiveId}&ip=${ip}&port=${port}&topic=${topic}`,
         method: 'GET',

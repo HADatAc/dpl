@@ -92,7 +92,7 @@ class StreamController extends ControllerBase {
   }
 
   public function recordMessageAjax(Request $request) {
-
+    
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
@@ -101,6 +101,13 @@ class StreamController extends ControllerBase {
     $ip = $request->query->get('ip');
     $port = $request->query->get('port');
     $topic = $request->query->get('topic');
+
+    \Drupal::logger('dpl')->info('recordMessageAjax chamado com archive_id: @id, ip: @ip, port: @port, topic: @topic', [
+      '@id' => $archive_id,
+      '@ip' => $ip,
+      '@port' => $port,
+      '@topic' => $topic,
+    ]);
 
     // Ler nova mensagem (adaptar o comando SSH como no teu Form)
     $ssh_cmd = "ssh -i /var/www/.ssh/graxiom_main.pem -o StrictHostKeyChecking=no ubuntu@$ip 'tmux capture-pane -pt " . escapeshellarg($topic) . " -S -1 -e'";
@@ -115,7 +122,7 @@ class StreamController extends ControllerBase {
     $last_msg = end($messages);
 
     if (isset($_SESSION['last_mqtt_message']) && $_SESSION['last_mqtt_message'] === $last_msg) {
-        return new JsonResponse(['status' => 'duplicate']);
+      return new JsonResponse(['status' => 'duplicate']);
     }
     
     $_SESSION['last_mqtt_message'] = $last_msg;

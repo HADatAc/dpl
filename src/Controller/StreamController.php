@@ -8,6 +8,8 @@ use Drupal\rep\Vocabulary\VSTOI;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\MessageCommand;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\rep\Vocabulary\HASCO;
 
 class StreamController extends ControllerBase {

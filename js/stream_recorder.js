@@ -64,7 +64,18 @@
             dataType: 'json',
             success: function () {
               console.log('Controller chamado com sucesso.');
-              // O polling será iniciado via AjaxResponse -> InvokeCommand
+              setTimeout(() => {
+                if (
+                  typeof Drupal.dplStartPolling === 'function' &&
+                  drupalSettings.dplStreamRecorder &&
+                  drupalSettings.dplStreamRecorder.ip
+                ) {
+                  console.log('[Fallback] Iniciando polling após AJAX');
+                  Drupal.dplStartPolling();
+                } else {
+                  console.warn('[Fallback] Não foi possível iniciar polling — settings ou função ausentes');
+                }
+              }, 100);
             },
             error: function () {
               alert('Erro ao iniciar gravação.');

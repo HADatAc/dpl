@@ -267,9 +267,13 @@ dpl.stream_record:
   path: '/dpl/stream/record/{streamUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamRecord'
+    _title: 'Start Stream Recording'
   methods: [POST]
   requirements:
     _permission: 'access content'
+  options:
+    _format: 'drupal_ajax'
+
 
 dpl.record_message_ajax:
   path: '/dpl/record-message-ajax'

@@ -88,6 +88,7 @@ class StreamController extends ControllerBase {
     catch (\Exception $e) {
       $error = $this->t('An error occurred: @msg', ['@msg' => $e->getMessage()]);
       $response->addCommand(new MessageCommand($error, NULL, ['type' => 'error']));
+      return $response;
     }
   
     return $response;

@@ -312,8 +312,9 @@ class StreamController extends ControllerBase {
       return ['debug' => $debug_info, 'messages' => []];
     }
 
-    $lines = array_filter(array_map('trim', explode("\n", $output)));
-    $latest_two = array_slice($lines, -2);
+    preg_match_all('/\{.*?\}/s', $output, $matches);
+    $all_messages = $matches[0] ?? [];
+    $latest_two = array_slice($all_messages, -2);
 
     return [
       'debug' => $debug_info,

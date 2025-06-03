@@ -34,20 +34,17 @@
     }, 5000);
   };
 
-  // Agora com Drupal.behaviors
   Drupal.behaviors.dplStreamRecorder = {
     attach: function (context, settings) {
       console.log('JS dplStreamRecorder comportamentos carregados');
 
-      // Botão START RECORD
-      $('.dpl-start-record', context)
-        .once('dplStartRecord')
-        .on('click', function (e) {
+      // START RECORD
+      Drupal.once('dplStartRecord', '.dpl-start-record', context).forEach((el) => {
+        el.addEventListener('click', function (e) {
           e.preventDefault();
           console.log('Botão record clicado');
 
-          const $btn = $(this);
-          const url = $btn.data('url');
+          const url = el.getAttribute('data-url');
 
           $.ajax({
             url: url,
@@ -62,11 +59,11 @@
             }
           });
         });
+      });
 
-      // // Botão STOP RECORD
-      // $('.dpl-stop-record', context)
-      //   .once('dplStopRecord')
-      //   .on('click', function (e) {
+      // // STOP RECORD (opcional)
+      // Drupal.once('dplStopRecord', '.dpl-stop-record', context).forEach((el) => {
+      //   el.addEventListener('click', function (e) {
       //     e.preventDefault();
       //     if (recordingInterval) {
       //       clearInterval(recordingInterval);
@@ -74,6 +71,7 @@
       //       alert('Gravação parada.');
       //     }
       //   });
+      // });
     }
   };
 })(jQuery, Drupal, drupalSettings);

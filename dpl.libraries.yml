@@ -34,3 +34,4 @@ stream_recorder:
     - core/jquery
     - core/drupal
     - core/drupalSettings
+    - core/drupal.ajax

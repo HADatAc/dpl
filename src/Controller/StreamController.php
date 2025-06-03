@@ -196,10 +196,10 @@ class StreamController extends ControllerBase {
     return new Response('Página placeholder para streamSuspend.');
   }
 
-  public function streamIngest($streamUri) {
-    // Your logic to handle ingesting the stream.
-    return new Response('Página placeholder para streamIngest.');
-  }
+  // public function streamIngest($streamUri) {
+  //   // Your logic to handle ingesting the stream.
+  //   return new Response('Página placeholder para streamIngest.');
+  // }
 
   /**
    * AJAX endpoint to ingest a file.

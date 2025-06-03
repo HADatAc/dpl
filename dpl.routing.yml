@@ -292,13 +292,13 @@ dpl.stream_suspend:
   requirements:
     _permission: 'access content'
 
-dpl.stream_ingest:
-  path: '/dpl/stream/{streamUri}'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
-    _title: 'Stream Ingest'
-  requirements:
-    _permission: 'access content'
+# dpl.stream_ingest:
+#   path: '/dpl/stream/{streamUri}'
+#   defaults:
+#     _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
+#     _title: 'Stream Ingest'
+#   requirements:
+#     _permission: 'access content'
 
 # STREAM FILES (and messages when applicable)
 dpl.file_ingest_ajax:

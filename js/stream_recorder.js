@@ -90,4 +90,16 @@
       // });
     }
   };
+  
+  Drupal.behaviors.dplPollingInit = {
+    attach: function () {
+      if (typeof Drupal.dplStartPolling === 'function') {
+        console.log('[dplPollingInit] Iniciando polling via behavior');
+        Drupal.dplStartPolling();
+      } else {
+        console.error('dplStartPolling não definida ainda');
+      }
+    }
+  };
+
 })(jQuery, Drupal, drupalSettings);

@@ -15,8 +15,7 @@ $kernel = DrupalKernel::createFromRequest(
   'dev'
 );
 $kernel->boot();
-$kernel->prepareLegacyRequest(Request::createFromGlobals());
-
+\Drupal::setContainer($kernel->getContainer());
 $stream_id = $argv[1];
 $archive_id = $argv[2];
 $ip = $argv[3];

@@ -75,9 +75,9 @@ class StreamController extends ControllerBase {
             escapeshellarg($stream->messageArchiveId) . ' ' .
             escapeshellarg($stream->messageIP) . ' ' .
             escapeshellarg($stream->messagePort) . ' ' .
-            escapeshellarg('wsaheadin') .
+            escapeshellarg('wsaheadhin') .
             " > /dev/null 2>&1 & echo $!";
-            
+
       \Drupal::logger('stream_record')->debug('Comando: @cmd', ['@cmd' => $cmd]);
 
 

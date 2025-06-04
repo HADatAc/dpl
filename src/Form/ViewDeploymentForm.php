@@ -101,6 +101,8 @@ class ViewDeploymentForm extends FormBase {
     // ROOT URL
     $root_url = \Drupal::request()->getBaseUrl();
 
+    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
+
     // Attach libraries for modal/dialog if needed.
     $form['#attached']['library'][] = 'core/drupal.dialog';
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -117,7 +119,6 @@ class ViewDeploymentForm extends FormBase {
     // If the API call failed or returned an error flag, show error and go back.
     if (empty($result->isSuccessful) || !$result->isSuccessful) {
       \Drupal::messenger()->addError($this->t('Failed to retrieve Deployment.'));
-      $this->backUrl();
       return;
     }
 
@@ -221,21 +222,23 @@ class ViewDeploymentForm extends FormBase {
         '#disabled' => TRUE,
       ];
 
+      if ($socialEnabled) {
       // Owner (disabled textfield).
-      $form['platform_instance']['platform_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        '#default_value' => $platform->hasOwner ?? '',
-        '#disabled' => TRUE,
-      ];
+        $form['platform_instance']['platform_owner'] = [
+          '#type' => 'textfield',
+          '#title' => $this->t('Owner'),
+          '#default_value' => $platform->hasOwner ?? '',
+          '#disabled' => TRUE,
+        ];
 
-      // Maintainer (disabled textfield).
-      $form['platform_instance']['platform_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        '#default_value' => $platform->hasMaintainer ?? '',
-        '#disabled' => TRUE,
-      ];
+        // Maintainer (disabled textfield).
+        $form['platform_instance']['platform_maintainer'] = [
+          '#type' => 'textfield',
+          '#title' => $this->t('Maintainer'),
+          '#default_value' => $platform->hasMaintainer ?? '',
+          '#disabled' => TRUE,
+        ];
+      }
 
       // SIR Manager Email (disabled textfield).
       $form['platform_instance']['platform_manager'] = [
@@ -388,21 +391,23 @@ class ViewDeploymentForm extends FormBase {
         '#disabled' => TRUE,
       ];
 
-      // Owner (disabled textfield).
-      $form['instrument_instance']['instrument_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        '#default_value' => $instrument->hasOwner ?? '',
-        '#disabled' => TRUE,
-      ];
+      if ($socialEnabled) {
+        // Owner (disabled textfield).
+        $form['instrument_instance']['instrument_owner'] = [
+          '#type' => 'textfield',
+          '#title' => $this->t('Owner'),
+          '#default_value' => $instrument->hasOwner ?? '',
+          '#disabled' => TRUE,
+        ];
 
-      // Maintainer (disabled textfield).
-      $form['instrument_instance']['instrument_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        '#default_value' => $instrument->hasMaintainer ?? '',
-        '#disabled' => TRUE,
-      ];
+        // Maintainer (disabled textfield).
+        $form['instrument_instance']['instrument_maintainer'] = [
+          '#type' => 'textfield',
+          '#title' => $this->t('Maintainer'),
+          '#default_value' => $instrument->hasMaintainer ?? '',
+          '#disabled' => TRUE,
+        ];
+      }
 
       // SIR Manager Email (disabled textfield).
       $form['instrument_instance']['instrument_manager'] = [
@@ -471,8 +476,8 @@ class ViewDeploymentForm extends FormBase {
     $form['actions']['back'] = [
       '#type' => 'submit',
       '#value' => $this->t('Back'),
-      '#name' => 'back',
-      '#button_type' => 'primary',
+      '#button_type' => 'secondary',
+      '#submit' => ['::backButtonSubmit'],
       '#attributes' => [
         'class' => ['btn', 'btn-secondary', 'back-button', 'mb-5'],
       ],
@@ -496,24 +501,23 @@ class ViewDeploymentForm extends FormBase {
    * Only handles the "Back" button to return to the previous page.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $trigger = $form_state->getTriggeringElement()['#name'];
-    if ($trigger === 'back') {
-      $this->backUrl();
-    }
   }
 
   /**
-   * Redirects the user to the previous URL stored in tracking.
-   *
-   * Similar logic to the ReviewInstrumentForm backUrl().
+   * “Back” button submit handler: limpa caches e redireciona ao referrer.
    */
-  protected function backUrl() {
+  public function backButtonSubmit(array &$form, FormStateInterface $form_state) {
+    \Drupal::state()->delete('my_form_basic');
+    \Drupal::state()->delete('my_form_variables');
+    \Drupal::state()->delete('my_form_objects');
+    \Drupal::state()->delete('my_form_codes');
+
     $uid = \Drupal::currentUser()->id();
-    // Assumes the same tracking utility exists in \Drupal\sir\Utils.
-    $previousUrl = UTILS::trackingGetPreviousUrl($uid, \Drupal::request()->getRequestUri());
+    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'std.manage_study_elements');
     if ($previousUrl) {
       $response = new RedirectResponse($previousUrl);
       $response->send();
+      return;
     }
   }
 

@@ -65,26 +65,22 @@ class StreamController extends ControllerBase {
       // Atualizar a stream (delete + add)
       $api->elementDel('stream', $stream->uri);
       $api->elementAdd('stream', json_encode($payload));
-  
-      $filename = 'Messages_' . ($stream->messageArchiveId ?? 'unknown') . '.xlsx';
-      $msg = $this->t('The Stream Messages started to record on file "@file".', ['@file' => $filename]);
-      $response->addCommand(new MessageCommand($msg, NULL, ['type' => 'status']));
 
-      $response->addCommand(new SettingsCommand([
-        'dplStreamRecorder' => [
-          'ip' => $stream->messageIP,
-          'port' => $stream->messagePort,
-          'topic' => 'wsaheadin',
-          'archiveId' => $stream->messageArchiveId,
-          'shouldStartPolling' => TRUE,
-        ]
-      ]));
-      //$response->addCommand(new InvokeCommand(NULL, 'dplStartPolling', []));
-      // Anexa o JS
-      $response->setAttachments([
-        'library' => ['dpl/stream_recorder'],
-      ]);
+      // Iniciar script worker para gravar a stream
+      $php_path = '/usr/bin/php'; // Ajustar se o PHP estiver noutro caminho
+      $script_path = DRUPAL_ROOT . '/modules/custom/dpl/scripts/stream_worker.php';
 
+      $cmd = escapeshellcmd("$php_path $script_path " .
+        escapeshellarg($stream->uri) . ' ' .
+        escapeshellarg($stream->messageArchiveId) . ' ' .
+        escapeshellarg($stream->messageIP) . ' ' .
+        escapeshellarg($stream->messagePort) . ' ' .
+        escapeshellarg('wsaheadin') . ' > /dev/null 2>&1 & echo $!'
+      );
+
+      $pid = shell_exec($cmd);
+      $pid_file = "private://streams/pid_" . md5($stream->uri) . ".txt";
+      \Drupal::service('file_system')->saveData($pid, $pid_file, FileSystemInterface::EXISTS_REPLACE);
     }
     catch (\Exception $e) {
       $error = $this->t('An error occurred: @msg', ['@msg' => $e->getMessage()]);

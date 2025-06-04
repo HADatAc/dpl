@@ -1,45 +1,4 @@
 (function ($, Drupal, drupalSettings) {
-  let recordingInterval = null;
-
-  Drupal.dplStartPolling = function () {
-    const settings = drupalSettings.dplStreamRecorder || {};
-    const { ip, port, topic, archiveId } = settings;
-    console.log('[dplStartPolling] Configuração:', settings);
-
-
-    if (!ip || !port || !topic || !archiveId) {
-      console.error('Dados incompletos para iniciar o polling.');
-      return;
-    }
-
-    console.log('Iniciando gravação com polling a cada 5s...');
-
-    if (recordingInterval) {
-      console.log('[dplStartPolling] Limpando intervalo anterior');
-      clearInterval(recordingInterval);
-    }
-
-    recordingInterval = setInterval(() => {
-      console.log('[dplStartPolling] Requisição AJAX ao endpoint de escrita');
-      $.ajax({
-        url: `/dpl/record-message-ajax?archive_id=${archiveId}&ip=${ip}&port=${port}&topic=${topic}`,
-        method: 'GET',
-        success: function (data) {
-          if (data.status === 'ok') {
-            console.log(`Gravada nova linha: ${data.row}`);
-          } else if (data.status === 'duplicate') {
-            console.log('Mensagem duplicada, ignorada.');
-          } else if (data.status === 'no-message') {
-            console.log('Sem nova mensagem.');
-          }
-        },
-        error: function () {
-          console.error('Erro ao comunicar com o servidor.');
-        }
-      });
-    }, 5000);
-  };
-  window.dplStartPolling = Drupal.dplStartPolling;
 
   Drupal.behaviors.dplStreamRecorder = {
     attach: function (context, settings) {
@@ -63,19 +22,8 @@
             method: 'POST',
             dataType: 'json',
             success: function () {
+              alert('Gravação iniciada com sucesso!');
               console.log('Controller chamado com sucesso.');
-              setTimeout(() => {
-                if (
-                  typeof Drupal.dplStartPolling === 'function' &&
-                  drupalSettings.dplStreamRecorder &&
-                  drupalSettings.dplStreamRecorder.ip
-                ) {
-                  console.log('[Fallback] Iniciando polling após AJAX');
-                  Drupal.dplStartPolling();
-                } else {
-                  console.warn('[Fallback] Não foi possível iniciar polling — settings ou função ausentes');
-                }
-              }, 100);
             },
             error: function () {
               alert('Erro ao iniciar gravação.');
@@ -83,43 +31,6 @@
           });
         });
       });
-
-      // Descomente e adapte para o botão STOP RECORD, se necessário
-      // $('.dpl-stop-record', context).each(function () {
-      //   const $btn = $(this);
-      //   if ($btn.data('dpl-stop-bound')) return;
-      //   $btn.data('dpl-stop-bound', true);
-
-      //   $btn.on('click', function (e) {
-      //     e.preventDefault();
-      //     if (recordingInterval) {
-      //       clearInterval(recordingInterval);
-      //       recordingInterval = null;
-      //       alert('Gravação parada.');
-      //     }
-      //   });
-      // });
-    }
-  };
-
-  Drupal.behaviors.dplPollingInit = {
-    attach: function (context, settings) {
-      const recorderSettings = settings.dplStreamRecorder || {};
-      if (
-        typeof Drupal.dplStartPolling === 'function' &&
-        settings.dplStreamRecorder &&
-        settings.dplStreamRecorder.ip &&
-        settings.dplStreamRecorder.port &&
-        settings.dplStreamRecorder.topic &&
-        settings.dplStreamRecorder.archiveId &&
-        recorderSettings.shouldStartPolling
-      ) {
-        console.log('[dplPollingInit] Iniciando polling via behavior (fallback)');
-        Drupal.dplStartPolling();
-        recorderSettings.shouldStartPolling = false;
-      } else {
-        console.log('[dplPollingInit] Settings incompletos ou função não disponível ainda.');
-      }
     }
   };
 

@@ -67,8 +67,8 @@ class StreamController extends ControllerBase {
       $api->elementAdd('stream', json_encode($payload));
 
       // Iniciar script worker para gravar a stream
-      $php_path = '/usr/bin/php'; // Ajustar se o PHP estiver noutro caminho
-      $script_path = DRUPAL_ROOT . '/modules/custom/dpl/scripts/stream_worker.php';
+      $php_path = '/usr/local/bin/php'; // Ajustar se o PHP estiver noutro caminho
+      $script_path = 'opt/drupal/web/modules/custom/dpl/scripts/stream_worker.php';
 
       $cmd = escapeshellcmd("$php_path $script_path " .
         escapeshellarg($stream->uri) . ' ' .

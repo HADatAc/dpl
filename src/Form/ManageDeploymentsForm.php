@@ -296,6 +296,7 @@ class ManageDeploymentsForm extends FormBase {
         '#name' => 'close_element',
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'close-button', 'me-1'],
+          'onclick' => 'return confirm("Are you sure you want to close the Deployment? If you continue, all ACTIVE Streams will also be closed!");',
         ],
       ];
       $form['card']['card_body']['actions']['modify_selected'] = [

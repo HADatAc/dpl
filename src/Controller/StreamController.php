@@ -77,8 +77,15 @@ class StreamController extends ControllerBase {
         escapeshellarg($stream->messagePort) . ' ' .
         escapeshellarg('wsaheadin') . ' > /dev/null 2>&1 & echo $!'
       );
+      \Drupal::logger('stream_record')->debug('Comando: @cmd', ['@cmd' => $cmd]);
+
 
       $pid = shell_exec($cmd);
+      if ($pid) {
+        \Drupal::logger('stream_record')->notice('Script iniciado com PID: @pid', ['@pid' => $pid]);
+      } else {
+        \Drupal::logger('stream_record')->error('Falha ao iniciar o script worker.');
+      }
       $fs = \Drupal::service('file_system');
       $directory = 'private://streams';
       $fs->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);

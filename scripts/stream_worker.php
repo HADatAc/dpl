@@ -15,7 +15,7 @@ $topic = $argv[5];
 
 $fs = \Drupal::service('file_system');
 $directory = 'private://streams/messageFiles/';
-$fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY);
+$fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
 $filepath = $fs->realpath($directory . "Messages{$archive_id}_0.xlsx");
 $last_message = '';

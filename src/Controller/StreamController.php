@@ -79,6 +79,8 @@ class StreamController extends ControllerBase {
       );
 
       $pid = shell_exec($cmd);
+      $fs = \Drupal::service('file_system');
+      $fs->prepareDirectory('private://streams', FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
       $pid_file = "private://streams/pid_" . md5($stream->uri) . ".txt";
       \Drupal::service('file_system')->saveData($pid, $pid_file, FileSystemInterface::EXISTS_REPLACE);
       return new JsonResponse(['status' => 'ok', 'message' => 'Recording started.']);

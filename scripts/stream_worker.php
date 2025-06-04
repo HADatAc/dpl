@@ -34,16 +34,17 @@ $last_message = '';
 while (true) {
   $api = \Drupal::service('rep.api_connector');
   $stream = $api->parseObjectResponse($api->getUri($stream_id), 'getUri');
-  \Drupal::logger('stream_record')->debug('Stream: <pre>@stream</pre>', ['@stream' => print_r($stream, TRUE)]);
 
   if ($stream->hasMessageStatus !== 'http://hadatac.org/ont/hasco/Recording') {
     break;
   }
 
   $ssh_cmd = "ssh -i /var/www/.ssh/graxiom_main.pem -o StrictHostKeyChecking=no ubuntu@$ip 'tmux capture-pane -pt " . escapeshellarg($topic) . " -S -1 -e'";
+  \Drupal::logger('stream_record')->debug('SSH CMD: @cmd', ['@cmd' => $ssh_cmd]);
   $output = shell_exec($ssh_cmd);
+  \Drupal::logger('stream_record')->debug('Output do SSH: <pre>@output</pre>', ['@output' => print_r($output, TRUE)]);
 
-  if (empty(trim($output))) {
+  if (!is_string($output) || trim($output) === '') {
     sleep(20);
     continue;
   }

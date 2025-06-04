@@ -40,9 +40,9 @@ while (true) {
   }
 
   $ssh_cmd = "ssh -i /var/www/.ssh/graxiom_main.pem -o StrictHostKeyChecking=no ubuntu@$ip 'tmux capture-pane -pt " . escapeshellarg($topic) . " -S -1 -e'";
-  \Drupal::logger('stream_record')->debug('SSH CMD: @cmd', ['@cmd' => $ssh_cmd]);
+  //\Drupal::logger('stream_record')->debug('SSH CMD: @cmd', ['@cmd' => $ssh_cmd]);
   $output = shell_exec($ssh_cmd);
-  \Drupal::logger('stream_record')->debug('Output do SSH: <pre>@output</pre>', ['@output' => print_r($output, TRUE)]);
+  //\Drupal::logger('stream_record')->debug('Output do SSH: <pre>@output</pre>', ['@output' => print_r($output, TRUE)]);
 
   if (!is_string($output) || trim($output) === '') {
     sleep(20);

@@ -36,7 +36,7 @@ while (true) {
   $stream = $api->parseObjectResponse($api->getUri($stream_id), 'getUri');
   \Drupal::logger('stream_record')->debug('Stream: <pre>@stream</pre>', ['@stream' => print_r($stream, TRUE)]);
 
-  if ($stream->hasMessageStatus !== 'http://hadatac.org/ont/hasco/RECORDING') {
+  if ($stream->hasMessageStatus !== 'http://hadatac.org/ont/hasco/Recording') {
     break;
   }
 

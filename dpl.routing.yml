@@ -282,7 +282,7 @@ dpl.record_message_ajax:
   requirements:
     _permission: 'access content'
   methods: [GET]
-  
+
 # STREAM MESSAGES
 dpl.stream_suspend:
   path: '/dpl/stream/suspend/{streamUri}'
@@ -314,5 +314,13 @@ dpl.file_uningest_ajax:
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::fileUningestAjax'
   methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+dpl.view_deployment_form:
+  path: '/dpl/view-deployment/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ViewDeploymentForm'
+    _title: 'View Deployment'
   requirements:
     _permission: 'access content'

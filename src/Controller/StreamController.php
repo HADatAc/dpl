@@ -70,13 +70,14 @@ class StreamController extends ControllerBase {
       $php_path = '/usr/local/bin/php'; // Ajustar se o PHP estiver noutro caminho
       $script_path = '/opt/drupal/web/modules/custom/dpl/scripts/stream_worker.php';
 
-      $cmd = escapeshellcmd("$php_path $script_path " .
-        escapeshellarg($stream->uri) . ' ' .
-        escapeshellarg($stream->messageArchiveId) . ' ' .
-        escapeshellarg($stream->messageIP) . ' ' .
-        escapeshellarg($stream->messagePort) . ' ' .
-        escapeshellarg('wsaheadin') . ' > /dev/null 2>&1 & echo $!'
-      );
+      $cmd = "$php_path $script_path " .
+            escapeshellarg($stream->uri) . ' ' .
+            escapeshellarg($stream->messageArchiveId) . ' ' .
+            escapeshellarg($stream->messageIP) . ' ' .
+            escapeshellarg($stream->messagePort) . ' ' .
+            escapeshellarg('wsaheadin') .
+            " > /dev/null 2>&1 & echo $!";
+            
       \Drupal::logger('stream_record')->debug('Comando: @cmd', ['@cmd' => $cmd]);
 
 

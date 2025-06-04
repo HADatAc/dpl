@@ -6,8 +6,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\DrupalKernel;
 
-define('DRUPAL_ROOT', '/opt/drupal/web');
-$autoloader = require_once DRUPAL_ROOT . '/autoload.php';
+$autoloader = require_once '/opt/drupal/web/autoload.php';
 
 $kernel = DrupalKernel::createFromRequest(
   Request::createFromGlobals(),

@@ -34,6 +34,7 @@ $last_message = '';
 while (true) {
   $api = \Drupal::service('rep.api_connector');
   $stream = $api->parseObjectResponse($api->getUri($stream_id), 'getUri');
+  \Drupal::logger('stream_record')->debug('Stream: <pre>@stream</pre>', ['@stream' => print_r($stream, TRUE)]);
 
   if ($stream->hasMessageStatus !== 'http://hadatac.org/ont/hasco/RECORDING') {
     break;

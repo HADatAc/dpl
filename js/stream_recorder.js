@@ -21,12 +21,16 @@
             url: url,
             method: 'POST',
             dataType: 'json',
-            success: function () {
-              alert('Gravação iniciada com sucesso!');
-              console.log('Controller chamado com sucesso.');
+            success: function (data) {
+              if (data.status === 'ok') {
+                alert('Gravação iniciada com sucesso!');
+              } else {
+                alert('Erro: ' + data.message);
+              }
             },
-            error: function () {
-              alert('Erro ao iniciar gravação.');
+            error: function (xhr) {
+              const err = xhr.responseJSON?.message || 'Erro inesperado ao iniciar gravação.';
+              alert(err);
             }
           });
         });

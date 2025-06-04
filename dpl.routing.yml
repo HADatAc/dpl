@@ -271,8 +271,7 @@ dpl.stream_record:
   methods: [POST]
   requirements:
     _permission: 'access content'
-  options:
-    _format: 'drupal_ajax'
+
 
 
 dpl.record_message_ajax:

@@ -10,6 +10,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\MessageCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Ajax\SettingsCommand;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\rep\Vocabulary\HASCO;
 
 class StreamController extends ControllerBase {
@@ -18,7 +19,6 @@ class StreamController extends ControllerBase {
 
 
   public function streamRecord($streamUri) {
-    $response = new AjaxResponse();
     $streamUri = base64_decode($streamUri);
   
     try {
@@ -30,7 +30,7 @@ class StreamController extends ControllerBase {
       );
   
       if (!$stream) {
-        return $response->addCommand(new MessageCommand('Stream not found.', NULL, ['type' => 'error']));
+        return new JsonResponse(['status' => 'error', 'message' => 'Stream not found.'], 404);
       }
   
       // Atualizar o estado da stream
@@ -81,14 +81,14 @@ class StreamController extends ControllerBase {
       $pid = shell_exec($cmd);
       $pid_file = "private://streams/pid_" . md5($stream->uri) . ".txt";
       \Drupal::service('file_system')->saveData($pid, $pid_file, FileSystemInterface::EXISTS_REPLACE);
+      return new JsonResponse(['status' => 'ok', 'message' => 'Recording started.']);
     }
     catch (\Exception $e) {
-      $error = $this->t('An error occurred: @msg', ['@msg' => $e->getMessage()]);
-      $response->addCommand(new MessageCommand($error, NULL, ['type' => 'error']));
-      return $response;
-    }
-  
-    return $response;
+      return new JsonResponse([
+        'status' => 'error',
+        'message' => 'Erro: ' . $e->getMessage(),
+      ], 500);
+    }  
   }
 
   public function recordMessageAjax(Request $request) {

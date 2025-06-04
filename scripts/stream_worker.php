@@ -6,7 +6,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\DrupalKernel;
 
-$autoloader = require_once '/opt/drupal/web/autoload.php';
+define('DRUPAL_ROOT', '/opt/drupal/web');
+$autoloader = require_once DRUPAL_ROOT . '/autoload.php';
 
 $kernel = DrupalKernel::createFromRequest(
   Request::createFromGlobals(),
@@ -14,6 +15,7 @@ $kernel = DrupalKernel::createFromRequest(
   'dev'
 );
 $kernel->boot();
+$kernel->prepareLegacyRequest(Request::createFromGlobals());
 
 $stream_id = $argv[1];
 $archive_id = $argv[2];

@@ -315,22 +315,21 @@ class StreamController extends ControllerBase {
   public static function readMessages($filename) {
     $filepath = 'private://streams/messageFiles/' . basename($filename); // segurança extra com basename
     $real_path = \Drupal::service('file_system')->realpath($filepath);
-    $debug_info = "<pre><strong>Ficheiro de mensagens:</strong> $real_path\n\n";
     if (!file_exists($real_path)) {
-      $debug_info .= "O ficheiro de mensagens não existe.\n";
-      return ['debug' => $debug_info, 'messages' => []];
+      \Drupal::logger('dpl')->debug('O ficheiro de mensagens não existe: @path', ['@path' => $real_path]);
+      return ['messages' => []];
     }
   
     $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if (!$lines) {
-      $debug_info .= "O ficheiro está vazio ou ocorreu um erro na leitura.\n";
-      return ['debug' => $debug_info, 'messages' => []];
+      \Drupal::logger('dpl')->debug('O ficheiro está vazio ou ocorreu um erro na leitura: @path', ['@path' => $real_path]);
+      return ['messages' => []];
     }
   
     $latest_two = array_slice($lines, -2);
+    \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
   
     return [
-      'debug' => $debug_info,
       'messages' => $latest_two,
     ];
   }  

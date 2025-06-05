@@ -146,7 +146,7 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Erro ao criar o ficheiro de gravação.'], 500);
       }
       // Atualizar estado da stream
-      $stream->hasMessageStatus = HASCO::INACTIVE;
+      $stream->hasMessageStatus = HASCO::SUSPENDED;
       $payload = [
         'uri' => $stream->uri,
         'typeUri' => HASCO::STREAM,
@@ -170,7 +170,7 @@ class StreamController extends ControllerBase {
         'designedAt' => $stream->designedAt ?? '',
         'hasSIRManagerEmail' => $stream->hasSIRManagerEmail ?? '',
         'hasStreamStatus' => $stream->hasStreamStatus ?? '',
-        'hasMessageStatus' => HASCO::INACTIVE,
+        'hasMessageStatus' => HASCO::SUSPENDED,
       ];
   
       $api->elementDel('stream', $stream->uri);

@@ -127,9 +127,8 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'ok', 'message' => 'No messages to record.']);
       }
   
-      // Criar diretório de destino se não existir
       $target_dir = 'private://streams/messageFilesRecord/';
-      \Drupal::service('file_system')->prepareDirectory($target_dir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY);
+      \Drupal::service('file_system')->prepareDirectory($target_dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
   
       // Calcular o número sequencial
       $existing = file_scan_directory($target_dir, '/^' . preg_quote($archiveId) . '_\d+\.txt$/');
@@ -138,8 +137,14 @@ class StreamController extends ControllerBase {
       // Escrever novo ficheiro
       $new_filename = $archiveId . '_' . $seq . '.txt';
       $new_filepath = $target_dir . $new_filename;
-      file_put_contents(\Drupal::service('file_system')->realpath($new_filepath), implode(PHP_EOL, $filtered));
-  
+      $data = implode(PHP_EOL, $filtered);
+
+      try {
+        \Drupal::service('file_system')->saveData($data, $new_filepath, FileSystemInterface::EXISTS_REPLACE);
+      } catch (\Exception $e) {
+        \Drupal::logger('debug')->error('Erro ao gravar os dados: @error', ['@error' => $e->getMessage()]);
+        return new JsonResponse(['status' => 'error', 'message' => 'Erro ao criar o ficheiro de gravação.'], 500);
+      }
       // Atualizar estado da stream
       $stream->hasMessageStatus = HASCO::INACTIVE;
       $payload = [

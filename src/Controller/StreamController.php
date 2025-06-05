@@ -131,7 +131,7 @@ class StreamController extends ControllerBase {
       \Drupal::service('file_system')->prepareDirectory($target_dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
   
       // Calcular o número sequencial
-      $existing = file_scan_directory($target_dir, '/^' . preg_quote($archiveId) . '_\d+\.txt$/');
+      $existing = \Drupal::service('file_system')->scanDirectory($target_dir, '/^' . preg_quote($archiveId) . '_\d+\.txt$/');
       $seq = count($existing);
   
       // Escrever novo ficheiro

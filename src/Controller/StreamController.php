@@ -142,6 +142,7 @@ class StreamController extends ControllerBase {
       $data = implode(PHP_EOL, $filtered);
 
       try {
+        \Drupal::logger('debug')->info('A gravar ficheiro: @file', ['@file' => $new_filepath]);
         \Drupal::service('file_system')->saveData($data, $new_filepath, FileSystemInterface::EXISTS_REPLACE);
       } catch (\Exception $e) {
         \Drupal::logger('debug')->error('Erro ao gravar os dados: @error', ['@error' => $e->getMessage()]);

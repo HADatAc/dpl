@@ -327,6 +327,7 @@ class StreamController extends ControllerBase {
     }
   
     $latest_two = array_slice($lines, -2);
+    
     \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
   
     return [

@@ -28,7 +28,7 @@ class StreamController extends ControllerBase {
         $api->getUri($streamUri),
         'getUri'
       );
-      \Drupal::logger('debug')->debug('<pre>@stream record</pre>', ['@stream' => print_r($stream, TRUE)]);
+
       if (!$stream) {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream not found.'], 404);
       }
@@ -69,7 +69,6 @@ class StreamController extends ControllerBase {
       $api->elementDel('stream', $stream->uri);
       $api->elementAdd('stream', json_encode($payload));
 
-      
       return new JsonResponse(['status' => 'ok', 'message' => 'Recording started.']);
     }
     catch (\Exception $e) {
@@ -87,7 +86,8 @@ class StreamController extends ControllerBase {
     try {
       $api = \Drupal::service('rep.api_connector');
       $stream = $api->parseObjectResponse($api->getUri($streamUri), 'getUri');
-  
+      \Drupal::logger('debug')->debug('<pre>@stream suspend</pre>', ['@stream' => print_r($stream, TRUE)]);
+
       if (!$stream || empty($stream->messageArchiveId) || empty($stream->endedAt)) {
         return new JsonResponse(['status' => 'error', 'message' => 'Missing data in stream.'], 400);
       }

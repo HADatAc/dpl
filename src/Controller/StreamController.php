@@ -313,7 +313,7 @@ class StreamController extends ControllerBase {
   }
 
   public static function readMessages($filename) {
-    $filepath = 'private://streams/messageFiles/' . basename($filename); // segurança extra com basename
+    $filepath = 'private://streams/messageFiles/' . basename($filename) . '.txt'; // segurança extra com basename
     $real_path = \Drupal::service('file_system')->realpath($filepath);
     if (!file_exists($real_path)) {
       \Drupal::logger('dpl')->debug('O ficheiro de mensagens não existe: @path', ['@path' => $real_path]);

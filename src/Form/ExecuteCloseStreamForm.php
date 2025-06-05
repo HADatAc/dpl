@@ -309,6 +309,8 @@ class ExecuteCloseStreamForm extends FormBase {
         $clone['endedAt']           = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
         $clone['hasStreamStatus']   = HASCO::CLOSED;
         $clone['hasMessageStatus']  = HASCO::INACTIVE;
+        $filename = $this->getStream()->messageArchiveId . '.txt';
+        $this->stopSubscription($filename);
       }
 
       $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
@@ -382,6 +384,13 @@ class ExecuteCloseStreamForm extends FormBase {
             $api->elementAdd('da', $mtJSON);
           }
         }
+      }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
+        $ip       = $this->getStream()->messageIP;
+        $port     = $this->getStream()->messagePort;
+        $topic    = $this->getStream()->messageTopic;
+        $filename = $this->getStream()->messageArchiveId . '.txt';
+      
+        $this->startSubscription($ip, $port, $topic, $filename);
       }
 
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
@@ -412,5 +421,47 @@ class ExecuteCloseStreamForm extends FormBase {
     return;
   }
 
-
+  private function startSubscription($ip, $port, $topic, $filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/';
+    $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+  
+    $filepath = $directory . $filename;
+    $realpath = $fs->realpath($filepath);
+  
+    // Define caminho do ficheiro PID ao lado do ficheiro de log
+    $pidpath = $realpath . '.pid';
+  
+    // Comando MQTT
+    $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
+    $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
+  
+    // Executa e guarda PID
+    $pid = shell_exec($fullCmd);
+    file_put_contents($pidpath, $pid);
+  
+    \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
+  }
+  
+  private function stopSubscription($filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/';
+    $filepath = $directory . $filename;
+  
+    $realpath = $fs->realpath($filepath);
+    $pidpath = $realpath . '.pid';
+  
+    if (file_exists($pidpath)) {
+      $pid = trim(file_get_contents($pidpath));
+      if (is_numeric($pid)) {
+        exec("kill $pid");
+        unlink($pidpath);
+        \Drupal::logger('dpl')->notice("Subscrição terminada (PID $pid) para {$filename}");
+      } else {
+        \Drupal::logger('dpl')->error("PID inválido em {$pidpath}: $pid");
+      }
+    } else {
+      \Drupal::logger('dpl')->warning("Ficheiro de PID não encontrado: {$pidpath}");
+    }
+  }  
 }

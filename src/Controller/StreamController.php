@@ -313,14 +313,13 @@ class StreamController extends ControllerBase {
   }
 
   public static function readMessages($ip, $port, $topic) {
-    $private_key = '/var/www/.ssh/graxiom_main.pem';
-    $ssh_user = 'ubuntu';
     $escaped_topic = escapeshellarg($topic);
-    $remote_cmd = "tmux capture-pane -pt $escaped_topic -S -2 -e";
-  
-    $ssh_cmd = "ssh -i $private_key -o StrictHostKeyChecking=no $ssh_user@$ip '$remote_cmd' 2>&1";
+    $escaped_ip = escapeshellarg($ip);
+    $escaped_port = escapeshellarg($port);
 
-    $output = shell_exec($ssh_cmd);
+    $cmd = "timeout 3s mosquitto_sub -h $escaped_ip -p $escaped_port -t $escaped_topic -C 2 2>&1";
+
+    $output = shell_exec($cmd);
 
     $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
     \Drupal::logger('stream_debug')->debug($ssh_cmd);

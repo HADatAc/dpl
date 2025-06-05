@@ -95,6 +95,7 @@ class StreamController extends ControllerBase {
       try {
         $recordStart = new \DateTime($stream->startedAt);
       } catch (\Exception $e) {
+        \Drupal::logger('debug')->error('Erro ao ir buscar a data: @error', ['@error' => $e->getMessage()]);
         return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time format.'], 400);
       }
   
@@ -102,6 +103,7 @@ class StreamController extends ControllerBase {
       $real_path = \Drupal::service('file_system')->realpath($file_path);
   
       if (!file_exists($real_path)) {
+        \Drupal::logger('debug')->error('Erro ao ir buscar o ficheiro original');
         return new JsonResponse(['status' => 'error', 'message' => 'Original file not found.'], 404);
       }
   

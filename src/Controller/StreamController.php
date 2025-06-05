@@ -48,8 +48,7 @@ class StreamController extends ControllerBase {
         'studyUri' => $stream->studyUri ?? '',
         'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
         'method' => $stream->method ?? '',
-        'startedAt' => $stream->startedAt ?? '',
-        'endedAt' => $recordStartTime,
+        'startedAt' => $recordStartTime,
         'datasetPattern' => $stream->datasetPattern ?? '',
         'cellScopeUri' => $stream->cellScopeUri ?? [],
         'cellScopeName' => $stream->cellScopeName ?? [],
@@ -89,12 +88,12 @@ class StreamController extends ControllerBase {
       $stream = $api->parseObjectResponse($api->getUri($streamUri), 'getUri');
       \Drupal::logger('debug')->debug('<pre>@stream suspend</pre>', ['@stream' => print_r($stream, TRUE)]);
 
-      if (!$stream || empty($stream->messageArchiveId) || empty($stream->endedAt)) {
+      if (!$stream || empty($stream->messageArchiveId) || empty($stream->startedAt)) {
         return new JsonResponse(['status' => 'error', 'message' => 'Missing data in stream.'], 400);
       }
   
       $archiveId = $stream->messageArchiveId;
-      $recordStart = \DateTime::createFromFormat('Y-m-d H:i:s', $stream->endedAt);
+      $recordStart = \DateTime::createFromFormat('Y-m-d H:i:s', $stream->startedAt);
       if (!$recordStart) {
         return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time.'], 400);
       }
@@ -153,7 +152,6 @@ class StreamController extends ControllerBase {
         'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
         'method' => $stream->method ?? '',
         'startedAt' => $stream->startedAt ?? '',
-        'endedAt' => '',
         'datasetPattern' => $stream->datasetPattern ?? '',
         'cellScopeUri' => $stream->cellScopeUri ?? [],
         'cellScopeName' => $stream->cellScopeName ?? [],

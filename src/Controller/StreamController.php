@@ -312,31 +312,27 @@ class StreamController extends ControllerBase {
     ]);
   }
 
-  public static function readMessages($ip, $port, $topic) {
-    $escaped_topic = escapeshellarg($topic);
-    $escaped_ip = escapeshellarg($ip);
-    $escaped_port = escapeshellarg($port);
-
-    $cmd = "timeout 3s mosquitto_sub -h $escaped_ip -p $escaped_port -t $escaped_topic -C 2 2>&1";
-
-    $output = shell_exec($cmd);
-
-    $debug_info = "<pre><strong>Comando executado:</strong> $ssh_cmd\n\n";
-    \Drupal::logger('stream_debug')->debug($ssh_cmd);
-
-
-    if (empty(trim($output))) {
+  public static function readMessages($filename) {
+    $filepath = 'private://streams/messageFiles/' . basename($filename); // segurança extra com basename
+    $real_path = \Drupal::service('file_system')->realpath($filepath);
+    $debug_info = "<pre><strong>Ficheiro de mensagens:</strong> $real_path\n\n";
+    if (!file_exists($real_path)) {
+      $debug_info .= "O ficheiro de mensagens não existe.\n";
       return ['debug' => $debug_info, 'messages' => []];
     }
-
-    preg_match_all('/\{.*?\}/s', $output, $matches);
-    $all_messages = $matches[0] ?? [];
-    $latest_two = array_slice($all_messages, -2);
-
+  
+    $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (!$lines) {
+      $debug_info .= "O ficheiro está vazio ou ocorreu um erro na leitura.\n";
+      return ['debug' => $debug_info, 'messages' => []];
+    }
+  
+    $latest_two = array_slice($lines, -2);
+  
     return [
       'debug' => $debug_info,
       'messages' => $latest_two,
     ];
-  }
+  }  
 
 }

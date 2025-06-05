@@ -272,22 +272,12 @@ dpl.stream_record:
   requirements:
     _permission: 'access content'
 
-
-
-dpl.record_message_ajax:
-  path: '/dpl/record-message-ajax'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::recordMessageAjax'
-  requirements:
-    _permission: 'access content'
-  methods: [GET]
-
-# STREAM MESSAGES
 dpl.stream_suspend:
   path: '/dpl/stream/suspend/{streamUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamSuspend'
     _title: 'Stream Suspend'
+  methods: [POST]
   requirements:
     _permission: 'access content'
 

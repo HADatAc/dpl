@@ -28,13 +28,14 @@ class StreamController extends ControllerBase {
         $api->getUri($streamUri),
         'getUri'
       );
-  
+      \Drupal::logger('debug')->debug('<pre>@stream record</pre>', ['@stream' => print_r($stream, TRUE)]);
       if (!$stream) {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream not found.'], 404);
       }
   
       // Atualizar o estado da stream
       $stream->hasMessageStatus = HASCO::RECORDING;
+      $recordStartTime = date('Y-m-d H:i:s');
   
       // Reconstruir o payload com os dados existentes + atualização
       $payload = [
@@ -47,6 +48,7 @@ class StreamController extends ControllerBase {
         'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
         'method' => $stream->method ?? '',
         'startedAt' => $stream->startedAt ?? '',
+        'endedAt' => $recordStartTime,
         'datasetPattern' => $stream->datasetPattern ?? '',
         'cellScopeUri' => $stream->cellScopeUri ?? [],
         'cellScopeName' => $stream->cellScopeName ?? [],
@@ -67,32 +69,7 @@ class StreamController extends ControllerBase {
       $api->elementDel('stream', $stream->uri);
       $api->elementAdd('stream', json_encode($payload));
 
-      // Iniciar script worker para gravar a stream
-      $php_path = '/usr/local/bin/php'; // Ajustar se o PHP estiver noutro caminho
-      $script_path = '/opt/drupal/web/modules/custom/dpl/scripts/stream_worker.php';
-
-      $cmd = "$php_path $script_path " .
-            escapeshellarg($stream->uri) . ' ' .
-            escapeshellarg($stream->messageArchiveId) . ' ' .
-            escapeshellarg($stream->messageIP) . ' ' .
-            escapeshellarg($stream->messagePort) . ' ' .
-            escapeshellarg('wsaheadhin') .
-            " > /dev/null 2>&1 & echo $!";
-
-      \Drupal::logger('stream_record')->debug('Comando: @cmd', ['@cmd' => $cmd]);
-
-
-      $pid = shell_exec($cmd);
-      if ($pid) {
-        \Drupal::logger('stream_record')->notice('Script iniciado com PID: @pid', ['@pid' => $pid]);
-      } else {
-        \Drupal::logger('stream_record')->error('Falha ao iniciar o script worker.');
-      }
-      $fs = \Drupal::service('file_system');
-      $directory = 'private://streams';
-      $fs->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-      $pid_file = "private://streams/pid_" . md5($stream->uri) . ".txt";
-      $fs->saveData($pid, $pid_file, FileSystemInterface::EXISTS_REPLACE);
+      
       return new JsonResponse(['status' => 'ok', 'message' => 'Recording started.']);
     }
     catch (\Exception $e) {
@@ -103,116 +80,147 @@ class StreamController extends ControllerBase {
     }  
   }
 
-  public function recordMessageAjax(Request $request) {
-    
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
-
-    $archive_id = $request->query->get('archive_id');
-    $ip = $request->query->get('ip');
-    $port = $request->query->get('port');
-    $topic = $request->query->get('topic');
-
-    \Drupal::logger('dpl')->info('recordMessageAjax chamado com archive_id: @id, ip: @ip, port: @port, topic: @topic', [
-      '@id' => $archive_id,
-      '@ip' => $ip,
-      '@port' => $port,
-      '@topic' => $topic,
-    ]);
-
-    // Ler nova mensagem (adaptar o comando SSH como no teu Form)
-    $ssh_cmd = "ssh -i /var/www/.ssh/graxiom_main.pem -o StrictHostKeyChecking=no ubuntu@$ip 'tmux capture-pane -pt " . escapeshellarg($topic) . " -S -1 -e'";
-    $output = shell_exec($ssh_cmd);
-
-    if (empty(trim($output))) {
-      return new JsonResponse(['status' => 'no-message']);
-    }
-
-    preg_match_all('/\{.*?\}/s', $output, $matches);
-    $messages = $matches[0] ?? [];
-    $last_msg = end($messages);
-
-    if (isset($_SESSION['last_mqtt_message']) && $_SESSION['last_mqtt_message'] === $last_msg) {
-      return new JsonResponse(['status' => 'duplicate']);
-    }
-    
-    $_SESSION['last_mqtt_message'] = $last_msg;
-
-    // Gravar no Excel (append)
-    $directory = 'private://streams/messageFiles/';
-    \Drupal::service('file_system')->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-    $filepath = \Drupal::service('file_system')->realpath($directory . "Messages{$archive_id}_0.xlsx");
-
-    if (file_exists($filepath)) {
-      $spreadsheet = IOFactory::load($filepath);
-    } else {
-      $spreadsheet = new Spreadsheet();
-      $spreadsheet->getActiveSheet()->fromArray(['Timestamp', 'Raw JSON'], NULL, 'A1');
-    }
-
-    $sheet = $spreadsheet->getActiveSheet();
-    $row = $sheet->getHighestRow() + 1;
-    $sheet->setCellValue("A$row", date('Y-m-d H:i:s'));
-    $sheet->setCellValue("B$row", $last_msg);
-
-    $writer = new Xlsx($spreadsheet);
-    $writer->save($filepath);
-
-    return new JsonResponse(['status' => 'ok', 'row' => $row]);
-  }
-
-
-
   public function streamSuspend($streamUri) {
-    // Your logic to handle suspending the stream.
-    // Status do messageStream passa a Inactive
-    // Enviar para a API o ficheiro DA
+
+    $streamUri = base64_decode($streamUri);
+
+    try {
+      $api = \Drupal::service('rep.api_connector');
+      $stream = $api->parseObjectResponse($api->getUri($streamUri), 'getUri');
+  
+      if (!$stream || empty($stream->messageArchiveId) || empty($stream->endedAt)) {
+        return new JsonResponse(['status' => 'error', 'message' => 'Missing data in stream.'], 400);
+      }
+  
+      $archiveId = $stream->messageArchiveId;
+      $recordStart = \DateTime::createFromFormat('Y-m-d H:i:s', $stream->endedAt);
+      if (!$recordStart) {
+        return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time.'], 400);
+      }
+  
+      $file_path = 'private://streams/messageFiles/' . $archiveId . '.txt';
+      $real_path = \Drupal::service('file_system')->realpath($file_path);
+  
+      if (!file_exists($real_path)) {
+        return new JsonResponse(['status' => 'error', 'message' => 'Original file not found.'], 404);
+      }
+  
+      $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $filtered = [];
+  
+      foreach ($lines as $line) {
+        // Separar tópico e mensagem
+        [$topic, $json] = explode(' ', $line, 2);
+        $data = json_decode($json, true);
+  
+        if (json_last_error() !== JSON_ERROR_NONE || empty($data['timestamp'])) {
+          continue;
+        }
+  
+        $msgTime = \DateTime::createFromFormat('Y-m-d H:i:s', $data['timestamp']);
+        if ($msgTime && $msgTime >= $recordStart) {
+          $filtered[] = $line;
+        }
+      }
+  
+      if (empty($filtered)) {
+        return new JsonResponse(['status' => 'ok', 'message' => 'No messages to record.']);
+      }
+  
+      // Criar diretório de destino se não existir
+      $target_dir = 'private://streams/messageFilesRecord/';
+      \Drupal::service('file_system')->prepareDirectory($target_dir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY);
+  
+      // Calcular o número sequencial
+      $existing = file_scan_directory($target_dir, '/^' . preg_quote($archiveId) . '_\d+\.txt$/');
+      $seq = count($existing);
+  
+      // Escrever novo ficheiro
+      $new_filename = $archiveId . '_' . $seq . '.txt';
+      $new_filepath = $target_dir . $new_filename;
+      file_put_contents(\Drupal::service('file_system')->realpath($new_filepath), implode(PHP_EOL, $filtered));
+  
+      // Atualizar estado da stream
+      $stream->hasMessageStatus = HASCO::INACTIVE;
+      $payload = [
+        'uri' => $stream->uri,
+        'typeUri' => HASCO::STREAM,
+        'hascoTypeUri' => HASCO::STREAM,
+        'label' => $stream->label ?? 'Stream',
+        'deploymentUri' => $stream->deploymentUri ?? '',
+        'studyUri' => $stream->studyUri ?? '',
+        'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
+        'method' => $stream->method ?? '',
+        'startedAt' => $stream->startedAt ?? '',
+        'endedAt' => '',
+        'datasetPattern' => $stream->datasetPattern ?? '',
+        'cellScopeUri' => $stream->cellScopeUri ?? [],
+        'cellScopeName' => $stream->cellScopeName ?? [],
+        'messageProtocol' => $stream->messageProtocol ?? '',
+        'messageIP' => $stream->messageIP ?? '',
+        'messagePort' => $stream->messagePort ?? '',
+        'messageArchiveId' => $stream->messageArchiveId ?? '',
+        'hasVersion' => $stream->hasVersion ?? '',
+        'comment' => $stream->comment ?? '',
+        'canUpdate' => $stream->canUpdate ?? [],
+        'designedAt' => $stream->designedAt ?? '',
+        'hasSIRManagerEmail' => $stream->hasSIRManagerEmail ?? '',
+        'hasStreamStatus' => $stream->hasStreamStatus ?? '',
+        'hasMessageStatus' => HASCO::INACTIVE,
+      ];
+  
+      $api->elementDel('stream', $stream->uri);
+      $api->elementAdd('stream', json_encode($payload));
+
+      $filename = $new_filename;
+      $fileId = $archiveId . '_' . $seq;
+      $studyUri = $stream->studyUri ?? '';
+      $useremail = \Drupal::currentUser()->getEmail();
+      $newDataFileUri = Utils::uriGen('datafile');
+
+      $datafileArr = [
+        'uri'               => $newDataFileUri,
+        'typeUri'           => HASCO::DATAFILE,
+        'hascoTypeUri'      => HASCO::DATAFILE,
+        'label'             => $filename,
+        'filename'          => $filename,
+        'id'                => $fileId,
+        'studyUri'          => $studyUri,
+        'streamUri'         => $stream->uri,
+        'fileStatus'        => Constant::FILE_STATUS_UNPROCESSED,
+        'hasSIRManagerEmail'=> $useremail,
+      ];
+      $datafileJSON = json_encode($datafileArr);
+      
+      // Criar DA JSON
+      $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
+      $mtArr = [
+        'uri'             => $newMTUri,
+        'typeUri'         => HASCO::DATA_ACQUISITION,
+        'hascoTypeUri'    => HASCO::DATA_ACQUISITION,
+        'isMemberOfUri'   => $studyUri,
+        'label'           => $filename,
+        'hasDataFileUri'  => $newDataFileUri,
+        'hasVersion'      => '',
+        'comment'         => '',
+        'hasSIRManagerEmail'=> $useremail,
+      ];
+      $mtJSON = json_encode($mtArr);
+      
+      // Enviar para a API
+      $api->parseObjectResponse($api->datafileAdd($datafileJSON), 'datafileAdd');
+      $api->parseObjectResponse($api->elementAdd('da', $mtJSON), 'elementAdd');
 
 
-    // CRIAR E ENVIAR FICHEIRO DA NA API
-    //  Procura função processDAFile em JsonDataController.php (std)
-    // 3) Build JSON with json_encode (avoids precedence bugs in ??)
-    // $newDataFileUri = Utils::uriGen('datafile');
-    // $datafileArr = [
-    //     'uri'               => $newDataFileUri,
-    //     'typeUri'           => HASCO::DATAFILE,
-    //     'hascoTypeUri'      => HASCO::DATAFILE,
-    //     'label'             => $filename,
-    //     'filename'          => $filename,
-    //     'id'                => $fileId,
-    //     'studyUri'          => base64_decode($studyuri),
-    //     'streamUri'         => $streamUri,
-    //     'fileStatus'        => Constant::FILE_STATUS_UNPROCESSED,
-    //     'hasSIRManagerEmail'=> $useremail,
-    // ];
-    // $datafileJSON = json_encode($datafileArr);
-    // // \Drupal::logger('debug')->debug('DATAFILE JSON: @json', ['@json' => $datafileJSON]);
-
-    // // Mount the MT JSON
-    // $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
-    // $mtArr = [
-    //     'uri'             => $newMTUri,
-    //     'typeUri'         => HASCO::DATA_ACQUISITION,
-    //     'hascoTypeUri'    => HASCO::DATA_ACQUISITION,
-    //     'isMemberOfUri'   => base64_decode($studyuri),
-    //     'label'           => $filename,
-    //     'hasDataFileUri'  => $newDataFileUri,
-    //     'hasVersion'      => '',
-    //     'comment'         => '',
-    //     'hasSIRManagerEmail'=> $useremail,
-    // ];
-    // $mtJSON = json_encode($mtArr);
-    // // \Drupal::logger('debug')->debug('MT JSON: @json', ['@json' => $mtJSON]);
-
-    // // 4) Call API and log responses
-    // $msg1 = $api->parseObjectResponse($api->datafileAdd($datafileJSON), 'datafileAdd');
-    // // \Drupal::logger('debug')->debug('Response datafileAdd: @resp', [
-    // //     '@resp' => print_r($msg1, TRUE),
-    // // ]);
-
-    // $msg2 = $api->parseObjectResponse($api->elementAdd('da', $mtJSON), 'elementAdd');
-    return new Response('Página placeholder para streamSuspend.');
+  
+      return new JsonResponse(['status' => 'ok', 'message' => 'Gravação suspensa e ficheiro criado com sucesso.']);
+    }
+    catch (\Exception $e) {
+      return new JsonResponse([
+        'status' => 'error',
+        'message' => 'Erro: ' . $e->getMessage(),
+      ], 500);
+    }
   }
 
   public function streamIngest($streamUri) {
@@ -327,7 +335,7 @@ class StreamController extends ControllerBase {
     }
   
     $latest_two = array_slice($lines, -2);
-    
+
     \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
   
     return [

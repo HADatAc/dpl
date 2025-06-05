@@ -12,6 +12,7 @@ use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\rep\Vocabulary\HASCO;
+use Drupal\rep\Utils;
 
 class StreamController extends ControllerBase {
 

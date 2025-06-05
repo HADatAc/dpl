@@ -13,6 +13,7 @@ use Drupal\Core\Ajax\SettingsCommand;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Utils;
+use Drupal\rep\Constant;
 
 class StreamController extends ControllerBase {
 

@@ -387,7 +387,7 @@ class ExecuteCloseStreamForm extends FormBase {
       }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
         $ip       = $this->getStream()->messageIP;
         $port     = $this->getStream()->messagePort;
-        $topic    = $this->getStream()->messageTopic;
+        $topic    = 'wsaheadhin';
         $filename = $this->getStream()->messageArchiveId . '.txt';
       
         $this->startSubscription($ip, $port, $topic, $filename);

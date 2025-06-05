@@ -28,8 +28,6 @@ class StreamController extends ControllerBase {
         $api->getUri($streamUri),
         'getUri'
       );
-      \Drupal::logger('debug')->debug('<pre>@stream record</pre>', ['@stream' => print_r($stream, TRUE)]);
-
       if (!$stream) {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream not found.'], 404);
       }
@@ -93,7 +91,7 @@ class StreamController extends ControllerBase {
       }
   
       $archiveId = $stream->messageArchiveId;
-      
+
       try {
         $recordStart = new \DateTime($stream->startedAt);
       } catch (\Exception $e) {

@@ -110,11 +110,8 @@ class StreamController extends ControllerBase {
       $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
       $filtered = [];
       \Drupal::logger('debug')->debug('<pre>@lines</pre>', ['@lines' => print_r($lines, TRUE)]);
-      dpm($lines);return false;
       foreach ($lines as $line) {
-        // Separar tópico e mensagem
-        [$topic, $json] = explode(' ', $line, 2);
-        $data = json_decode($json, true);
+        $data = json_decode($line, true);
   
         if (json_last_error() !== JSON_ERROR_NONE || empty($data['timestamp'])) {
           continue;

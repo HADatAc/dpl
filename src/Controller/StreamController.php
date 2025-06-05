@@ -93,9 +93,11 @@ class StreamController extends ControllerBase {
       }
   
       $archiveId = $stream->messageArchiveId;
-      $recordStart = \DateTime::createFromFormat('Y-m-d H:i:s', $stream->startedAt);
-      if (!$recordStart) {
-        return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time.'], 400);
+      
+      try {
+        $recordStart = new \DateTime($stream->startedAt);
+      } catch (\Exception $e) {
+        return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time format.'], 400);
       }
   
       $file_path = 'private://streams/messageFiles/' . $archiveId . '.txt';

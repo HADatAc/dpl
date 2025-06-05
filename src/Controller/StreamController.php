@@ -48,7 +48,7 @@ class StreamController extends ControllerBase {
         'studyUri' => $stream->studyUri ?? '',
         'semanticDataDictionaryUri' => $stream->semanticDataDictionaryUri ?? '',
         'method' => $stream->method ?? '',
-        'startedAt' => $recordStartTime,
+        'startedAt' => $stream->startedAt ?? '',
         'datasetPattern' => $stream->datasetPattern ?? '',
         'cellScopeUri' => $stream->cellScopeUri ?? [],
         'cellScopeName' => $stream->cellScopeName ?? [],

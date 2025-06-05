@@ -124,7 +124,7 @@ class StreamController extends ControllerBase {
           $filtered[] = $line;
         }
       }
-  
+      dpm(empty($filtered));return false;
       if (empty($filtered)) {
         return new JsonResponse(['status' => 'ok', 'message' => 'No messages to record.']);
       }

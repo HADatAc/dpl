@@ -459,7 +459,7 @@ class AddStreamForm extends FormBase {
             'uri'                       => $uriTopic,
             'streamUri'                 => $uri,
             'deploymentUri'             => Utils::uriFromAutocomplete($topicItem['deployment']),
-            'semanticdatadictionaryUri' => Utils::uriFromAutocomplete($topicItem['sdd']),
+            'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($topicItem['sdd']),
             'cellScopeUri'              => [$topicItem['cellscope']],
           ];
 

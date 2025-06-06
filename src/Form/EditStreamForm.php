@@ -65,6 +65,9 @@ class EditStreamForm extends FormBase {
    * Tabs are rendered conditionally via #access, and rebuilt via AJAX on method change.
    */
   public function buildForm(array $form, FormStateInterface $form_state, $streamuri = NULL) {
+
+    $form['#attributes']['novalidate'] = 'novalidate';
+
     // Attach the custom tabs library and Drupal States for AJAX rebuild.
     $form['#attached']['library'][] = 'dpl/dpl_onlytabs';
     $form['#attached']['library'][] = 'core/drupal.states';
@@ -81,17 +84,25 @@ class EditStreamForm extends FormBase {
     }
     $this->setStream($response->body);
 
+    // dpm($this->getStream());
+
     // INIT TOPICS
-    $topics = [];
+    if ($form_state->has('topics')) {
+      $topics = $form_state->get('topics');
+    }
+    else {
+      $topics = [];
+      $form_state->set('topics', $topics);
+    }
 
     //dpm($this->getStream());
 
     // 2) Prepare the deployment autocomplete label.
     $deploymentLabel = '';
     if (!empty($this->stream->deployment) && isset($this->stream->deployment->uri, $this->stream->deployment->label)) {
-      $deploymentLabel = Utils::fieldToAutocomplete(
-        $this->stream->deployment->uri,
-        $this->stream->deployment->label
+      $deploymentLabel = Utils::trimAutoCompleteString(
+        $this->stream->deployment->label,
+        $this->stream->deployment->uri
       );
     }
 
@@ -185,7 +196,7 @@ class EditStreamForm extends FormBase {
         HASCO::PUBLIC  => $this->t('Public'),
         HASCO::PRIVATE => $this->t('Private'),
       ],
-      '#default_value' => $this->getStream()->permissionUri,
+      '#value' => $this->getStream()->permissionUri ?? HASCO::PUBLIC,
       '#required' => TRUE,
     ];
     // Study autocomplete.
@@ -268,6 +279,7 @@ class EditStreamForm extends FormBase {
         'id' => 'edit-tab3',
       ],
     ];
+
     // Protocol.
     $form['tabs']['tab_content']['tab3']['stream_protocol'] = [
       '#type' => 'select',
@@ -291,7 +303,7 @@ class EditStreamForm extends FormBase {
       ];
     }
 
-    //  
+    //
     //  TOPICS: START
     //
 
@@ -300,24 +312,26 @@ class EditStreamForm extends FormBase {
         '#markup' => 'Topics',
       ];
 
-      $form['tabs']['tab_content']['tab3']['topics'] = array(
+      $form['tabs']['tab_content']['tab3']['topics'] = [
         '#type' => 'container',
-        '#title' => $this->t('topics'),
-        '#attributes' => array(
-          'class' => array('p-3', 'bg-light', 'text-dark', 'row', 'border', 'border-secondary', 'rounded'),
-          'id' => 'custom-table-wrapper',
-        ),
-      );
+        '#attributes' => [
+          'id' => 'topics-ajax-wrapper',
+          'class' => ['p-3', 'bg-light', 'text-dark', 'row', 'border', 'border-secondary', 'rounded'],
+        ],
+      ];
 
-      $form['tabs']['tab_content']['tab3']['topics']['header'] = array(
+      $separator = '<div class="w-100"></div>';
+
+      $form['tabs']['tab_content']['tab3']['topics']['header'] = [
         '#type' => 'markup',
         '#markup' =>
           '<div class="p-2 col bg-secondary text-white border border-white">Topic Name</div>' .
           '<div class="p-2 col bg-secondary text-white border border-white">Deployment</div>' .
           '<div class="p-2 col bg-secondary text-white border border-white">Semantic Data Dictionary</div>' .
           '<div class="p-2 col bg-secondary text-white border border-white">Cell Scope</div>' .
-          '<div class="p-2 col-md-1 bg-secondary text-white border border-white">Operations</div>' . $separator,
-      );
+          '<div class="p-2 col-md-1 bg-secondary text-white border border-white">Operations</div>' .
+          $separator,
+      ];
 
       $form['tabs']['tab_content']['tab3']['topics']['rows'] = $this->renderTopicRows($topics);
 
@@ -326,31 +340,27 @@ class EditStreamForm extends FormBase {
         '#markup' => $separator,
       ];
 
-      $form['tabs']['tab_content']['tab3']['topics']['actions']['top'] = array(
-        '#type' => 'markup',
-        '#markup' => '<div class="p-3 col">',
-      );
-
+      $form['tabs']['tab_content']['tab3']['topics']['actions'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['col-12', 'mb-3']],
+      ];
       $form['tabs']['tab_content']['tab3']['topics']['actions']['add_row'] = [
         '#type' => 'submit',
         '#value' => $this->t('New Topic'),
-        '#name' => 'new_topic',
-        '#attributes' => array('class' => array('btn', 'btn-sm', 'add-element-button')),
+        '#name'  => 'new_topic',
+        '#attributes' =>['class' => ['btn', 'btn-sm', 'add-element-button', 'mt-3']],
+        '#ajax'  => [
+          'callback' => '::ajaxAddTopicCallback',
+          'wrapper'  => 'topics-ajax-wrapper',
+          'effect'   => 'fade',
+        ],
+        '#limit_validation_errors' => [],
+        '#submit' => ['::submitAjaxAddTopic'],
       ];
 
-      $form['tabs']['tab_content']['tab3']['topics']['actions']['bottom'] = array(
-        '#type' => 'markup',
-        '#markup' => '</div>' . $separator,
-      );
-
-    //  
+    //
     //  TOPICS: END
     //
-
-    $form['tabs']['tab_content']['tab3']['space_0'] = [
-      '#type' => 'item',
-      '#markup' => '<br>',
-    ];
 
     // Header
     $form['tabs']['tab_content']['tab3']['stream_header'] = [
@@ -358,6 +368,9 @@ class EditStreamForm extends FormBase {
       '#title' => $this->t('Header'),
       '#default_value' => '',
       // '#required' => ($method === 'messages'),
+      '#wrapper_attributes' => [
+        'class' => ['mt-3']
+      ]
     ];
 
     // 7) Action buttons: Save and Cancel.
@@ -380,6 +393,8 @@ class EditStreamForm extends FormBase {
       '#markup' => '<br><br>',
     ];
 
+    $form_state->set('topics', $topics);
+
     return $form;
   }
 
@@ -397,214 +412,117 @@ class EditStreamForm extends FormBase {
    *    TOPIC'S FUNCTIONS
    *
    ******************************/
-
-   protected function renderTopicRows(array $topics) {
+  protected function renderTopicRows(array $topics) {
     $form_rows = [];
     $separator = '<div class="w-100"></div>';
+
     foreach ($topics as $delta => $topic) {
 
-      $form_row = array(
-        'topic' => array(
-          'top' => array(
+      $form_row = [
+        'topic' => [
+          'top' => [
             '#type' => 'markup',
             '#markup' => '<div class="pt-3 col border border-white">',
-          ),
-          'main' => array(
+          ],
+          'main' => [
             '#type' => 'textfield',
             '#name' => 'topic_topic_' . $delta,
             '#value' => $topic['topic'],
-          ),
-          'bottom' => array(
+          ],
+          'bottom' => [
             '#type' => 'markup',
             '#markup' => '</div>',
-          ),
-        ),
-        'deployment' => array(
-          'top' => array(
+          ],
+        ],
+        'deployment' => [
+          'top' => [
             '#type' => 'markup',
             '#markup' => '<div class="pt-3 col border border-white">',
-          ),
-          'main' => array(
+          ],
+          'main' => [
             '#type' => 'textfield',
             '#name' => 'topic_deployment_' . $delta,
             '#value' => $topic['deployment'],
-          ),
-          'bottom' => array(
+            '#autocomplete_route_name' => 'std.deployment_autocomplete',
+          ],
+          'bottom' => [
             '#type' => 'markup',
             '#markup' => '</div>',
-          ),
-        ),
-        'sdd' => array(
-          'top' => array(
+          ],
+        ],
+        'sdd' => [
+          'top' => [
             '#type' => 'markup',
             '#markup' => '<div class="pt-3 col border border-white">',
-          ),
-          'main' => array(
+          ],
+          'main' => [
             '#type' => 'textfield',
             '#name' => 'topic_sdd_' . $delta,
             '#value' => $topic['sdd'],
-          ),
-          'bottom' => array(
+            '#autocomplete_route_name' => 'rep.sdd_autocomplete',
+          ],
+          'bottom' => [
             '#type' => 'markup',
             '#markup' => '</div>',
-          ),
-        ),
-        'cellscope' => array(
-          'top' => array(
+          ],
+        ],
+        'cellscope' => [
+          'top' => [
             '#type' => 'markup',
             '#markup' => '<div class="pt-3 col border border-white">',
-          ),
-          'main' => array(
+          ],
+          'main' => [
             '#type' => 'textfield',
             '#name' => 'topic_cellscope_' . $delta,
             '#value' => $topic['cellscope'],
-          ),
-          'bottom' => array(
+          ],
+          'bottom' => [
             '#type' => 'markup',
             '#markup' => '</div>',
-          ),
-        ),
-        'operations' => array(
-          'top' => array(
+          ],
+        ],
+        'operations' => [
+          'top' => [
             '#type' => 'markup',
             '#markup' => '<div class="pt-3 col-md-1 border border-white">',
-          ),
-          'main' => array(
+          ],
+          'main' => [
+            // Use a submit button with AJAX instead of a plain 'button'
             '#type' => 'submit',
-            '#name' => 'topic_remove_' . $delta,
+            // English comment: This button will trigger AJAX removal of this row.
             '#value' => $this->t('Remove'),
-            '#attributes' => array(
-              'class' => array('remove-row', 'btn', 'btn-sm', 'delete-element-button'),
-              'id' => 'topic-' . $delta,
-            ),
-          ),
-          'bottom' => array(
+            // English comment: Give a unique name so we can parse which index to remove.
+            '#name' => 'topic_remove_' . $delta,
+            // English comment: Prevent full form validation before AJAX callback.
+            '#limit_validation_errors' => [],
+            // English comment: Use a CSS class for styling or JS hooks if needed.
+            '#attributes' => [
+              'class' => ['remove-row', 'btn', 'btn-sm', 'delete-element-button'],
+              // 'id' is optional here since '#name' is already unique.
+            ],
+            // English comment: Attach AJAX settings so that only this region is re-rendered.
+            '#ajax' => [
+              'callback' => '::ajaxRemoveTopicCallback',
+              'wrapper' => 'topics-ajax-wrapper',
+              'effect' => 'fade',
+            ],
+            // English comment: Define a submit handler that actually removes the topic.
+            '#submit' => ['::submitAjaxRemoveTopic'],
+          ],
+          'bottom' => [
             '#type' => 'markup',
             '#markup' => '</div>' . $separator,
-          ),
-        ),
-      );
+          ],
+        ],
+      ];
 
       $rowId = 'row' . $delta;
       $form_rows[] = [
         $rowId => $form_row,
       ];
-
     }
+
     return $form_rows;
-  }
-
-  protected function updateTopics(FormStateInterface $form_state) {
-    $topics = \Drupal::state()->get('my_form_topics');
-    $input = $form_state->getUserInput();
-    if (isset($input) && is_array($input) &&
-        isset($topics) && is_array($topics)) {
-
-      foreach ($topics as $topic_id => $topic) {
-        if (isset($topic_id) && isset($topic)) {
-          $codes[$topic_id]['topic']       = $input['topic_topic_' . $topic_id] ?? '';
-          $codes[$topic_id]['deployment']  = $input['topic_deployment_' . $topic_id] ?? '';
-          $codes[$topic_id]['sdd']         = $input['topic_sdd_' . $topic_id] ?? '';
-          $codes[$topic_id]['cellscope']   = $input['topic_cellscope_' . $topic_id] ?? '';
-        }
-      }
-    }
-    \Drupal::state()->set('my_form_codes', $topics);
-    return;
-  }
-
-  protected function saveTopics($semanticDataDictionaryUri, array $codes) {
-    if (!isset($semanticDataDictionaryUri)) {
-      \Drupal::messenger()->addError(t("No semantic data dictionary's URI have been provided to save possible values."));
-      return;
-    }
-    if (!isset($codes) || !is_array($codes)) {
-      \Drupal::messenger()->addWarning(t("Semantic data dictionary has no possible values to be saved."));
-      return;
-    }
-
-    foreach ($codes as $code_id => $code) {
-      if (isset($code_id) && isset($code)) {
-        try {
-          $useremail = \Drupal::currentUser()->getEmail();
-
-          $column = ' ';
-          if ($codes[$code_id]['column'] != NULL && $codes[$code_id]['column'] != '') {
-            $column = $codes[$code_id]['column'];
-          }
-
-          $codeStr = ' ';
-          if ($codes[$code_id]['code'] != NULL && $codes[$code_id]['code'] != '') {
-            $codeStr = $codes[$code_id]['code'];
-          }
-
-          $codeLabel = ' ';
-          if ($codes[$code_id]['label'] != NULL && $codes[$code_id]['label'] != '') {
-            $codeLabel = $codes[$code_id]['label'];
-          }
-
-          $class = ' ';
-          if ($codes[$code_id]['class'] != NULL && $codes[$code_id]['class'] != '') {
-            $class = $codes[$code_id]['class'];
-          }
-
-          $codeUri = str_replace(
-            Constant::PREFIX_SEMANTIC_DATA_DICTIONARY,
-            Constant::PREFIX_POSSIBLE_VALUE,
-            $semanticDataDictionaryUri) . '/' . $code_id;
-          $codeJSON = '{"uri":"'. $codeUri .'",'.
-              '"superUri":"'.HASCO::POSSIBLE_VALUE.'",'.
-              '"hascoTypeUri":"'.HASCO::POSSIBLE_VALUE.'",'.
-              '"partOfSchema":"'.$semanticDataDictionaryUri.'",'.
-              '"listPosition":"'.$code_id.'",'.
-              '"isPossibleValueOf":"'.$column.'",'.
-              '"label":"'.$column.'",'.
-              '"hasCode":"' . $codeStr . '",' .
-              '"hasCodeLabel":"' . $codeLabel . '",' .
-              '"hasClass":"' . $class . '",' .
-              '"comment":"Possible value ' . $column . ' of ' . $column . ' of SDD ' . $semanticDataDictionaryUri . '",'.
-              '"hasSIRManagerEmail":"'.$useremail.'"}';
-          $api = \Drupal::service('rep.api_connector');
-          $api->elementAdd('possiblevalue',$codeJSON);
-
-          //dpm($codeJSON);
-
-        } catch(\Exception $e){
-          \Drupal::messenger()->addError(t("An error occurred while saving possible value(s): ".$e->getMessage()));
-        }
-      }
-    }
-    return;
-  }
-
-  public function addTopicRow() {
-
-    // Add a new row to the table.
-    $topics[] = [
-      'topic' => '',
-      'deployment' => '',
-      'sdd' => '',
-      'cellscope' => '',
-    ];
-
-    // Rebuild the table rows.
-    $form['topics']['rows'] = $this->renderTopicRows($topics);
-    return;
-  }
-
-  public function removeTopicRow($button_name) {
-    $topics = \Drupal::state()->get('my_form_topics') ?? [];
-
-    // from button name's value, determine which row to remove.
-    $parts = explode('_', $button_name);
-    $topic_to_remove = (isset($parts) && is_array($parts)) ? (int) (end($parts)) : null;
-
-    if (isset($topic_to_remove) && $topic_to_remove > -1) {
-      unset($topics[$topic_to_remove]);
-      $topics = array_values($topics);
-      \Drupal::state()->set('my_form_topics', $topics);
-    }
-    return;
   }
 
   /**
@@ -621,7 +539,7 @@ class EditStreamForm extends FormBase {
 
     // RETRIEVE TOPICS STATE
     $topics = \Drupal::state()->get('my_form_topics');
-    
+
     // PROCESS BUTTONS
 
     if ($button_ === 'back') {
@@ -687,6 +605,98 @@ class EditStreamForm extends FormBase {
     }
 
     $this->backUrl();
+  }
+
+  /**
+   * Submission AJAX Handler to add a new topic.
+   */
+  public function submitAjaxAddTopic(array &$form, FormStateInterface $form_state) {
+    $topics = $form_state->get('topics') ?: [];
+
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$topicItem) {
+      $topicItem['topic']      = $input['topic_topic_' . $delta]      ?? $topicItem['topic'];
+      $topicItem['deployment'] = $input['topic_deployment_' . $delta] ?? $topicItem['deployment'];
+      $topicItem['sdd']        = $input['topic_sdd_' . $delta]        ?? $topicItem['sdd'];
+      $topicItem['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $topicItem['cellscope'];
+    }
+    unset($topicItem);
+
+    $topics[] = [
+      'topic'     => '',
+      'deployment'=> '',
+      'sdd'       => '',
+      'cellscope' => '',
+    ];
+
+    $form_state->set('topics', $topics);
+    $form_state->setRebuild(TRUE);
+  }
+
+  /**
+   * AJAX callback to rebuild only Topic block.
+   */
+  public function ajaxAddTopicCallback(array &$form, FormStateInterface $form_state) {
+    return $form['tabs']['tab_content']['tab3']['topics'];
+  }
+
+  /**
+   * AJAX Handler for Topic row delete.
+   */
+  public function submitAjaxRemoveTopic(array &$form, FormStateInterface $form_state) {
+    $topics = $form_state->get('topics') ?: [];
+
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$topicItem) {
+      $topicItem['topic']      = $input['topic_topic_' . $delta]      ?? $topicItem['topic'];
+      $topicItem['deployment'] = $input['topic_deployment_' . $delta] ?? $topicItem['deployment'];
+      $topicItem['sdd']        = $input['topic_sdd_' . $delta]        ?? $topicItem['sdd'];
+      $topicItem['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $topicItem['cellscope'];
+    }
+    unset($topicItem);
+
+    $trigger = $form_state->getTriggeringElement();
+    $name = $trigger['#name'];
+    $parts = explode('_', $name);
+    $index_to_remove = (int) end($parts);
+
+    if (isset($topics[$index_to_remove])) {
+      unset($topics[$index_to_remove]);
+      $topics = array_values($topics);
+    }
+
+    $form_state->set('topics', $topics);
+    $form_state->setRebuild(TRUE);
+  }
+
+  /**
+   * AJAX callback for rebuild only the Topic list after topic removal.
+   */
+  public function ajaxRemoveTopicCallback(array &$form, FormStateInterface $form_state) {
+    $topics = $form_state->get('topics') ?: [];
+
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$topicItem) {
+      $topicItem['topic']      = $input['topic_topic_' . $delta]      ?? $topicItem['topic'];
+      $topicItem['deployment'] = $input['topic_deployment_' . $delta] ?? $topicItem['deployment'];
+      $topicItem['sdd']        = $input['topic_sdd_' . $delta]        ?? $topicItem['sdd'];
+      $topicItem['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $topicItem['cellscope'];
+    }
+    unset($topicItem);
+
+    $trigger = $form_state->getTriggeringElement();
+    $id = $trigger['#id'];
+    $index_to_remove = (int) str_replace('topic-', '', $id);
+
+    if (isset($topics[$index_to_remove])) {
+      unset($topics[$index_to_remove]);
+      $topics = array_values($topics);
+    }
+
+    $form_state->set('topics', $topics);
+    $form_state->setRebuild(TRUE);
+
+    return $form['tabs']['tab_content']['tab3']['topics'];
   }
 
   /**

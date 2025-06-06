@@ -372,7 +372,7 @@ class AddStreamForm extends FormBase {
     // dpm(json_encode($stream));return false;
 
     try {
-      \Drupal::service('rep.api_connector')->elementAdd('stream', json_encode($stream));
+      \Drupal::service('rep.api_connector')->elementAdd('stream', json_encode($stream, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
       \Drupal::messenger()->addMessage($this->t('Stream has been added successfully.'));
     }
     catch (\Exception $e) {

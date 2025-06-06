@@ -321,7 +321,6 @@ class ExecuteCloseDeploymentForm extends FormBase {
           // b) Build a “clone” array. Copy all fields from the original, except set:
           //    - endedAt       => the form‐provided end datetime
           //    - hasStreamStatus => CLOSED
-          //    - hasMessageStatus => INACTIVE
           //    (Adjust any other fields you need to change, if necessary.)
           $clone = [
             'uri'                       => $orig->uri,
@@ -350,7 +349,6 @@ class ExecuteCloseDeploymentForm extends FormBase {
                                               ->getValue('deployment_end_datetime')
                                               ->format('Y-m-d\TH:i:s.v'),
             'hasStreamStatus'           => HASCO::CLOSED,
-            'hasMessageStatus'          => HASCO::INACTIVE,
           ];
 
           // c) JSON‐encode without escaping slashes or unicode:

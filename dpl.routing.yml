@@ -139,6 +139,7 @@ dpl.manage_streams_route:
   path: 'dpl/manage/streams/{state}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\ManageStreamsForm'
+    state: 'design'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'

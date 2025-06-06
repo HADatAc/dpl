@@ -441,8 +441,6 @@ class AddStreamForm extends FormBase {
       $stream['datasetPattern']    = '';
       $stream['cellScopeUri']      = [];
       $stream['cellScopeName']     = [];
-      $stream['hasMessageStatus']  = HASCO::INACTIVE;
-
     }
 
     try {
@@ -457,10 +455,14 @@ class AddStreamForm extends FormBase {
           $uriTopic = Utils::uriGen('streamtopic');
           $streamTopic = [
             'uri'                       => $uriTopic,
+            'typeUri'                   => HASCO::STREAMTOPIC,
+            'hascoTypeUri'              => HASCO::STREAMTOPIC,
             'streamUri'                 => $uri,
+            'label'                     => $topicItem['topic'],
             'deploymentUri'             => Utils::uriFromAutocomplete($topicItem['deployment']),
             'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($topicItem['sdd']),
             'cellScopeUri'              => [$topicItem['cellscope']],
+            'hasTopicStatus'            => HASCO::INACTIVE,
           ];
 
           \Drupal::service('rep.api_connector')

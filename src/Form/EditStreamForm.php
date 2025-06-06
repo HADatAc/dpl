@@ -87,12 +87,37 @@ class EditStreamForm extends FormBase {
     // dpm($this->getStream());
 
     // INIT TOPICS
-    if ($form_state->has('topics')) {
-      $topics = $form_state->get('topics');
+    if (isset($this->getStream()->topics) && is_array($this->getStream()->topics)) {
+      $topics_raw = $this->getStream()->topics;
+      $topics = [];
+
+      foreach ($topics_raw as $obj) {
+        $topics[] = [
+          // “topic” → nome (label) do tópico
+          'topic'      => $obj->label ?? '',
+          // “deployment” → string de autocomplete (ex: “Label [URI]”)
+          'deployment' => Utils::trimAutoCompleteString(
+                            // supondo que exista um objeto->deployment, com uri+label
+                            $obj->deployment->label  ?? '',
+                            $obj->deployment->depluri    ?? ''
+                          ),
+          // “sdd” → mesma lógica para semanticDataDictionary
+          'sdd'        => Utils::trimAutoCompleteString(
+                            $obj->semanticDataDictionary->label ?? '',
+                            $obj->semanticDataDictionary->uri   ?? ''
+                          ),
+          // “cellscope” → se CellScopeUri vier como array, use o primeiro elemento
+          'cellscope'  => is_array($obj->cellScopeUri)
+                            ? ($obj->cellScopeUri[0] ?? '')
+                            : ($obj->cellScopeUri  ?? ''),
+        ];
+      }
+
+      // Agora $topics é um array de arrays, cada um com as chaves esperadas
+      $form_state->set('topics', $topics);
     }
     else {
-      $topics = [];
-      $form_state->set('topics', $topics);
+      $form_state->set('topics', []);
     }
 
     //dpm($this->getStream());
@@ -590,7 +615,6 @@ class EditStreamForm extends FormBase {
       $payload['datasetPattern']   = '';
       $payload['cellScopeUri']      = [];
       $payload['cellScopeName']     = [];
-      $payload['hasMessageStatus']  = $this->stream->hasMessageStatus ?? HASCO::INACTIVE;
     }
 
     try {

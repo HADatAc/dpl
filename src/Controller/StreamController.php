@@ -22,10 +22,10 @@ class StreamController extends ControllerBase {
 
   public function streamRecord($streamUri) {
     $streamUri = base64_decode($streamUri);
-  
+
     try {
       $api = \Drupal::service('rep.api_connector');
-  
+
       $stream = $api->parseObjectResponse(
         $api->getUri($streamUri),
         'getUri'
@@ -33,11 +33,10 @@ class StreamController extends ControllerBase {
       if (!$stream) {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream not found.'], 404);
       }
-  
+
       // Atualizar o estado da stream
-      $stream->hasMessageStatus = HASCO::RECORDING;
       $recordStartTime = date('Y-m-d H:i:s');
-  
+
       // Reconstruir o payload com os dados existentes + atualização
       $payload = [
         'uri' => $stream->uri,
@@ -62,9 +61,8 @@ class StreamController extends ControllerBase {
         'designedAt' => $stream->designedAt ?? '',
         'hasSIRManagerEmail' => $stream->hasSIRManagerEmail ?? '',
         'hasStreamStatus' => $stream->hasStreamStatus ?? '',
-        'hasMessageStatus' => HASCO::RECORDING,
       ];
-  
+
       // Atualizar a stream (delete + add)
       $api->elementDel('stream', $stream->uri);
       $api->elementAdd('stream', json_encode($payload));
@@ -76,7 +74,7 @@ class StreamController extends ControllerBase {
         'status' => 'error',
         'message' => 'Erro: ' . $e->getMessage(),
       ], 500);
-    }  
+    }
   }
 
   public function streamSuspend($streamUri) {
@@ -91,7 +89,7 @@ class StreamController extends ControllerBase {
       if (!$stream || empty($stream->messageArchiveId) || empty($stream->startedAt)) {
         return new JsonResponse(['status' => 'error', 'message' => 'Missing data in stream.'], 400);
       }
-  
+
       $archiveId = $stream->messageArchiveId;
 
       try {
@@ -100,25 +98,25 @@ class StreamController extends ControllerBase {
         \Drupal::logger('debug')->error('Erro ao ir buscar a data: @error', ['@error' => $e->getMessage()]);
         return new JsonResponse(['status' => 'error', 'message' => 'Invalid start time format.'], 400);
       }
-  
+
       $file_path = 'private://streams/messageFiles/' . $archiveId . '.txt';
       $real_path = \Drupal::service('file_system')->realpath($file_path);
-  
+
       if (!file_exists($real_path)) {
         \Drupal::logger('debug')->error('Erro ao ir buscar o ficheiro original');
         return new JsonResponse(['status' => 'error', 'message' => 'Original file not found.'], 404);
       }
-  
+
       $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
       $filtered = [];
       \Drupal::logger('debug')->debug('<pre>@lines</pre>', ['@lines' => print_r($lines, TRUE)]);
       foreach ($lines as $line) {
         $data = json_decode($line, true);
-  
+
         if (json_last_error() !== JSON_ERROR_NONE || empty($data['timestamp'])) {
           continue;
         }
-  
+
         $msgTime = \DateTime::createFromFormat('Y-m-d H:i:s', $data['timestamp']);
         if ($msgTime && $msgTime >= $recordStart) {
           $filtered[] = $line;
@@ -128,14 +126,14 @@ class StreamController extends ControllerBase {
       if (empty($filtered)) {
         return new JsonResponse(['status' => 'ok', 'message' => 'No messages to record.']);
       }
-  
+
       $target_dir = 'private://streams/messageFilesRecord/';
       \Drupal::service('file_system')->prepareDirectory($target_dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-  
+
       // Calcular o número sequencial
       $existing = \Drupal::service('file_system')->scanDirectory($target_dir, '/^' . preg_quote($archiveId) . '_\d+\.txt$/');
       $seq = count($existing);
-  
+
       // Escrever novo ficheiro
       $new_filename = $archiveId . '_' . $seq . '.txt';
       $new_filepath = $target_dir . $new_filename;
@@ -149,7 +147,6 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Erro ao criar o ficheiro de gravação.'], 500);
       }
       // Atualizar estado da stream
-      $stream->hasMessageStatus = HASCO::SUSPENDED;
       $payload = [
         'uri' => $stream->uri,
         'typeUri' => HASCO::STREAM,
@@ -173,9 +170,8 @@ class StreamController extends ControllerBase {
         'designedAt' => $stream->designedAt ?? '',
         'hasSIRManagerEmail' => $stream->hasSIRManagerEmail ?? '',
         'hasStreamStatus' => $stream->hasStreamStatus ?? '',
-        'hasMessageStatus' => HASCO::SUSPENDED,
       ];
-  
+
       $api->elementDel('stream', $stream->uri);
       $api->elementAdd('stream', json_encode($payload));
 
@@ -198,7 +194,7 @@ class StreamController extends ControllerBase {
         'hasSIRManagerEmail'=> $useremail,
       ];
       $datafileJSON = json_encode($datafileArr);
-      
+
       // Criar DA JSON
       $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
       $mtArr = [
@@ -213,13 +209,13 @@ class StreamController extends ControllerBase {
         'hasSIRManagerEmail'=> $useremail,
       ];
       $mtJSON = json_encode($mtArr);
-      
+
       // Enviar para a API
       $api->parseObjectResponse($api->datafileAdd($datafileJSON), 'datafileAdd');
       $api->parseObjectResponse($api->elementAdd('da', $mtJSON), 'elementAdd');
 
 
-  
+
       return new JsonResponse(['status' => 'ok', 'message' => 'Gravação suspensa e ficheiro criado com sucesso.']);
     }
     catch (\Exception $e) {
@@ -334,20 +330,20 @@ class StreamController extends ControllerBase {
       \Drupal::logger('dpl')->debug('O ficheiro de mensagens não existe: @path', ['@path' => $real_path]);
       return ['messages' => []];
     }
-  
+
     $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if (!$lines) {
       \Drupal::logger('dpl')->debug('O ficheiro está vazio ou ocorreu um erro na leitura: @path', ['@path' => $real_path]);
       return ['messages' => []];
     }
-  
+
     $latest_two = array_slice($lines, -2);
 
     \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
-  
+
     return [
       'messages' => $latest_two,
     ];
-  }  
+  }
 
 }

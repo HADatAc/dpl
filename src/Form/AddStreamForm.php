@@ -198,7 +198,7 @@ class AddStreamForm extends FormBase {
     ];
     $form['tabs']['tab_content']['tab2']['stream_semanticdatadictionary'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('SDD'),
+      '#title' => $this->t('Semantic Data Dictionary'),
       '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
     ];
     // Cell Scope URI.

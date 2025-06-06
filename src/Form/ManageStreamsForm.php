@@ -122,6 +122,8 @@ class ManageStreamsForm extends FormBase {
       return;
     }
 
+    // dpm($apiState, 'Debug API State', 'status', FALSE);
+
     // GET manager EMAIL
     $current_user = \Drupal::currentUser();
     $user = \Drupal::entityTypeManager()->getStorage('user')->load($current_user->id());
@@ -311,6 +313,7 @@ class ManageStreamsForm extends FormBase {
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
         ],
+        '#disabled' => true,
       ];
     }
     $form['card']['card_body']['element_table'] = [

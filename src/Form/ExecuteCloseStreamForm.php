@@ -300,11 +300,17 @@ class ExecuteCloseStreamForm extends FormBase {
       ];
 
       if ($this->getMode() === 'execute') {
-        $clone['startedAt']       = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['startedAt']         = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']   = HASCO::ACTIVE;
+        $clone['hasMessageStatus']  = HASCO::SUSPENDED;
       }
       elseif ($this->getMode() === 'close') {
-        $clone['startedAt']       = $orig->startedAt;
-        $clone['endedAt']         = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['startedAt']         = $orig->startedAt;
+        $clone['endedAt']           = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']   = HASCO::CLOSED;
+        $clone['hasMessageStatus']  = HASCO::INACTIVE;
+        $filename = $this->getStream()->messageArchiveId . '.txt';
+        $this->stopSubscription($filename);
       }
 
       $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
@@ -312,6 +318,80 @@ class ExecuteCloseStreamForm extends FormBase {
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('stream', $this->getStreamUri());
       $api->elementAdd('stream', $streamJson);
+
+      // RENAME to execute because new end-points are still not working
+      if ($this->getMode() === 'execute' && $this->getStream()->method === 'files') {
+
+        $useremail = \Drupal::currentUser()->getEmail();
+        $streamUri = $this->getStreamUri();
+        $studyUri  = $this->getStream()->studyUri;
+        $pattern   = $this->getStream()->datasetPattern;
+
+        // 2.1) Get all Data Acquisitions (DAs) from the study:
+        $allItems = $api->parseObjectResponse($api->getStudyDAsByStudy($studyUri, 99999, 0),'getStudyDAsByStudy');
+
+        $unassociated = array_filter($allItems, function ($item) {
+          return empty($item->hasDataFile->streamUri);
+        });
+
+        foreach ($unassociated as $da) {
+          // 2.2) Only interested in those whose streamUri is still empty/null:
+          $filename = $da->hasDataFile->filename;
+
+          // 2.4) If the filename matches (at the beginning) the datasetPattern, then recycle:
+          if (preg_match('/^' . $pattern . '/', $filename)) {
+            // Store some old values to copy
+            $oldDataFileUri = $da->hasDataFile->uri;
+            $oldDAUri       = $da->uri;
+            $oldFileId      = $da->hasDataFile->id;
+
+            // 2.5) Delete the original DA and DataFile:
+            $api->elementDel('da', $oldDAUri);
+            $api->elementDel('datafile', $oldDataFileUri);
+
+            // 2.6) Recreate a new DataFile with the same name and id, but linking to the current stream:
+            //     (this is exactly the snippet you already sent, just adapted for these variables):
+            $newDataFileUri = Utils::uriGen('datafile');
+            $datafileArr = [
+              'uri'                => $newDataFileUri,
+              'typeUri'            => HASCO::DATAFILE,
+              'hascoTypeUri'       => HASCO::DATAFILE,
+              'label'              => $filename,
+              'filename'           => $filename,
+              'id'                 => $oldFileId,
+              'studyUri'           => $studyUri,
+              'streamUri'          => $streamUri,
+              'fileStatus'         => Constant::FILE_STATUS_UNPROCESSED,
+              'hasSIRManagerEmail' => $useremail,
+            ];
+            $datafileJSON = json_encode($datafileArr);
+            $api->datafileAdd($datafileJSON);
+
+            // 2.7) Recreate the Data Acquisition (DA) pointing to the new DataFile:
+            $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
+            $mtArr = [
+              'uri'               => $newMTUri,
+              'typeUri'           => HASCO::DATA_ACQUISITION,
+              'hascoTypeUri'      => HASCO::DATA_ACQUISITION,
+              'isMemberOfUri'     => $studyUri,
+              'label'             => $filename,
+              'hasDataFileUri'    => $newDataFileUri,
+              'hasVersion'        => '',
+              'comment'           => '',
+              'hasSIRManagerEmail'=> $useremail,
+            ];
+            $mtJSON = json_encode($mtArr);
+            $api->elementAdd('da', $mtJSON);
+          }
+        }
+      }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
+        $ip       = $this->getStream()->messageIP;
+        $port     = $this->getStream()->messagePort;
+        $topic    = 'wsaheadhin';
+        $filename = $this->getStream()->messageArchiveId . '.txt';
+      
+        $this->startSubscription($ip, $port, $topic, $filename);
+      }
 
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
@@ -341,5 +421,47 @@ class ExecuteCloseStreamForm extends FormBase {
     return;
   }
 
-
+  private function startSubscription($ip, $port, $topic, $filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/';
+    $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+  
+    $filepath = $directory . $filename;
+    $realpath = $fs->realpath($filepath);
+  
+    // Define caminho do ficheiro PID ao lado do ficheiro de log
+    $pidpath = $realpath . '.pid';
+  
+    // Comando MQTT
+    $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
+    $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
+  
+    // Executa e guarda PID
+    $pid = shell_exec($fullCmd);
+    file_put_contents($pidpath, $pid);
+  
+    \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
+  }
+  
+  private function stopSubscription($filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/';
+    $filepath = $directory . $filename;
+  
+    $realpath = $fs->realpath($filepath);
+    $pidpath = $realpath . '.pid';
+  
+    if (file_exists($pidpath)) {
+      $pid = trim(file_get_contents($pidpath));
+      if (is_numeric($pid)) {
+        exec("kill $pid");
+        unlink($pidpath);
+        \Drupal::logger('dpl')->notice("Subscrição terminada (PID $pid) para {$filename}");
+      } else {
+        \Drupal::logger('dpl')->error("PID inválido em {$pidpath}: $pid");
+      }
+    } else {
+      \Drupal::logger('dpl')->warning("Ficheiro de PID não encontrado: {$pidpath}");
+    }
+  }  
 }

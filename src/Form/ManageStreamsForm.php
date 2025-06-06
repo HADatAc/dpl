@@ -6,7 +6,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\dpl\Form\ListStreamStateByDeploymentPage;
+use Drupal\dpl\Form\ListStreamStatePage;
 use Drupal\rep\Entity\Stream;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
@@ -24,8 +24,6 @@ class ManageStreamsForm extends FormBase {
   protected $manager_email;
 
   protected $manager_name;
-
-  protected $deployment;
 
   protected $state;
 
@@ -56,13 +54,6 @@ class ManageStreamsForm extends FormBase {
     return $this->state = $state;
   }
 
-  public function getDeployment() {
-    return $this->deployment;
-  }
-  public function setDeployment($deployment) {
-    return $this->deployment = $deployment;
-  }
-
   public function getList() {
     return $this->list;
   }
@@ -87,7 +78,7 @@ class ManageStreamsForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi=NULL, $state=NULL, $page=NULL, $pagesize=NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $state=NULL, $page=NULL, $pagesize=NULL) {
 
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
@@ -109,19 +100,6 @@ class ManageStreamsForm extends FormBase {
         break;
     }
 
-    // RETRIEVE DEPLOYMENT
-    $api = \Drupal::service('rep.api_connector');
-    $uri_decode=base64_decode($deploymenturi);
-    $rawresponse = $api->getUri($uri_decode);
-    $obj = json_decode($rawresponse);
-    if ($obj->isSuccessful) {
-      $this->setDeployment($obj->body);
-    } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve Deployment."));
-      self::backUrl();
-      return;
-    }
-
     // dpm($apiState, 'Debug API State', 'status', FALSE);
 
     // GET manager EMAIL
@@ -141,7 +119,7 @@ class ManageStreamsForm extends FormBase {
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
     if ($this->getState() != NULL) {
-      $this->setListSize(ListStreamStateByDeploymentPage::total($apiState, $this->getManagerEmail(), $this->getDeployment()->uri));
+      $this->setListSize(ListStreamStatePage::total($apiState, $this->getManagerEmail()));
     }
     if (gettype($this->list_size) == 'string') {
       $total_pages = "0";
@@ -156,19 +134,19 @@ class ManageStreamsForm extends FormBase {
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $next_page, $pagesize);
+      $next_page_link = ListStreamStatePage::link($apiState, $this->getManagerEmail(), $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $previous_page, $pagesize);
+      $previous_page_link = ListStreamStatePage::link($apiState, $this->getManagerEmail(), $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListStreamStateByDeploymentPage::exec($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $page, $pagesize));
+    $this->setList(ListStreamStatePage::exec($apiState, $this->getManagerEmail(), $page, $pagesize));
 
     //dpm($this->getList());
     $header = Stream::generateHeaderState($apiState);
@@ -178,10 +156,6 @@ class ManageStreamsForm extends FormBase {
     $form['page_title'] = [
       '#type' => 'item',
       '#title' => $this->t('<h3>Manage Streams</h3>'),
-    ];
-    $form['page_context'] = [
-      '#type' => 'item',
-      '#title' => $this->t('<h4>Streams belonging to deployment <font color="DarkGreen">' . $this->getDeployment()->label . '</font></h4>'),
     ];
     $form['page_subtitle'] = [
       '#type' => 'item',
@@ -196,19 +170,19 @@ class ManageStreamsForm extends FormBase {
               <ul class="nav nav-pills nav-justified mb-0" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'design' ? 'active-dp2' : '') . '" id="pills-design-tab"  href="' .
-                      $this->stateLink($this->getDeployment()->uri, 'design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
+                      $this->stateLink('design', $page, $pagesize) . '" role="tab">Upcoming Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'active' ? 'active-dp2' : '') . '" id="pills-active-tab" href="' .
-                      $this->stateLink($this->getDeployment()->uri, 'active', $page, $pagesize) . '" role="tab">Active Streams</a>
+                      $this->stateLink('active', $page, $pagesize) . '" role="tab">Active Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'closed' ? 'active-dp2' : '') . '" id="pills-closed-tab" href="' .
-                      $this->stateLink($this->getDeployment()->uri, 'closed', $page, $pagesize) . '" role="tab">Completed Streams</a>
+                      $this->stateLink('closed', $page, $pagesize) . '" role="tab">Completed Streams</a>
                   </li>
                   <li class="nav-item" role="presentation">
                       <a class="nav-link ' . ($state === 'all' ? 'active-dp2' : '') . '" id="pills-all-tab" href="' .
-                      $this->stateLink($this->getDeployment()->uri, 'all', $page, $pagesize) . '" role="tab">All Streams</a>
+                      $this->stateLink('all', $page, $pagesize) . '" role="tab">All Streams</a>
                   </li>
               </ul>
           </div>
@@ -327,8 +301,8 @@ class ManageStreamsForm extends FormBase {
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, 1, $pagesize),
-        'last' => ListStreamStateByDeploymentPage::link($apiState, $this->getManagerEmail(), $this->getDeployment()->uri, $total_pages, $pagesize),
+        'first' => ListStreamStatePage::link($apiState, $this->getManagerEmail(), 1, $pagesize),
+        'last' => ListStreamStatePage::link($apiState, $this->getManagerEmail(), $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),
@@ -380,7 +354,6 @@ class ManageStreamsForm extends FormBase {
     // DESIGN STATE
     if ($button_name === 'design_state' && $this->getState() != 'design') {
       $url = Url::fromRoute('dpl.manage_streams_route');
-      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'design');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -391,7 +364,6 @@ class ManageStreamsForm extends FormBase {
     // ACTIVE STATE
     if ($button_name === 'active_state' && $this->getState() != 'active') {
       $url = Url::fromRoute('dpl.manage_streams_route');
-      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'active');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -402,7 +374,6 @@ class ManageStreamsForm extends FormBase {
     // CLOSED STATE
     if ($button_name === 'closed_state' && $this->getState() != 'closed') {
       $url = Url::fromRoute('dpl.manage_streams_route');
-      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'closed');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -413,7 +384,6 @@ class ManageStreamsForm extends FormBase {
     // ALL STATE
     if ($button_name === 'all_state' && $this->getState() != 'all') {
       $url = Url::fromRoute('dpl.manage_streams_route');
-      $url->setRouteParameter('deploymenturi', base64_encode($this->getDeployment()->uri));
       $url->setRouteParameter('state', 'all');
       $url->setRouteParameter('page', '1');
       $url->setRouteParameter('pagesize', $this->getPageSize());
@@ -424,7 +394,7 @@ class ManageStreamsForm extends FormBase {
     // ADD ELEMENT
     if ($button_name === 'add_element') {
       Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_stream');
-      $url = Url::fromRoute('dpl.add_stream', ['deploymenturi' => base64_encode($this->getDeployment()->uri)]);
+      $url = Url::fromRoute('dpl.add_stream');
       $form_state->setRedirectUrl($url);
     }
 
@@ -511,10 +481,9 @@ class ManageStreamsForm extends FormBase {
     }
   }
 
-  public function stateLink($deploymenturi, $state, $page, $pagesize) {
+  public function stateLink($state, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
     return $root_url . REPGUI::MANAGE_STREAMS .
-        base64_encode($deploymenturi) . '/'.
         $state . '/' .
         strval($page) . '/' .
         strval($pagesize);

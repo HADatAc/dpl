@@ -27,32 +27,6 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * Deployment object retrieved from API.
-   *
-   * @var object
-   */
-  protected $deployment;
-
-  /**
-   * Getter for deployment.
-   *
-   * @return object
-   */
-  public function getDeployment() {
-    return $this->deployment;
-  }
-
-  /**
-   * Setter for deployment.
-   *
-   * @param object $deployment
-   *   Deployment data returned from the API.
-   */
-  public function setDeployment($deployment) {
-    $this->deployment = $deployment;
-  }
-
-  /**
    * {@inheritdoc}
    *
    * Build the form with three tabs:
@@ -62,31 +36,31 @@ class AddStreamForm extends FormBase {
    *
    * Uses #ajax to rebuild on method change and #access to include/exclude tabs.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     // Attach libraries for custom tabs and Drupal States.
     $form['#attached']['library'][] = 'dpl/dpl_onlytabs';
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
 
     // Load deployment via API.
-    $api = \Drupal::service('rep.api_connector');
-    $decoded = base64_decode($deploymenturi);
-    $response = json_decode($api->getUri($decoded));
-    if (empty($response->isSuccessful)) {
-      \Drupal::messenger()->addError($this->t('Failed to retrieve Deployment.'));
-      $this->backUrl();
-      return [];
-    }
-    $this->setDeployment($response->body);
+    //$api = \Drupal::service('rep.api_connector');
+    //$decoded = base64_decode($deploymenturi);
+    //$response = json_decode($api->getUri($decoded));
+    //if (empty($response->isSuccessful)) {
+    //  \Drupal::messenger()->addError($this->t('Failed to retrieve Deployment.'));
+    //  $this->backUrl();
+    //  return [];
+    //}
+    //$this->setDeployment($response->body);
 
     // Prepare deployment autocomplete label.
-    $deploymentLabel = '';
-    if (isset($this->deployment->uri, $this->deployment->label)) {
-      $deploymentLabel = Utils::fieldToAutocomplete(
-        $this->deployment->uri,
-        $this->deployment->label
-      );
-    }
+    //$deploymentLabel = '';
+    //if (isset($this->deployment->uri, $this->deployment->label)) {
+    //  $deploymentLabel = Utils::fieldToAutocomplete(
+    //    $this->deployment->uri,
+    //    $this->deployment->label
+    //  );
+    //}
 
     // Determine selected method or default to 'files'.
     $method = $form_state->getValue('stream_method', 'files');
@@ -153,14 +127,6 @@ class AddStreamForm extends FormBase {
         'id'    => 'edit-tab1',
       ],
     ];
-    // Deployment field (autocomplete, disabled).
-    $form['tabs']['tab_content']['tab1']['stream_deployment'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Deployment'),
-      '#default_value' => $deploymentLabel,
-      '#disabled' => TRUE,
-      '#required' => TRUE,
-    ];
     // Method select triggers AJAX rebuild.
     $form['tabs']['tab_content']['tab1']['stream_method'] = [
       '#type' => 'select',
@@ -194,11 +160,6 @@ class AddStreamForm extends FormBase {
       '#title' => $this->t('Study'),
       '#autocomplete_route_name' => 'std.study_autocomplete',
     ];
-    $form['tabs']['tab_content']['tab1']['stream_semanticdatadictionary'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('SDD'),
-      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
-    ];
     // Version (fixed) and Description.
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
       '#type' => 'textfield',
@@ -227,6 +188,18 @@ class AddStreamForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Datafile Pattern'),
       '#required' => ($method === 'files'),
+    ];
+    // Deployment field (autocomplete).
+    $form['tabs']['tab_content']['tab2']['stream_deployment'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Deployment'),
+      '#autocomplete_route_name' => 'std.deployment_autocomplete',
+      '#required' => TRUE,
+    ];
+    $form['tabs']['tab_content']['tab2']['stream_semanticdatadictionary'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('SDD'),
+      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
     ];
     // Cell Scope URI.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_uri'] = [
@@ -363,21 +336,21 @@ class AddStreamForm extends FormBase {
       'label'                     => 'Stream',
       'method'                    => $form_state->getValue('stream_method'),
       'permissionUri'             => $form_state->getValue('permission_uri'),
-      'deploymentUri'             => $deployment,
       'hasVersion'                => $form_state->getValue('stream_version') ?? 1,
       'comment'                   => $form_state->getValue('stream_description'),
       'canUpdate'                 => [$email],
       'designedAt'                => $timestamp,
       'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
-      'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
       'hasSIRManagerEmail'        => $email,
       'hasStreamStatus'           => HASCO::DRAFT,
     ];
 
     if ($method === 'files') {
-      $stream['datasetPattern'] = $form_state->getValue('stream_datafile_pattern');
-      $stream['cellScopeUri']    = [$form_state->getValue('stream_cell_scope_uri')];
-      $stream['cellScopeName']   = [$form_state->getValue('stream_cell_scope_name')];
+      $stream['datasetPattern']   = $form_state->getValue('stream_datafile_pattern');
+      $stream['deploymentUri']    = $deployment;
+      $stream['semanticDataDictionaryUri'] = Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary'));
+      $stream['cellScopeUri']     = [$form_state->getValue('stream_cell_scope_uri')];
+      $stream['cellScopeName']    = [$form_state->getValue('stream_cell_scope_name')];
       $stream['messageProtocol']  = '';
       $stream['messageIP']        = '';
       $stream['messagePort']      = '';

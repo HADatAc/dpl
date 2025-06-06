@@ -59,7 +59,7 @@ dpl.edit_platform:
 # Stream CRUD options
 
 dpl.add_stream:
-  path: 'dpl/manage/addstream/{deploymenturi}'
+  path: 'dpl/manage/addstream'
   defaults:
     _form: '\Drupal\dpl\Form\AddStreamForm'
     _title: 'Add Stream'
@@ -136,7 +136,7 @@ dpl.manage_deployments_route:
     no_cache: 'TRUE'
 
 dpl.manage_streams_route:
-  path: 'dpl/manage/streams/{deploymenturi}/{state}/{page}/{pagesize}'
+  path: 'dpl/manage/streams/{state}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\ManageStreamsForm'
   requirements:

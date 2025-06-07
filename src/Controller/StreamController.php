@@ -20,8 +20,9 @@ class StreamController extends ControllerBase {
   use StringTranslationTrait;
 
 
-  public function streamRecord($streamUri) {
+  public function streamRecord($streamUri, $topicUri) {
     $streamUri = base64_decode($streamUri);
+    $topicUri = base64_decode($topicUri);
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -77,9 +78,10 @@ class StreamController extends ControllerBase {
     }
   }
 
-  public function streamSuspend($streamUri) {
+  public function streamSuspend($streamUri, $topicUri) {
 
     $streamUri = base64_decode($streamUri);
+    $topicUri = base64_decode($topicUri);
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -226,8 +228,10 @@ class StreamController extends ControllerBase {
     }
   }
 
-  public function streamIngest($streamUri) {
-    return new Response('Página placeholder para streamIngest.');
+  public function streamIngest($streamUri, $topicUri) {
+    $streamUri = base64_decode($streamUri);
+    $topicUri = base64_decode($topicUri);
+    return new JsonResponse(['status' => 'ok', 'message' => 'TODO']);
   }
 
   /**
@@ -278,7 +282,6 @@ class StreamController extends ControllerBase {
       'message' => $this->t('The file was successfully submitted for ingestion.'),
     ]);
   }
-
 
   public function fileUningestAjax(Request $request) {
     // 1) Read the base64‐encoded element URI from the query string.

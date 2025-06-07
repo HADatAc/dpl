@@ -398,7 +398,7 @@ class ExecuteCloseStreamForm extends FormBase {
         $topic    = 'wsaheadhin';
         $filename = $this->getStream()->messageArchiveId . '.txt';
 
-        $this->startSubscription($ip, $port, $topic, $filename);
+        // $this->startSubscription($ip, $port, $topic, $filename);
       }
 
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));

@@ -265,7 +265,7 @@ dpl.platform_edit:
 
 # STREAM RELATED ROUTES
 dpl.stream_record:
-  path: '/dpl/stream/record/{streamUri}'
+  path: '/dpl/stream/record/{streamUri}/{topicUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamRecord'
     _title: 'Start Stream Recording'
@@ -274,7 +274,7 @@ dpl.stream_record:
     _permission: 'access content'
 
 dpl.stream_suspend:
-  path: '/dpl/stream/suspend/{streamUri}'
+  path: '/dpl/stream/suspend/{streamUri}/{topicUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamSuspend'
     _title: 'Stream Suspend'
@@ -283,7 +283,7 @@ dpl.stream_suspend:
     _permission: 'access content'
 
 dpl.stream_ingest:
-  path: '/dpl/stream/ingest/{streamUri}'
+  path: '/dpl/stream/ingest/{streamUri}/{topicUri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
     _title: 'Stream Ingest'

@@ -457,7 +457,7 @@ class AddStreamForm extends FormBase {
             'uri'                       => $uriTopic,
             'typeUri'                   => HASCO::STREAMTOPIC,
             'hascoTypeUri'              => HASCO::STREAMTOPIC,
-            'streamUri'                 => $uri,
+            'streamUri'                 => $stream['uri'],
             'label'                     => $topicItem['topic'],
             'deploymentUri'             => Utils::uriFromAutocomplete($topicItem['deployment']),
             'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($topicItem['sdd']),

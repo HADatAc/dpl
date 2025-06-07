@@ -1,7 +1,7 @@
 (function ($, Drupal, drupalSettings) {
   Drupal.behaviors.dplStreamRecorder = {
     attach: function (context, settings) {
-      console.log('JS dplStreamRecorder comportamentos carregados');
+      // console.log('JS dplStreamRecorder comportamentos carregados');
 
       $('.dpl-start-record', context).each(function () {
         const $btn = $(this);

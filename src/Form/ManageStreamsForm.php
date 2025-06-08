@@ -287,7 +287,7 @@ class ManageStreamsForm extends FormBase {
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
         ],
-        '#disabled' => true,
+        // '#disabled' => true,
       ];
     }
     $form['card']['card_body']['element_table'] = [
@@ -459,6 +459,22 @@ class ManageStreamsForm extends FormBase {
         }
         \Drupal::messenger()->addMessage(t("Selected stream(s) has/have been deleted successfully."));
         return;
+      }
+    }
+
+    // MODIFY ELEMENT
+    if ($button_name === 'modify_element') {
+      if (sizeof($rows) < 1) {
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be modified."));
+      } else if ((sizeof($rows) > 1)) {
+        \Drupal::messenger()->addWarning(t("No more than one stream can be modified at once."));
+      } else {
+        $first = array_shift($rows);
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_stream');
+        $url = Url::fromRoute('dpl.edit_stream', [
+          'streamuri' => base64_encode($first)
+        ]);
+        $form_state->setRedirectUrl($url);
       }
     }
 

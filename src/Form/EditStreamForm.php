@@ -92,19 +92,24 @@ class EditStreamForm extends FormBase {
       $topics = [];
 
       foreach ($topics_raw as $obj) {
+
+        dpm($obj);
+        $dpl = $api->parseObjectResponse($api->getUri($obj->deploymentUri), 'getUri');
+        $sdd = $api->parseObjectResponse($api->getUri($obj->semanticDataDictionaryUri), 'getUri');
+
         $topics[] = [
           // “topic” → nome (label) do tópico
           'topic'      => $obj->label ?? '',
           // “deployment” → string de autocomplete (ex: “Label [URI]”)
           'deployment' => Utils::trimAutoCompleteString(
                             // supondo que exista um objeto->deployment, com uri+label
-                            $obj->deployment->label  ?? '',
-                            $obj->deployment->depluri    ?? ''
+                            $dpl->label  ?? '',
+                            $dpl->uri    ?? ''
                           ),
           // “sdd” → mesma lógica para semanticDataDictionary
           'sdd'        => Utils::trimAutoCompleteString(
-                            $obj->semanticDataDictionary->label ?? '',
-                            $obj->semanticDataDictionary->uri   ?? ''
+                            $sdd->label ?? '',
+                            $sdd->uri   ?? ''
                           ),
           // “cellscope” → se CellScopeUri vier como array, use o primeiro elemento
           'cellscope'  => is_array($obj->cellScopeUri)

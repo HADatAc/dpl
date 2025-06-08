@@ -92,8 +92,6 @@ class EditStreamForm extends FormBase {
       $topics = [];
 
       foreach ($topics_raw as $obj) {
-
-        dpm($obj);
         $dpl = $api->parseObjectResponse($api->getUri($obj->deploymentUri), 'getUri');
         $sdd = $api->parseObjectResponse($api->getUri($obj->semanticDataDictionaryUri), 'getUri');
 

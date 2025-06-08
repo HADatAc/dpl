@@ -300,66 +300,95 @@ class ExecuteCloseDeploymentForm extends FormBase {
       $api->elementDel('deployment',$this->getDeployment()->uri);
       $api->elementAdd('deployment',$deploymentJson);
 
-      // IF CLOSE ALL ACTIVE STREAMS MUST ALSO BE CLOSED
-      if ($this->getMode() === 'close') {
+      /* IF CLOSE OPERATION,
+            - ALL ACTIVE STREAMS MUST BE CLOSED
+            - ALL TOPICS INACTIVATED
+         IMPORTANT AND URGENT:
+            - WAS WORKING RIGHT NOW IT NOT BECAUSE
+            - API MUST IMPLEMENT AGAINT THIS END-POINT
+            - WHEN IMPLEMENTE JUST -->>>>>> UN-COMMENT THE NEXT IF
+            - IT WILL ALSO INACTIVATE THE "TOPICS", BUT LAKS TESTING!!!!!
+      */
 
-        // Replace HASCO::ACTIVE and HASCO::STREAM with your constants as needed.
-        $streamList = $api->parseObjectResponse(
-          $api->streamByStateEmailDeployment(rawurlencode(HASCO::ACTIVE), $useremail, $this->getDeployment()->uri, 99999, 0),
-          'streamByStateEmailDeployment'
-        );
+      // if ($this->getMode() === 'close') {
 
-        // dpm(HASCO::ACTIVE);
-        // dpm(rawurlencode($this->getDeployment()->uri));
-        // dpm($streamList);return false;
+      //   // Replace HASCO::ACTIVE and HASCO::STREAM with your constants as needed.
+      //   $streamList = $api->parseObjectResponse(
+      //     $api->streamByStateEmailDeployment(rawurlencode(HASCO::ACTIVE), $useremail, $this->getDeployment()->uri, 99999, 0),
+      //     'streamByStateEmailDeployment'
+      //   );
 
-        // 2) Loop over each active stream and “close” it:
-        foreach ($streamList as $stream) {
-          // a) We use $stream itself as $orig for cloning purposes.
-          $orig = $stream;
+      //   // 2) Loop over each active stream and “close” it:
+      //   foreach ($streamList as $stream) {
+      //     // a) We use $stream itself as $orig for cloning purposes.
+      //     $orig = $stream;
 
-          // b) Build a “clone” array. Copy all fields from the original, except set:
-          //    - endedAt       => the form‐provided end datetime
-          //    - hasStreamStatus => CLOSED
-          //    (Adjust any other fields you need to change, if necessary.)
-          $clone = [
-            'uri'                       => $orig->uri,
-            'typeUri'                   => HASCO::STREAM,
-            'hascoTypeUri'              => HASCO::STREAM,
-            'label'                     => $orig->label,
-            'comment'                   => $orig->comment,
-            'method'                    => $orig->method,
-            'messageProtocol'           => $orig->messageProtocol,
-            'messageIP'                 => $orig->messageIP,
-            'messagePort'               => $orig->messagePort,
-            'messageArchiveId'          => $orig->messageArchiveId,
-            'canUpdate'                 => $orig->canUpdate,
-            'designedAt'                => $orig->designedAt,
-            'hasVersion'                => $orig->hasVersion,
-            'studyUri'                  => $orig->studyUri,
-            'semanticDataDictionaryUri' => $orig->semanticDataDictionaryUri,
-            'deploymentUri'             => $orig->deploymentUri,
-            'triggeringEvent'           => $orig->triggeringEvent,
-            'numberDataPoints'          => $orig->numberDataPoints,
-            'datasetPattern'            => $orig->datasetPattern,
-            'datasetUri'                => $orig->datasetUri,
-            'startedAt'                 => $orig->startedAt,
-            // Use the form_state value for the new endedAt:
-            'endedAt'                   => $form_state
-                                              ->getValue('deployment_end_datetime')
-                                              ->format('Y-m-d\TH:i:s.v'),
-            'hasStreamStatus'           => HASCO::CLOSED,
-          ];
+      //     // b) Build a “clone” array. Copy all fields from the original, except set:
+      //     //    - endedAt       => the form‐provided end datetime
+      //     //    - hasStreamStatus => CLOSED
+      //     //    (Adjust any other fields you need to change, if necessary.)
+      //     $clone = [
+      //       'uri'                       => $orig->uri,
+      //       'typeUri'                   => HASCO::STREAM,
+      //       'hascoTypeUri'              => HASCO::STREAM,
+      //       'label'                     => $orig->label,
+      //       'comment'                   => $orig->comment,
+      //       'method'                    => $orig->method,
+      //       'messageProtocol'           => $orig->messageProtocol,
+      //       'messageIP'                 => $orig->messageIP,
+      //       'messagePort'               => $orig->messagePort,
+      //       'messageArchiveId'          => $orig->messageArchiveId,
+      //       'canUpdate'                 => $orig->canUpdate,
+      //       'designedAt'                => $orig->designedAt,
+      //       'hasVersion'                => $orig->hasVersion,
+      //       'studyUri'                  => $orig->studyUri,
+      //       'semanticDataDictionaryUri' => $orig->semanticDataDictionaryUri,
+      //       'deploymentUri'             => $orig->deploymentUri,
+      //       'triggeringEvent'           => $orig->triggeringEvent,
+      //       'numberDataPoints'          => $orig->numberDataPoints,
+      //       'datasetPattern'            => $orig->datasetPattern,
+      //       'datasetUri'                => $orig->datasetUri,
+      //       'startedAt'                 => $orig->startedAt,
+      //       // Use the form_state value for the new endedAt:
+      //       'endedAt'                   => $form_state
+      //                                         ->getValue('deployment_end_datetime')
+      //                                         ->format('Y-m-d\TH:i:s.v'),
+      //       'hasStreamStatus'           => HASCO::CLOSED,
+      //     ];
 
-          // c) JSON‐encode without escaping slashes or unicode:
-          $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+      //     // WE MUST INACTIVATE ALL TOPICS
+      //     if (!empty($orig->topics)){
+      //       $topicsList = $orig->topics;
 
-          // d) Delete the old stream and add the “closed” version back:
-          $api->elementDel('stream', $orig->uri);
-          $api->elementAdd('stream', $streamJson);
+      //       foreach ($topicsList as $topicItem) {
 
-        }
-      }
+      //         $streamTopic = [
+      //           'uri'                       => $topicItem->uri,
+      //           'typeUri'                   => HASCO::STREAMTOPIC,
+      //           'hascoTypeUri'              => HASCO::STREAMTOPIC,
+      //           'streamUri'                 => $orig->uri,
+      //           'label'                     => $topicItem->label,
+      //           'deploymentUri'             => $topicItem->deploymentUri,
+      //           'semanticDataDictionaryUri' => $topicItem->semanticDataDictionaryUri,
+      //           'cellScopeUri'              => $topicItem->cellScopeUri,
+      //           'hasTopicStatus'            => HASCO::INACTIVE,
+      //         ];
+
+      //         \Drupal::service('rep.api_connector')->elementDel('streamtopic', $topicItem->uri);
+      //         \Drupal::service('rep.api_connector')->elementAdd('streamtopic', json_encode($streamTopic, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+      //       }
+      //     }
+
+      //     // c) JSON‐encode without escaping slashes or unicode:
+      //     $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+      //     // d) Delete the old stream and add the “closed” version back:
+      //     $api->elementDel('stream', $orig->uri);
+      //     $api->elementAdd('stream', $streamJson);
+
+      //   }
+      // }
 
       \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
       self::backUrl();

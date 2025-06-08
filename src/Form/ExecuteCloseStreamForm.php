@@ -142,8 +142,6 @@ class ExecuteCloseStreamForm extends FormBase {
       }
     }
 
-    //dpm($this->getDeployment());
-
     if ($this->getMode() == 'execute') {
       $form['page_title'] = [
         '#type' => 'item',
@@ -321,6 +319,31 @@ class ExecuteCloseStreamForm extends FormBase {
         $clone['hasStreamStatus']   = HASCO::CLOSED;
         $filename = $this->getStream()->messageArchiveId . '.txt';
         $this->stopSubscription($filename);
+
+        // WE MUST INACTIVATE ALL TOPICS
+        if (!empty($orig->topics)){
+          $topicsList = $orig->topics;
+
+          foreach ($topicsList as $topicItem) {
+
+            $streamTopic = [
+              'uri'                       => $topicItem->uri,
+              'typeUri'                   => HASCO::STREAMTOPIC,
+              'hascoTypeUri'              => HASCO::STREAMTOPIC,
+              'streamUri'                 => $this->getStreamUri(),
+              'label'                     => $topicItem->label,
+              'deploymentUri'             => $topicItem->deploymentUri,
+              'semanticDataDictionaryUri' => $topicItem->semanticDataDictionaryUri,
+              'cellScopeUri'              => $topicItem->cellScopeUri,
+              'hasTopicStatus'            => HASCO::INACTIVE,
+            ];
+
+            \Drupal::service('rep.api_connector')->elementDel('streamtopic', $topicItem->uri);
+            \Drupal::service('rep.api_connector')->elementAdd('streamtopic', json_encode($streamTopic, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+          }
+        }
+
       }
 
       $api = \Drupal::service('rep.api_connector');

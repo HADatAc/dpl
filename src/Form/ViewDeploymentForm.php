@@ -514,6 +514,7 @@ class ViewDeploymentForm extends FormBase {
 
     $uid = \Drupal::currentUser()->id();
     $previousUrl = Utils::trackingGetPreviousUrl($uid, 'std.manage_study_elements');
+
     if (!$previousUrl) {
       return;
     }
@@ -532,7 +533,8 @@ class ViewDeploymentForm extends FormBase {
       }
     }
     else {
-      $form_state->setRedirectUrl(Url::fromUserInput($previousUrl));
+      $response = new RedirectResponse($previousUrl);
+      $response->send();
       return;
     }
   }

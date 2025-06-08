@@ -304,7 +304,7 @@ class ExecuteCloseStreamForm extends FormBase {
         'datasetUri'                => $orig->datasetUri,
       ];
 
-      if ($this->getStream()->method === 'Files') {
+      if ($this->getStream()->method === 'files') {
         $clone['semanticDataDictionaryUri'] = $orig->semanticDataDictionaryUri;
         $clone['deploymentUri']             = $orig->deploymentUri;
       }

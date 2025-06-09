@@ -418,10 +418,16 @@ class ExecuteCloseStreamForm extends FormBase {
       }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
         $ip       = $this->getStream()->messageIP;
         $port     = $this->getStream()->messagePort;
-        $topic    = 'wsaheadhin';
-        $filename = $this->getStream()->messageArchiveId . '.txt';
 
-        // $this->startSubscription($ip, $port, $topic, $filename);
+        if (!empty($this->getStream()->topics)){
+          $topicsList = $this->getStream()->topics;
+
+          foreach ($topicsList as $topicItem) {
+            $filename = $this->getStream()->messageArchiveId . '_' . $topicItem->label .  '.txt';
+            $topic    = $topicItem->label;
+            $this->startSubscription($ip, $port, $topic, $filename);
+          }
+        }
       }
 
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
@@ -454,7 +460,7 @@ class ExecuteCloseStreamForm extends FormBase {
 
   private function startSubscription($ip, $port, $topic, $filename) {
     $fs = \Drupal::service('file_system');
-    $directory = 'private://streams/messageFiles/';
+    $directory = 'private://streams/messageFiles/live/';
     $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
 
     $filepath = $directory . $filename;
@@ -476,7 +482,7 @@ class ExecuteCloseStreamForm extends FormBase {
 
   private function stopSubscription($filename) {
     $fs = \Drupal::service('file_system');
-    $directory = 'private://streams/messageFiles/';
+    $directory = 'private://streams/messageFiles/live/';
     $filepath = $directory . $filename;
 
     $realpath = $fs->realpath($filepath);

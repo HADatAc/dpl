@@ -421,12 +421,19 @@ class ExecuteCloseStreamForm extends FormBase {
 
         if (!empty($this->getStream()->topics)){
           $topicsList = $this->getStream()->topics;
-
+          $topics = [];
           foreach ($topicsList as $topicItem) {
-            $filename = $this->getStream()->messageArchiveId . '_' . $topicItem->label .  '.txt';
-            $topic    = $topicItem->label;
-            $this->startSubscription($ip, $port, $topic, $filename);
+            $topics[] = $topicItem->label;
+            //$filename = $this->getStream()->messageArchiveId . '_' . $topicItem->label .  '.txt';
+            // $topic    = $topicItem->label;
+            // $this->startSubscription($ip, $port, $topic);
           }
+          $topicsArg = implode(',', $topics);
+          $cmd = "php " . "/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php --ip=$ip --port=$port --topics=$topicsArg > /dev/null 2>&1 & echo $!";
+          $pid = shell_exec($cmd);
+
+          $pidFile = 'private://streams/pids/' . $this->getStream()->messageArchiveId . '.pid';
+          file_put_contents(\Drupal::service('file_system')->realpath($pidFile), $pid);
         }
       }
 
@@ -458,27 +465,30 @@ class ExecuteCloseStreamForm extends FormBase {
     return;
   }
 
-  private function startSubscription($ip, $port, $topic, $filename) {
-    $fs = \Drupal::service('file_system');
-    $directory = 'private://streams/messageFiles/live/';
-    $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+  // private function startSubscription($ip, $port, $topic) {
+  //   // $fs = \Drupal::service('file_system');
+  //   // $directory = 'private://streams/messageFiles/live/';
+  //   // $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
 
-    $filepath = $directory . $filename;
-    $realpath = $fs->realpath($filepath);
+  //   // $filepath = $directory . $filename;
+  //   // $realpath = $fs->realpath($filepath);
 
-    // Define caminho do ficheiro PID ao lado do ficheiro de log
-    $pidpath = $realpath . '.pid';
+  //   // // Define caminho do ficheiro PID ao lado do ficheiro de log
+  //   // $pidpath = $realpath . '.pid';
 
-    // Comando MQTT
-    $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
-    $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
+  //   // Comando MQTT
+  //   $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}' 2>&1 & echo $!";
+  //   $pid = shell_exec($cmd);
 
-    // Executa e guarda PID
-    $pid = shell_exec($fullCmd);
-    file_put_contents($pidpath, $pid);
+  //   // $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
+  //   // $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
 
-    \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
-  }
+  //   // Executa e guarda PID
+  //   // $pid = shell_exec($fullCmd);
+  //   // file_put_contents($pidpath, $pid);
+
+  //   \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
+  // }
 
   private function stopSubscription($filename) {
     $fs = \Drupal::service('file_system');

@@ -326,27 +326,41 @@ class StreamController extends ControllerBase {
     ]);
   }
 
-  public static function readMessages($filename) {
-    $filepath = 'private://streams/messageFiles/live/' . basename($filename) . '.txt'; // segurança extra com basename
-    $real_path = \Drupal::service('file_system')->realpath($filepath);
-    if (!file_exists($real_path)) {
-      \Drupal::logger('dpl')->debug('O ficheiro de mensagens não existe: @path', ['@path' => $real_path]);
+  // public static function readMessages($filename) {
+  //   $filepath = 'private://streams/messageFiles/live/' . basename($filename) . '.txt'; // segurança extra com basename
+  //   $real_path = \Drupal::service('file_system')->realpath($filepath);
+  //   if (!file_exists($real_path)) {
+  //     \Drupal::logger('dpl')->debug('O ficheiro de mensagens não existe: @path', ['@path' => $real_path]);
+  //     return ['messages' => []];
+  //   }
+
+  //   $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  //   if (!$lines) {
+  //     \Drupal::logger('dpl')->debug('O ficheiro está vazio ou ocorreu um erro na leitura: @path', ['@path' => $real_path]);
+  //     return ['messages' => []];
+  //   }
+
+  //   $latest_two = array_slice($lines, -2);
+
+  //   \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
+
+  //   return [
+  //     'messages' => $latest_two,
+  //   ];
+  // }
+
+  public static function readMessages($topic) {
+    $cid = 'mqtt_messages:' . str_replace(['/', '#', '+'], '_', $topic);
+    $cache = \Drupal::cache()->get($cid);
+  
+    if (!$cache) {
+      \Drupal::logger('dpl')->debug('Erro ao ler mensagens');
       return ['messages' => []];
     }
-
-    $lines = file($real_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (!$lines) {
-      \Drupal::logger('dpl')->debug('O ficheiro está vazio ou ocorreu um erro na leitura: @path', ['@path' => $real_path]);
-      return ['messages' => []];
-    }
-
-    $latest_two = array_slice($lines, -2);
-
-    \Drupal::logger('dpl')->debug('Últimas 2 mensagens: @lines', ['@lines' => print_r($latest_two, true)]);
-
-    return [
-      'messages' => $latest_two,
-    ];
+  
+    $messages = array_slice($cache->data, -2);
+    return ['messages' => $messages];
   }
+  
 
 }

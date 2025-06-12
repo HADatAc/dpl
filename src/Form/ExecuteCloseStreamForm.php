@@ -432,8 +432,20 @@ class ExecuteCloseStreamForm extends FormBase {
           $cmd = "php " . "/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php --ip=$ip --port=$port --topics=$topicsArg > /dev/null 2>&1 & echo $!";
           $pid = shell_exec($cmd);
 
+          $fs = \Drupal::service('file_system');
+
+          // Garante que o diretório existe (cria se não existir)
+          $fs->prepareDirectory('private://streams/pids', \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+          
           $pidFile = 'private://streams/pids/' . $this->getStream()->messageArchiveId . '.pid';
-          file_put_contents(\Drupal::service('file_system')->realpath($pidFile), $pid);
+          $realPath = $fs->realpath($pidFile);
+          
+          // Escreve o PID
+          if ($realPath !== FALSE) {
+            file_put_contents($realPath, $pid);
+          } else {
+            \Drupal::logger('dpl')->error("Falha ao obter realpath de $pidFile");
+          }          
         }
       }
 

@@ -433,11 +433,12 @@ class ExecuteCloseStreamForm extends FormBase {
           $pid = shell_exec($cmd);
 
           $fs = \Drupal::service('file_system');
+          $directory = 'private://streams/pids';
 
           // Garante que o diretório existe (cria se não existir)
-          $fs->prepareDirectory('private://streams/pids', \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+          $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
           
-          $pidFile = 'private://streams/pids/' . $this->getStream()->messageArchiveId . '.pid';
+          $pidFile = $directory . '/' . $this->getStream()->messageArchiveId . '.pid';
           $realPath = $fs->realpath($pidFile);
           
           // Escreve o PID

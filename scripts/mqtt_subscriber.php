@@ -16,7 +16,7 @@ $ip = $options['ip'];
 $port = $options['port'];
 $topics = explode(',', $options['topics']);
 
-$cache = \Drupal::cache('mqtt_messages');
+$cache = \Drupal::cache();
 $service = new MqttService($ip, $port, $cache);
 
 $service->connect();

@@ -16,14 +16,18 @@ $ip = $options['ip'];
 $port = $options['port'];
 $topics = explode(',', $options['topics']);
 
-$cache = \Drupal::service('cache.default');
+$cache = \Drupal::cache('mqtt_messages');
 $service = new MqttService($ip, $port, $cache);
 
 $service->connect();
+\Drupal::logger('dpl')->notice("MQTT conectado em $ip:$port");
+
 $service->subscribe($topics);
+\Drupal::logger('dpl')->notice("Subscrito aos tópicos: " . implode(', ', $topics));
 
 // Loop infinito
 while (true) {
+  \Drupal::logger('dpl')->debug("MQTT loop tick at " . date('H:i:s'));
   $service->loop();
   usleep(100000); // evita CPU 100%
 }

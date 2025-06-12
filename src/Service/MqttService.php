@@ -38,6 +38,8 @@ class MqttService {
     }
   
     protected function handleMessage(string $topic, string $message): void {
+      \Drupal::logger('dpl')->notice("Mensagem recebida: $topic => $message");
+
       $cid = 'mqtt_messages:' . $this->sanitizeCid($topic);
       $existing = $this->cache->get($cid);
       $messages = $existing ? $existing->data : [];

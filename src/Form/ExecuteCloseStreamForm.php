@@ -418,6 +418,7 @@ class ExecuteCloseStreamForm extends FormBase {
       }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
         $ip       = $this->getStream()->messageIP;
         $port     = $this->getStream()->messagePort;
+        $wsport = 8081;
 
         if (!empty($this->getStream()->topics)){
           $topicsList = $this->getStream()->topics;
@@ -426,7 +427,7 @@ class ExecuteCloseStreamForm extends FormBase {
             $topics[] = $topicItem->label;
           }
           $topicsArg = implode(',', $topics);
-          $cmd = "php " . "/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php --ip=$ip --port=$port --topics=$topicsArg > /dev/null 2>&1 & echo $!";
+          $cmd = "php " . "/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php --ip=$ip --port=$port --topics=$topicsArg --ws-port=$wsport> /dev/null 2>&1 & echo $!";
           $pid = shell_exec($cmd);
 
           $fs = \Drupal::service('file_system');

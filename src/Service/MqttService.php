@@ -26,16 +26,6 @@ class MqttService {
       }  
       
     }
-  
-    public function subscribe(array $topics): void {
-      foreach ($topics as $topic) {
-        $this->topics[] = $topic;
-        $this->client->subscribe($topic, function (string $topic, string $message) {
-          $this->lastMessages[$topic] = $message;
-          \Drupal::logger('dpl')->notice("Recebida nova mensagem para $topic: $message");
-        }, 0);
-      }
-    }
 
     public function subscribeWithCallback(array $topics, callable $callback): void {
       foreach ($topics as $topic) {
@@ -50,15 +40,7 @@ class MqttService {
     public function loop(): void {
       $this->client->loop(true);
     }
-  
-    protected function sanitizeCid($topic) {
-      return str_replace(['/', '#', '+'], '_', $topic);
-    }
 
-    public function getLastMessage($topic): ?string {
-        return $this->lastMessages[$topic] ?? null;
-      }
-  
     public function disconnect(): void {
       $this->client->disconnect();
     }

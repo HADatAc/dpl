@@ -4,68 +4,90 @@ use Drupal\Core\DrupalKernel;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\dpl\Service\MqttService;
 
+use Ratchet\Http\HttpServer;
+use Ratchet\Server\IoServer;
+use Ratchet\WebSocket\WsServer;
+use Ratchet\MessageComponentInterface;
+use Ratchet\ConnectionInterface;
+
 require_once '/opt/drupal/web/autoload.php';
+require_once '/opt/drupal/vendor/autoload.php';
 
 $kernel = DrupalKernel::createFromRequest(Request::createFromGlobals(), $autoloader, 'prod');
 $kernel->boot();
 
-// Lê argumentos CLI
-$options = getopt('', ['ip:', 'port:', 'topics:']);
+$options = getopt('', ['ip:', 'port:', 'topics:', 'ws-port:']);
 $ip = $options['ip'];
 $port = $options['port'];
 $topics = explode(',', $options['topics']);
+$wsPort = $options['ws-port'] ?? 8081;
 
-// Cria chave para memória partilhada
-$shmKey = ftok(__FILE__, 'm');
-$shmSize = 8192;
-$shmId = shmop_open($shmKey, 'c', 0644, $shmSize);
-if (!$shmId) {
-  \Drupal::logger('dpl')->error("Falha ao criar shmop para MQTT.");
-  exit(1);
+class MqttWebSocket implements MessageComponentInterface {
+  protected $clients;
+  protected $subscriptions; // cliente => array de tópicos
+
+
+  public function __construct() {
+    $this->clients = new \SplObjectStorage;
+    $this->subscriptions = [];
+
+  }
+
+  public function onOpen(ConnectionInterface $conn) {
+    $this->clients->attach($conn);
+    $this->subscriptions[$conn->resourceId] = []; // inicia vazio
+
+  }
+
+  public function onMessage(ConnectionInterface $from, $msg) {
+    $data = json_decode($msg, true);
+    if (isset($data['subscribe']) && is_string($data['subscribe'])) {
+        $this->subscriptions[$from->resourceId] = [$data['subscribe']];
+    }
+  }
+
+  public function onClose(ConnectionInterface $conn) {
+    $this->clients->detach($conn);
+    unset($this->subscriptions[$conn->resourceId]);
+  }
+
+  public function onError(ConnectionInterface $conn, \Exception $e) {
+    $conn->close();
+  }
+
+  public function sendToSubscribedClients($topic, $msg) {
+    foreach ($this->clients as $client) {
+      $subs = $this->subscriptions[$client->resourceId] ?? [];
+      if (in_array($topic, $subs)) {
+          $client->send($msg);
+      }
+    }
+  }
 }
+
+$wsHandler = new MqttWebSocket();
+
+$loop = React\EventLoop\Factory::create();
+
+$webSock = new React\Socket\Server("0.0.0.0:$wsPort", $loop);
+$webServer = new IoServer(new HttpServer(new WsServer($wsHandler)), $webSock, $loop);
 
 $service = new MqttService($ip, $port);
+// Supondo que o MqttService tem métodos compatíveis com ReactPHP ou tem que adaptar o loop
+
+$lastMessages = [];
 
 $service->connect();
-\Drupal::logger('dpl')->debug('MQTT conectado a @ip:@port', ['@ip' => $ip, '@port' => $port]);
 
-$service->subscribeWithCallback($topics, function ($topic, $message) use ($shmId) {
-  // Lê o conteúdo atual da memória
-  $raw = shmop_read($shmId, 0, 8192);
-  \Drupal::logger('dpl')->debug('Mensagem recebida de @topic: @msg', ['@topic' => $topic, '@msg' => $message]);
-  \Drupal::logger('dpl')->debug('Conteúdo atual da memória: @raw', ['@raw' => $raw]);
-
-  $existing = json_decode(trim($raw), true);
-
-  if (!is_array($existing)) {
-    \Drupal::logger('dpl')->debug('Memória inválida. Recriando estrutura...');
-    $existing = [];
-  }
-
-  $existing[$topic] = $message;
-
-  // Codifica novamente
-  $payload = json_encode($existing);
-
-  if (strlen($payload) > 8192) {
-    \Drupal::logger('dpl')->warning('Memória cheia. Ignorada mensagem de @topic', ['@topic' => $topic]);
-    return;
-  }
-
-  // Escreve na memória
-  $payload = str_pad($payload, 8192); // Garantir tamanho fixo
-  shmop_write($shmId, $payload, 0);
-
-  \Drupal::logger('dpl')->debug('Mensagem de @topic guardada na memória.', ['@topic' => $topic]);
+$service->subscribeWithCallback($topics, function ($topic, $message) use ($wsHandler) {
+  $data = json_encode(['topic' => $topic, 'message' => $message]);
+  $wsHandler->sendToSubscribedClients($topic, $data);
 });
 
-\Drupal::logger('dpl')->notice("Subscrito aos tópicos: " . implode(', ', $topics));
-
-// Loop infinito
-while (true) {
+// Adaptar para integrar o MQTT loop com ReactPHP loop
+// Se o teu MqttService não tem suporte ReactPHP, tens que correr $service->loop() periodicamente
+$loop->addPeriodicTimer(0.1, function() use ($service) {
   $service->loop();
-  usleep(100000); // evita CPU 100%
-}
+});
 
-// Fecha shmop no fim
-shmop_close($shmId);
+$loop->run();

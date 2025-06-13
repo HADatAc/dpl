@@ -350,39 +350,39 @@ class StreamController extends ControllerBase {
   // }
 
   public static function readMessages($topic) {
-    $shmKey = ftok('/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php', 'm');
-    $shmId = shmop_open($shmKey, 'a', 0, 0);
+    $url = "http://127.0.0.1:8081/last-message?topic=" . urlencode($topic);
   
-    if ($shmId) {
-      $data = trim(shmop_read($shmId, 0, 8192));
-      \Drupal::logger('dpl')->debug('Dados brutos lidos da shmop: @data', ['@data' => $data]);
-
-      $json = json_decode($data, true);
-      shmop_close($shmId);
-  
-      if (is_array($json) && isset($json[$topic])) {
-        $msg = $json[$topic];
-  
-        // Se for JSON, formata
-        if (is_array($msg)) {
-          $msg = '<pre>' . json_encode($msg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . '</pre>';
-        }
-        \Drupal::logger('dpl')->debug('Mensagem para o tópico @topic encontrada.', ['@topic' => $topic]);
-
-        $output = "Última mensagem de <strong>{$topic}</strong>: {$msg}";
-      } else {
-        \Drupal::logger('dpl')->debug('Tópico @topic não encontrado na memória.', ['@topic' => $topic]);
-        $output = "Sem mensagens para o tópico <strong>{$topic}</strong>.";
+    try {
+      $response = file_get_contents($url);
+      if ($response === false) {
+        throw new \Exception("Falha na requisição HTTP");
       }
-    } else {
-      \Drupal::logger('dpl')->error('Falha ao abrir shmop com a chave @key.', ['@key' => $shmKey]);
-      $output = "Stream não iniciada ou sem acesso à memória partilhada.";
+  
+      $data = json_decode($response, true);
+      if (!$data || !isset($data['message'])) {
+        throw new \Exception("Resposta inválida");
+      }
+  
+      $msg = $data['message'];
+  
+      // Se for JSON, formatar para exibir
+      if (is_array($msg)) {
+        $msg = '<pre>' . json_encode($msg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . '</pre>';
+      }
+  
+      $output = "Última mensagem de <strong>{$topic}</strong>: {$msg}";
+  
+    } catch (\Exception $e) {
+      \Drupal::logger('dpl')->error('Erro ao obter mensagem para o tópico @topic: @error', [
+        '@topic' => $topic,
+        '@error' => $e->getMessage(),
+      ]);
+      $output = "Sem mensagens para o tópico <strong>{$topic}</strong>.";
     }
   
     return [
       '#markup' => $output,
     ];
-  }
-  
+  }  
 
 }

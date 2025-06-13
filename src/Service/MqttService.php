@@ -9,13 +9,12 @@ use Drupal\Core\Cache\CacheBackendInterface;
 class MqttService {
 
     protected $client;
-    protected $cache;
     protected $topics;
+    protected $lastMessages = [];
   
-    public function __construct($ip, $port, CacheBackendInterface $cache_backend) {
+    public function __construct($ip, $port) {
       $clientId = 'dpl_client_' . uniqid();
       $this->client = new MqttClient($ip, $port, $clientId);
-      $this->cache = $cache_backend;
       $this->topics = [];
     }
   
@@ -32,27 +31,21 @@ class MqttService {
       foreach ($topics as $topic) {
         $this->topics[] = $topic;
         $this->client->subscribe($topic, function (string $topic, string $message) {
-          $this->handleMessage($topic, $message);
+          $this->lastMessages[$topic] = $message;
+          \Drupal::logger('dpl')->notice("Recebida nova mensagem para $topic: $message");
         }, 0);
       }
     }
-  
-    protected function handleMessage(string $topic, string $message): void {
-      \Drupal::logger('dpl')->notice("Mensagem recebida: $topic => $message");
 
-      $cid = 'mqtt_messages:' . $this->sanitizeCid($topic);
-      $existing = $this->cache->get($cid);
-      $messages = $existing ? $existing->data : [];
-  
-      $messages[] = $message;
-  
-      // Mantém só as últimas 10
-      if (count($messages) > 10) {
-        array_shift($messages);
+    public function subscribeWithCallback(array $topics, callable $callback): void {
+      foreach ($topics as $topic) {
+        $this->topics[] = $topic;
+        $this->client->subscribe($topic, function (string $topic, string $message) use ($callback) {
+          $callback($topic, $message);
+        }, 0);
       }
+    }    
   
-      $this->cache->set($cid, $messages);
-    }
   
     public function loop(): void {
       $this->client->loop(true);
@@ -61,6 +54,10 @@ class MqttService {
     protected function sanitizeCid($topic) {
       return str_replace(['/', '#', '+'], '_', $topic);
     }
+
+    public function getLastMessage($topic): ?string {
+        return $this->lastMessages[$topic] ?? null;
+      }
   
     public function disconnect(): void {
       $this->client->disconnect();

@@ -350,16 +350,38 @@ class StreamController extends ControllerBase {
   // }
 
   public static function readMessages($topic) {
-    $cid = 'mqtt_messages:' . str_replace(['/', '#', '+'], '_', $topic);
-    $cache = \Drupal::cache()->get($cid);
+    $shmKey = ftok('/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php', 'm');
+    $shmId = shmop_open($shmKey, 'a', 0, 0);
   
-    if (!$cache) {
-      \Drupal::logger('dpl')->debug('Erro ao ler mensagens');
-      return ['messages' => []];
+    if ($shmId) {
+      $data = trim(shmop_read($shmId, 0, 8192));
+      \Drupal::logger('dpl')->debug('Dados brutos lidos da shmop: @data', ['@data' => $data]);
+
+      $json = json_decode($data, true);
+      shmop_close($shmId);
+  
+      if (is_array($json) && isset($json[$topic])) {
+        $msg = $json[$topic];
+  
+        // Se for JSON, formata
+        if (is_array($msg)) {
+          $msg = '<pre>' . json_encode($msg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . '</pre>';
+        }
+        \Drupal::logger('dpl')->debug('Mensagem para o tópico @topic encontrada.', ['@topic' => $topic]);
+
+        $output = "Última mensagem de <strong>{$topic}</strong>: {$msg}";
+      } else {
+        \Drupal::logger('dpl')->debug('Tópico @topic não encontrado na memória.', ['@topic' => $topic]);
+        $output = "Sem mensagens para o tópico <strong>{$topic}</strong>.";
+      }
+    } else {
+      \Drupal::logger('dpl')->error('Falha ao abrir shmop com a chave @key.', ['@key' => $shmKey]);
+      $output = "Stream não iniciada ou sem acesso à memória partilhada.";
     }
   
-    $messages = array_slice($cache->data, -2);
-    return ['messages' => $messages];
+    return [
+      '#markup' => $output,
+    ];
   }
   
 

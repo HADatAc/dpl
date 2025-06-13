@@ -424,9 +424,6 @@ class ExecuteCloseStreamForm extends FormBase {
           $topics = [];
           foreach ($topicsList as $topicItem) {
             $topics[] = $topicItem->label;
-            //$filename = $this->getStream()->messageArchiveId . '_' . $topicItem->label .  '.txt';
-            // $topic    = $topicItem->label;
-            // $this->startSubscription($ip, $port, $topic);
           }
           $topicsArg = implode(',', $topics);
           $cmd = "php " . "/opt/drupal/web/modules/custom/dpl/scripts/mqtt_subscriber.php --ip=$ip --port=$port --topics=$topicsArg > /dev/null 2>&1 & echo $!";

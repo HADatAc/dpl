@@ -10,6 +10,10 @@ use Ratchet\WebSocket\WsServer;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
+use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Message\Response;
+
+
 require_once '/opt/drupal/web/autoload.php';
 require_once '/opt/drupal/vendor/autoload.php';
 
@@ -20,7 +24,8 @@ $options = getopt('', ['ip:', 'port:', 'topics:', 'ws-port:']);
 $ip = $options['ip'];
 $port = $options['port'];
 $topics = explode(',', $options['topics']);
-$wsPort = $options['ws-port'] ?? 8081;
+$wsPort = $options['ws-port'] ?? 8082;
+$httpPort = 8081;
 
 class MqttWebSocket implements MessageComponentInterface {
   protected $clients;
@@ -79,15 +84,32 @@ $lastMessages = [];
 
 $service->connect();
 
-$service->subscribeWithCallback($topics, function ($topic, $message) use ($wsHandler) {
+$service->subscribeWithCallback($topics, function ($topic, $message) use (&$lastMessages, $wsHandler) {
+  $lastMessages[$topic] = $message;
   $data = json_encode(['topic' => $topic, 'message' => $message]);
   $wsHandler->sendToSubscribedClients($topic, $data);
 });
 
-// Adaptar para integrar o MQTT loop com ReactPHP loop
-// Se o teu MqttService não tem suporte ReactPHP, tens que correr $service->loop() periodicamente
-$loop->addPeriodicTimer(0.1, function() use ($service) {
-  $service->loop();
-});
+// Servidor HTTP para responder /last-message
+$httpServer = new HttpServer(function (ServerRequestInterface $request) use (&$lastMessages) {
+  $path = $request->getUri()->getPath();
+  $queryParams = $request->getQueryParams();
 
+  if ($path === '/last-message' && isset($queryParams['topic'])) {
+      $topic = $queryParams['topic'];
+      if (isset($lastMessages[$topic])) {
+          return new Response(
+              200,
+              ['Content-Type' => 'application/json'],
+              json_encode(['message' => $lastMessages[$topic]])
+          );
+      }
+      return new Response(404, ['Content-Type' => 'application/json'], json_encode(['error' => 'Topic not found']));
+  }
+  return new Response(404, ['Content-Type' => 'application/json'], 'Not Found');
+});
+$httpSock = new React\Socket\Server('0.0.0.0:' . $httpPort, $loop);
+$httpServer->listen($httpSock);
+
+// Já tens o WebSocket e o HTTP rodando no mesmo $loop
 $loop->run();

@@ -1,7 +1,7 @@
 dpl_tabs:
   version: VERSION
   css:
-    component:
+    theme:
       css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}
@@ -18,7 +18,8 @@ dpl_accordion:
 dpl_onlytabs:
   version: VERSION
   css:
-    css/dpl_tabs.css: {}
+    theme: 
+      css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}
   dependencies:

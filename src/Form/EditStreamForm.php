@@ -66,31 +66,39 @@ class EditStreamForm extends FormBase {
     }
     $this->stream = $response->body;
 
-    // 2) Initialize topics from the loaded Stream.
-    $topics = [];
-    if (!empty($this->stream->topics) && is_array($this->stream->topics)) {
-      foreach ($this->stream->topics as $item) {
-        $dplObj = !empty($item->deploymentUri)
-          ? $api->parseObjectResponse($api->getUri($item->deploymentUri), 'getUri')
-          : NULL;
-        $sddObj = !empty($item->semanticDataDictionaryUri)
-          ? $api->parseObjectResponse($api->getUri($item->semanticDataDictionaryUri), 'getUri')
-          : NULL;
-        $topics[] = [
-          'topic'      => $item->label ?? '',
-          'deployment' => $dplObj
-            ? Utils::trimAutoCompleteString($dplObj->label, $dplObj->uri)
-            : '',
-          'sdd'        => $sddObj
-            ? Utils::trimAutoCompleteString($sddObj->label, $sddObj->uri)
-            : '',
-          'cellscope'  => is_array($item->cellScopeUri)
-            ? ($item->cellScopeUri[0] ?? '')
-            : ($item->cellScopeUri ?? ''),
-        ];
-      }
+    // === Initialize topics: only on first build, load from Stream; afterward, use form_state ===
+    if ($form_state->has('topics')) {
+      // On AJAX rebuilds: keep whatever is in form_state.
+      $topics = $form_state->get('topics');
     }
-    $form_state->set('topics', $topics);
+    else {
+      // First page load: pull from the API Stream object.
+      $topics = [];
+      if (!empty($this->stream->topics) && is_array($this->stream->topics)) {
+        foreach ($this->stream->topics as $item) {
+          $dplObj = !empty($item->deploymentUri)
+            ? $api->parseObjectResponse($api->getUri($item->deploymentUri), 'getUri')
+            : NULL;
+          $sddObj = !empty($item->semanticDataDictionaryUri)
+            ? $api->parseObjectResponse($api->getUri($item->semanticDataDictionaryUri), 'getUri')
+            : NULL;
+          $topics[] = [
+            'topic'      => $item->label ?? '',
+            'deployment' => $dplObj
+              ? Utils::trimAutoCompleteString($dplObj->label, $dplObj->uri)
+              : '',
+            'sdd'        => $sddObj
+              ? Utils::trimAutoCompleteString($sddObj->label, $sddObj->uri)
+              : '',
+            'cellscope'  => is_array($item->cellScopeUri)
+              ? ($item->cellScopeUri[0] ?? '')
+              : ($item->cellScopeUri ?? ''),
+          ];
+        }
+      }
+      // Save into form_state so AJAX keeps appending to it.
+      $form_state->set('topics', $topics);
+    }
 
     // 3) Prepare default for deployment autocomplete.
     $deploymentLabel = '';

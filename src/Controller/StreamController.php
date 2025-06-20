@@ -36,7 +36,7 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicSubscribe($topicUri);
+      $api->streamTopicSubscribe($streamtopicUri);
 
       // // Reconstruir o payload com os dados existentes + atualização
       // $stPayload = [
@@ -79,7 +79,7 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicUnsubscribe($streamTopic->uri);
+      $api->streamTopicUnsubscribe($streamtopicUri);
 
       // // Reconstruir o payload com os dados existentes + atualização
       // $stPayload = [
@@ -110,7 +110,7 @@ class StreamController extends ControllerBase {
 
   public function streamTopicStatus($topicUri, $status) {
     $streamtopicUri = base64_decode($topicUri);
-    $status = base64_decode($status);
+    $statusTopic = base64_decode($status);
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -123,22 +123,24 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      // Reconstruir o payload com os dados existentes + atualização
-      $stPayload = [
-        'uri'                       => $streamTopic->uri,
-        'typeUri'                   => HASCO::STREAMTOPIC,
-        'hascoTypeUri'              => HASCO::STREAMTOPIC,
-        'streamUri'                 => $streamTopic->streamUri,
-        'label'                     => $streamTopic->label,
-        'deploymentUri'             => $streamTopic->deploymentUri,
-        'semanticDataDictionaryUri' => $streamTopic->semanticDataDictionaryUri,
-        'cellScopeUri'              => $streamTopic->cellScopeUri,
-        'hasTopicStatus'            => $status,
-      ];
+      $api->streamTopicSetStatus($streamtopicUri, $statusTopic);
 
-      // Atualizar a stream (delete + add)
-      $api->elementDel('streamtopic', $streamTopic->uri);
-      $api->elementAdd('streamtopic', json_encode($stPayload));
+      // // Reconstruir o payload com os dados existentes + atualização
+      // $stPayload = [
+      //   'uri'                       => $streamTopic->uri,
+      //   'typeUri'                   => HASCO::STREAMTOPIC,
+      //   'hascoTypeUri'              => HASCO::STREAMTOPIC,
+      //   'streamUri'                 => $streamTopic->streamUri,
+      //   'label'                     => $streamTopic->label,
+      //   'deploymentUri'             => $streamTopic->deploymentUri,
+      //   'semanticDataDictionaryUri' => $streamTopic->semanticDataDictionaryUri,
+      //   'cellScopeUri'              => $streamTopic->cellScopeUri,
+      //   'hasTopicStatus'            => $status,
+      // ];
+
+      // // Atualizar a stream (delete + add)
+      // $api->elementDel('streamtopic', $streamTopic->uri);
+      // $api->elementAdd('streamtopic', json_encode($stPayload));
 
       return new JsonResponse(['status' => 'ok', 'message' => 'Stream Topic has @status.', ['@status' => UTILS::plainStatus($status)]]);
     }

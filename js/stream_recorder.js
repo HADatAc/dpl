@@ -12,7 +12,7 @@
 
 (function ($, Drupal, drupalSettings) {
   $(document).ready(function () {
-    console.log('🛠️ dplStreamRecorder.js loaded');
+    // console.log('dplStreamRecorder.js loaded');
 
     // ——————— Subscribe ———————
     $(document).on('click', '.stream-topic-subscribe', function (e) {

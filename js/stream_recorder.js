@@ -33,14 +33,15 @@
           reloadTopics(streamValue);
         }
         else {
-          alert('Error: ' + data.message);
+          // alert('Error: ' + data.message);
+          console.error(data.message);
         }
       })
       .fail(function (xhr) {
         var err = (xhr.responseJSON && xhr.responseJSON.message)
           ? xhr.responseJSON.message
           : 'Unexpected error occurred.';
-        alert(err);
+        console.error(err);
       });
     });
 

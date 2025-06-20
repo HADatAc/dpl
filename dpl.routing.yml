@@ -265,7 +265,7 @@ dpl.platform_edit:
 
 # STREAM RELATED ROUTES
 dpl.stream_topic_subscribe:
-  path: '/dpl/streamtopic/subscribe/{topicUri}'
+  path: '/dpl/streamtopic/subscribe/{topicuri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamTopicSubscribe'
     _title: 'Subscribe Stream Topic'
@@ -274,7 +274,7 @@ dpl.stream_topic_subscribe:
     _permission: 'access content'
 
 dpl.stream_topic_unsubscribe:
-  path: '/dpl/streamtopic/unsubscribe/{topicUri}'
+  path: '/dpl/streamtopic/unsubscribe/{topicuri}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamTopicUnsubscribe'
     _title: 'Subscribe Stream Topic'
@@ -283,7 +283,7 @@ dpl.stream_topic_unsubscribe:
     _permission: 'access content'
 
 dpl.stream_topic_status:
-  path: '/dpl/streamtopic/record/{topicUri}/{status}'
+  path: '/dpl/streamtopic/record/{topicuri}/{status}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamTopicStatus'
     _title: 'Stream Topic Status Change'

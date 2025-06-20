@@ -19,8 +19,8 @@ class StreamController extends ControllerBase {
 
   use StringTranslationTrait;
 
-  public function streamTopicSubscribe($topicUri) {
-    $streamtopicUri = base64_decode($topicUri);
+  public function streamTopicSubscribe($topicuri) {
+    $streamtopicUri = base64_decode($topicuri);
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -65,8 +65,8 @@ class StreamController extends ControllerBase {
     }
   }
 
-  public function streamTopicUnsubscribe($topicUri) {
-    $streamtopicUri = base64_decode($topicUri);
+  public function streamTopicUnsubscribe($topicuri) {
+    $streamtopicUri = base64_decode($topicuri);
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -108,8 +108,8 @@ class StreamController extends ControllerBase {
     }
   }
 
-  public function streamTopicStatus($topicUri, $status) {
-    $streamtopicUri = base64_decode($topicUri);
+  public function streamTopicStatus($topicuri, $status) {
+    $streamtopicUri = base64_decode($topicuri);
     $statusTopic = base64_decode($status);
 
     try {

@@ -264,29 +264,30 @@ dpl.platform_edit:
 
 
 # STREAM RELATED ROUTES
-dpl.stream_record:
-  path: '/dpl/stream/record/{streamUri}/{topicUri}'
+dpl.stream_topic_subscribe:
+  path: '/dpl/streamtopic/subscribe/{topicUri}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamRecord'
-    _title: 'Start Stream Recording'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicSubscribe'
+    _title: 'Subscribe Stream Topic'
   methods: [POST]
   requirements:
     _permission: 'access content'
 
-dpl.stream_suspend:
-  path: '/dpl/stream/suspend/{streamUri}/{topicUri}'
+dpl.stream_topic_unsubscribe:
+  path: '/dpl/streamtopic/unsubscribe/{topicUri}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamSuspend'
-    _title: 'Stream Suspend'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicUnsubscribe'
+    _title: 'Subscribe Stream Topic'
   methods: [POST]
   requirements:
     _permission: 'access content'
 
-dpl.stream_ingest:
-  path: '/dpl/stream/ingest/{streamUri}/{topicUri}'
+dpl.stream_topic_status:
+  path: '/dpl/streamtopic/record/{topicUri}/{status}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
-    _title: 'Stream Ingest'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicStatus'
+    _title: 'Stream Topic Status Change'
+  methods: [POST]
   requirements:
     _permission: 'access content'
 

@@ -143,7 +143,18 @@ class StreamController extends ControllerBase {
       // $api->elementDel('streamtopic', $streamTopic->uri);
       // $api->elementAdd('streamtopic', json_encode($stPayload));
 
-      return new JsonResponse(['status' => 'ok', 'message' => 'Stream Topic has @status.', ['@status' => UTILS::plainStatus($status)]]);
+      $message = $this->t(
+        'Stream Topic has @status.',
+        ['@status' => Utils::plainStatus($status)]
+      );
+
+      // Ou, sem tradução:
+      $message = 'Stream Topic has ' . Utils::plainStatus($status) . '.';
+
+      return new JsonResponse([
+        'status'  => 'ok',
+        'message' => $message,
+      ]);
     }
     catch (\Exception $e) {
       return new JsonResponse([

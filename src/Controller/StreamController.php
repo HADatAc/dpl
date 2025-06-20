@@ -30,13 +30,14 @@ class StreamController extends ControllerBase {
         'getUri'
       );
 
-      dpm($streamTopic);
+      // dpm($streamTopic);
 
       if (!$streamTopic) {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicSubscribe($streamtopicUri);
+      // dpm(rawurlencode($streamTopic->uri));
+      $api->streamTopicSubscribe($streamTopic->uri);
 
       // // Reconstruir o payload com os dados existentes + atualização
       // $stPayload = [
@@ -79,7 +80,7 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicUnsubscribe($streamtopicUri);
+      $api->streamTopicUnsubscribe($streamTopic->uri);
 
       // // Reconstruir o payload com os dados existentes + atualização
       // $stPayload = [
@@ -123,7 +124,7 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicSetStatus($streamtopicUri, $statusTopic);
+      $api->streamTopicSetStatus($streamTopic->uri, $statusTopic);
 
       // // Reconstruir o payload com os dados existentes + atualização
       // $stPayload = [

@@ -60,18 +60,18 @@
       })
       .done(function (data) {
         if (data.status === 'ok') {
-          alert(data.message || 'Subscription stopped successfully!');
+          // alert(data.message || 'Subscription stopped successfully!');
           reloadTopics(streamValue);
         }
         else {
-          alert('Error: ' + data.message);
+          console.error(data.message);
         }
       })
       .fail(function (xhr) {
         var err = (xhr.responseJSON && xhr.responseJSON.message)
           ? xhr.responseJSON.message
           : 'Unexpected error occurred.';
-        alert(err);
+        console.error(err);
       });
     });
 

@@ -415,21 +415,8 @@ class ExecuteCloseStreamForm extends FormBase {
             $api->elementAdd('da', $mtJSON);
           }
         }
-      }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
-        $ip       = $this->getStream()->messageIP;
-        $port     = $this->getStream()->messagePort;
-
-        if (!empty($this->getStream()->topics)){
-          $topicsList = $this->getStream()->topics;
-
-          foreach ($topicsList as $topicItem) {
-            $filename = $this->getStream()->messageArchiveId . '_' . $topicItem->label .  '.txt';
-            $topic    = $topicItem->label;
-            $this->startSubscription($ip, $port, $topic, $filename);
-          }
-        }
       }
-
+      
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;

@@ -113,6 +113,7 @@ class StreamController extends ControllerBase {
     $streamtopicUri = base64_decode($topicuri);
     $statusTopic = base64_decode($status);
 
+
     try {
       $api = \Drupal::service('rep.api_connector');
 
@@ -145,11 +146,11 @@ class StreamController extends ControllerBase {
 
       $message = $this->t(
         'Stream Topic has @status.',
-        ['@status' => Utils::plainStatus($status)]
+        ['@status' => Utils::plainStatus($statusTopic)]
       );
 
       // Ou, sem tradução:
-      $message = 'Stream Topic has ' . Utils::plainStatus($status) . '.';
+      $message = 'Stream Topic has ' . Utils::plainStatus($statusTopic) . '.';
 
       return new JsonResponse([
         'status'  => 'ok',

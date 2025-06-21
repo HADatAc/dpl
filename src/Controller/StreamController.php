@@ -165,6 +165,37 @@ class StreamController extends ControllerBase {
     }
   }
 
+  public function streamTopicLatesMessage($topicuri) {
+    $streamtopicUri = base64_decode($topicuri);
+
+    try {
+      $api = \Drupal::service('rep.api_connector');
+
+      $streamTopic = $api->parseObjectResponse(
+        $api->getUri($streamtopicUri),
+        'getUri'
+      );
+      if (!$streamTopic) {
+        return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
+      }
+
+      $reponse = $api->streamTopicLatestMessage($streamTopic->uri);
+      $obj = json_decode($reponse);
+      $messages = [];
+      if ($obj->isSuccessful) {
+        $messages = $obj->body;
+      }
+
+      return new JsonResponse(['status' => 'ok', 'messages' => $messages]);
+    }
+    catch (\Exception $e) {
+      return new JsonResponse([
+        'status' => 'error',
+        'message' => 'Erro: ' . $e->getMessage(),
+      ], 500);
+    }
+  }
+
   // public function streamRecord($streamUri, $topicUri) {
   //   $streamUri = base64_decode($streamUri);
   //   $topicUri = base64_decode($topicUri);

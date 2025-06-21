@@ -291,6 +291,15 @@ dpl.stream_topic_status:
   requirements:
     _permission: 'access content'
 
+dpl.stream_topic_latest_message:
+  path: '/dpl/streamtopic/latest_message/{topicuri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicLatesMessage'
+    _title: 'Stream Topic Latest Message'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
 # STREAM FILES (and messages when applicable)
 dpl.file_ingest_ajax:
   path: '/dpl/file-ingest-ajax'

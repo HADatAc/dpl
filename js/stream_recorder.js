@@ -1,73 +1,106 @@
-/**
- * @file
- * stream_recorder.js
- *
- * Handle Subscribe/Unsubscribe/Record/Ingest/Suspend actions for Stream Topics
- * and then reload the topic list for the current stream via AJAX.
- */
-
 (function ($, Drupal, drupalSettings) {
   $(document).ready(function () {
-    // Reuso dos handlers existentes
+    var actionsDisabled = false;
+
+    function disableAllActionButtons() {
+      actionsDisabled = true;
+      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend')
+        // marca como desactivado para leitores de ecrã
+        .attr('aria-disabled', 'true')
+        // impede o clique e “empalidece” o link
+        .css({
+          'pointer-events': 'none',
+          'opacity': '0.6'
+        });
+    }
+    function enableAllActionButtons() {
+      actionsDisabled = false;
+      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend')
+        .removeAttr('aria-disabled')
+        .css({
+          'pointer-events': 'auto',
+          'opacity': '1'
+        });
+    }
+
     function handleAction(selector, logLabel, reloadOnSuccess = true) {
       $(document).on('click', selector, function (e) {
+        // 1) Se já estamos a aguardar resposta, ignora clicks posteriores
+        if (actionsDisabled) {
+          e.preventDefault();
+          return;
+        }
+
         e.preventDefault();
         console.log(logLabel + ' button clicked');
+
+        // 2) Desactiva TODOS
+        disableAllActionButtons();
+
         var $btn = $(this);
         var url = $btn.attr('data-url');
         var streamValue = $btn.attr('data-stream-uri');
 
-        $.ajax({
+        // 3) Chama a API
+        var ajaxReq = $.ajax({
           url: url,
           method: 'POST',
           dataType: 'json'
-        })
-        .done(function (data) {
-          if (data.status === 'ok') {
-            console.log(data.message || (logLabel + ' succeeded'));
-            if (reloadOnSuccess) {
-              reloadTopics(streamValue);
-            }
-          }
-          else {
-            console.error(data.message);
-          }
-        })
-        .fail(function (xhr) {
-          var err = (xhr.responseJSON && xhr.responseJSON.message)
-            ? xhr.responseJSON.message
-            : 'Unexpected error occurred.';
-          console.error(err);
         });
+
+        if (reloadOnSuccess) {
+          ajaxReq
+            .done(function (data) {
+              if (data.status === 'ok') {
+                console.log(data.message || (logLabel + ' succeeded'));
+                // reloadTopics devolve o jqXHR de getJSON
+                reloadTopics(streamValue)
+                  .always(function () {
+                    // 5) Só aqui re-activa tudo
+                    enableAllActionButtons();
+                  });
+              }
+              else {
+                console.error(data.message);
+                enableAllActionButtons();
+              }
+            })
+            .fail(function (xhr) {
+              var err = (xhr.responseJSON && xhr.responseJSON.message)
+                ? xhr.responseJSON.message
+                : 'Unexpected error occurred.';
+              console.error(err);
+              enableAllActionButtons();
+            });
+        }
+        else {
+          ajaxReq.always(function () {
+            enableAllActionButtons();
+          });
+        }
       });
     }
 
-    // ——————— Handlers existentes ———————
-    handleAction('.stream-topic-subscribe',     'Subscribe');
-    handleAction('.stream-topic-unsubscribe',   'Unsubscribe');
+    // — Handlers existentes —
+    handleAction('.stream-topic-subscribe',   'Subscribe');
+    handleAction('.stream-topic-unsubscribe', 'Unsubscribe');
+    // — Novos handlers —
+    handleAction('.stream-topic-record',  'Record');
+    handleAction('.stream-topic-ingest',  'Ingest');
+    handleAction('.stream-topic-suspend', 'Suspend');
 
-    // ——————— Novos handlers ———————
-    handleAction('.stream-topic-record',        'Record');
-    handleAction('.stream-topic-ingest',        'Ingest');
-    handleAction('.stream-topic-suspend',       'Suspend');
-
-    /**
-     * Re-fetches and re-renders the Stream Topic List for a given streamUri.
-     */
     function reloadTopics(streamUri) {
       if (!drupalSettings.std || !drupalSettings.std.ajaxUrl || !drupalSettings.std.studyUri) {
         console.warn('dplStreamRecorder: Missing std.ajaxUrl or std.studyUri');
-        return;
+        return $.Deferred().resolve().promise();
       }
 
-      // Hide todas as seções AJAX antes de recarregar
       $('#edit-ajax-cards-container').hide();
       $('#stream-topic-list-container').hide();
       $('#stream-data-files-container').hide();
       $('#message-stream-container').hide();
 
-      // Fetch dos tópicos atualizados
-      $.getJSON(drupalSettings.std.ajaxUrl, {
+      return $.getJSON(drupalSettings.std.ajaxUrl, {
         studyUri:  drupalSettings.std.studyUri,
         streamUri: streamUri
       })

@@ -280,15 +280,15 @@ class ManageStreamsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'close-button'],
         ],
       ];
-      $form['card']['card_body']['actions']['modify_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Modify Selected'),
-        '#name' => 'modify_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
-        ],
-        // '#disabled' => true,
-      ];
+      // $form['card']['card_body']['actions']['modify_selected'] = [
+      //   '#type' => 'submit',
+      //   '#value' => $this->t('Modify Selected'),
+      //   '#name' => 'modify_element',
+      //   '#attributes' => [
+      //     'class' => ['btn', 'btn-primary', 'edit-element-button', 'ms-1'],
+      //   ],
+      //   // '#disabled' => true,
+      // ];
     }
     $form['card']['card_body']['element_table'] = [
       '#type' => 'tableselect',

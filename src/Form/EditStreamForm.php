@@ -369,8 +369,16 @@ class EditStreamForm extends FormBase {
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
       '#limit_validation_errors' => [],
-      '#submit' => ['::backUrl'],
+      // '#submit' => ['::backUrl'],
       '#attributes' => ['class' => ['btn', 'btn-secondary']],
+    ];
+
+    $form['space'] = [
+      '#type' => 'item',
+      '#value' => $this->t('<br><br><br>'),
+      '#wrapper_attributes' => [
+        'class' => ['mb-5']
+      ]
     ];
 
     return $form;

@@ -10,6 +10,9 @@ use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
 use Drupal\rep\Vocabulary\HASCO;
+use Drupal\rep\Entity\Stream;
+use Drupal\rep\Vocabulary\REPGUI;
+use Drupal\Component\Render\Markup;
 
 class ExecuteExposeStreamForm extends FormBase {
 
@@ -69,6 +72,9 @@ class ExecuteExposeStreamForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $streamuri = NULL) {
+
+    // ROOT URL
+    $root_url = \Drupal::request()->getBaseUrl();
 
     // Globals
     $api = \Drupal::service('rep.api_connector');
@@ -148,6 +154,17 @@ class ExecuteExposeStreamForm extends FormBase {
         '#title' => $this->t('<h3>Close Stream Exposure</h3>'),
       ];
     }
+
+    $uri_string = Utils::namespaceUri($this->getStream()->uri);
+    $href = $root_url . REPGUI::DESCRIBE_PAGE . base64_encode($uri_string);
+
+    $link_html = '<a target="_new" href="' . $href . '" target="_blank">' . $uri_string . '</a>';
+
+    $form['stream_uri'] = [
+      '#type'   => 'markup',
+      '#markup' => t('<div class="mb-3"><strong>URI:</strong> '.$link_html.'</div>'),
+    ];
+
     $form['stream_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
@@ -171,25 +188,75 @@ class ExecuteExposeStreamForm extends FormBase {
 
     // DEPLOYMENT IS VALID
     if ($validationError == NULL) {
-      if ($this->getMode() == 'execute') {
-        $form['stream_start_datetime'] = [
-          '#type' => 'datetime',
-          '#title' => $this->t('Starting Date/Time'),
-          '#default_value' => $this->getStream()->startedAt ? $this->getStream()->startedAt : '',
-          '#date_date_element' => 'date', // Use a date element
-          '#date_time_element' => 'time', // Use a time element
-          '#date_format' => 'Y-m-d', // Date format
-          '#time_format' => 'H:i:s', // Time format
-        ];
-        $form['execute_submit'] = [
-          '#type' => 'submit',
-          '#value' => $this->t('Execute'),
-          '#name' => 'execute',
+
+      if ($this->getMode() == 'expose') {
+
+        $form['stream_exposeip'] = [
+          '#type' => 'textfield',
+          '#title' => $this->t('Stream IP'),
+          '#default_value' => $this->getStream()->ipCidr ?? '',
+          '#description' => $this->t('Insert one valid IPv4, example 192.168.0.1'),
+          '#required' => false,
           '#attributes' => [
-            'class' => ['btn', 'btn-primary', 'play-button'],
+            'placeholder' => 'xxx.xxx.xxx.xxx',
+            'pattern'     => '^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)$',
           ],
         ];
-        }
+
+        // Add the password field wrapped in a Bootstrap input-group
+        $form['stream_exposepassword'] = [
+          '#type'        => 'textfield',
+          '#title'       => $this->t('Stream Password'),
+          '#description' => $this->t('Type in the autorizating password for the stream'),
+          '#attributes'  => [
+            'class'        => ['col-md-2'],
+            'style'       => 'width: 250px;',
+            'autocomplete' => 'off',
+          ],
+        ];
+
+        $form['topic_table_title'] = [
+            '#type' => 'item',
+            '#title' => $this->t('<h3>Stream Topics List</h3>'),
+        ];
+
+        $header = Stream::generateHeaderTopic(true);
+        $output = Stream::generateOutputTopic($this->getStream()->topics, $this->getStream()->uri, 'select', true);
+        $form['element_table'] = [
+          '#type' => 'table',
+          '#header' => $header,
+          '#rows' => $output,
+          '#js_select' => FALSE,
+          '#empty' => t('No stream topic has been found'),
+        ];
+        // $form['card']['card_body']['pager'] = [
+        //   '#theme' => 'list-page',
+        //   '#items' => [
+        //     'page' => strval($page),
+        //     'first' => ListStreamStatePage::link($apiState, $this->getManagerEmail(), 1, $pagesize),
+        //     'last' => ListStreamStatePage::link($apiState, $this->getManagerEmail(), $total_pages, $pagesize),
+        //     'previous' => $previous_page_link,
+        //     'next' => $next_page_link,
+        //     'last_page' => strval($total_pages),
+        //     'links' => null,
+        //     'title' => ' ',
+        //   ],
+        // ];
+        $form['space1'] = [
+          '#type' => 'item',
+          '#value' => $this->t('<br><br>'),
+        ];
+
+        $form['expose_submit'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Expose'),
+          '#name' => 'expose',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'expose-button'],
+          ],
+        ];
+      }
+
       if ($this->getMode() == 'close') {
         $form['stream_end_datetime'] = [
           '#type' => 'datetime',
@@ -209,6 +276,7 @@ class ExecuteExposeStreamForm extends FormBase {
           ],
         ];
       }
+
       $form['cancel_submit'] = [
         '#type' => 'submit',
         '#value' => $this->t('Cancel'),
@@ -217,6 +285,12 @@ class ExecuteExposeStreamForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'cancel-button'],
         ],
       ];
+
+      // $form[$this->getFormId()] = [
+      //   '#attributes' => [
+      //     'class' => ['col-md-4'],
+      //   ],
+      // ]
 
     // DEPLOYMENT IS INVALID
     } else {

@@ -18,7 +18,7 @@ dpl_accordion:
 dpl_onlytabs:
   version: VERSION
   css:
-    theme: 
+    theme:
       css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}

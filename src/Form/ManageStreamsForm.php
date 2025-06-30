@@ -454,6 +454,23 @@ class ManageStreamsForm extends FormBase {
       }
     }
 
+    // EXPOSE ELEMENT
+    if ($button_name === 'expose_element') {
+      if (sizeof($rows) < 1) {
+        \Drupal::messenger()->addWarning(t("Select the exact stream to be exposed."));
+      } else if ((sizeof($rows) > 1)) {
+        \Drupal::messenger()->addWarning(t("No more than one stream can be exposed at once."));
+      } else {
+        $first = array_shift($rows);
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_expose_stream');
+        $url = Url::fromRoute('dpl.execute_expose_stream', [
+          'mode' => 'expose',
+          'streamuri' => base64_encode($first)
+        ]);
+        $form_state->setRedirectUrl($url);
+      }
+    }
+
     // DELETE ELEMENT
     if ($button_name === 'delete_element') {
       if (sizeof($rows) <= 0) {

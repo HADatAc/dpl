@@ -90,6 +90,16 @@ dpl.execute_close_stream:
   options:
     no_cache: 'TRUE'
 
+dpl.execute_expose_stream:
+  path: 'dpl/manage/executeexposestream/{mode}/{streamuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteExposeStreamForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
 # Deployment CRUD options
 
 dpl.add_deployment:

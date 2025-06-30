@@ -276,6 +276,7 @@ class ManageStreamsForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Expose Selected'),
         '#name' => 'expose_element',
+        '#disabled' => TRUE,
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'expose-button', 'me-1'],
         ],

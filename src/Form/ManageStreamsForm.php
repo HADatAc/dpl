@@ -272,6 +272,14 @@ class ManageStreamsForm extends FormBase {
       ];
     }
     if ($this->getState() == 'active') {
+      $form['card']['card_body']['actions']['expose_selected'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Expose Selected'),
+        '#name' => 'expose_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'expose-button', 'me-1'],
+        ],
+      ];
       $form['card']['card_body']['actions']['close_selected'] = [
         '#type' => 'submit',
         '#value' => $this->t('Close Selected'),

@@ -125,14 +125,31 @@ class ViewDeploymentForm extends FormBase {
     // The API returns an array in "body"; take the first (and only) element.
     $this->deployment = $result->body;
 
+    // dpm($this->getDeployment());
+
     if (isset($this->getDeployment()->instrumentInstanceUri) && $this->getDeployment()->instrumentInstanceUri !== null) {
       $instrumentInstance_response = $api->getUri($this->getDeployment()->instrumentInstanceUri);
       $resultInstrumentInstance = json_decode($instrumentInstance_response);
+
+      // If the API call failed or returned an error flag, show error and go back.
+      if (empty($resultInstrumentInstance->isSuccessful) || !$resultInstrumentInstance->isSuccessful) {
+        \Drupal::messenger()->addError($this->t('Failed to retrieve Instrument Instance.'));
+        return;
+      }
+
       $this->instrumentInstance = $resultInstrumentInstance->body;
 
       $instrument_response = $api->getUri($this->getInstrumentInstance()->typeUri);
       $resultInstrument = json_decode($instrument_response);
-      $this->instrument = $resultInstrument->body;
+
+      // If the API call failed or returned an error flag, show error and go back.
+      if (empty($resultInstrument->isSuccessful) || !$resultInstrument->isSuccessful) {
+        \Drupal::messenger()->addError($this->t('Failed to retrieve Instrument of Instance.'));
+        // return;
+        $this->instrument = [];
+      } else {
+        $this->instrument = $resultInstrument->body;
+      }
     }
 
     if (isset($this->getDeployment()->platformInstanceUri) && $this->getDeployment()->platformInstanceUri !== null) {
@@ -514,11 +531,28 @@ class ViewDeploymentForm extends FormBase {
 
     $uid = \Drupal::currentUser()->id();
     $previousUrl = Utils::trackingGetPreviousUrl($uid, 'std.manage_study_elements');
-    if ($previousUrl) {
+
+    if (!$previousUrl) {
+      return;
+    }
+
+    if (strpos($previousUrl, '/std/stream-data-ajax') !== FALSE) {
+      $parts = parse_url($previousUrl);
+      if (!empty($parts['query'])) {
+        parse_str($parts['query'], $query);
+        if (!empty($query['studyUri'])) {
+          $form_state->setRedirect(
+            'std.manage_study_elements',
+            ['studyuri' => $query['studyUri']]
+          );
+          return;
+        }
+      }
+    }
+    else {
       $response = new RedirectResponse($previousUrl);
       $response->send();
       return;
     }
   }
-
 }

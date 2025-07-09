@@ -125,17 +125,22 @@ class ExecuteCloseStreamForm extends FormBase {
     }
 
     $validationError = NULL;
-    if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
-      $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
-    }
-    if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
-      $validationError = "Stream is missing associated STUDY.";
-    }
-    if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
-      $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
-    }
 
-    //dpm($this->getDeployment());
+    if ($this->getStream()->method === 'Files') {
+      if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
+      }
+      if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing associated STUDY.";
+      }
+      if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
+      }
+    } else {
+      if (!isset($this->getStream()->study) ) {
+        $validationError = "Stream is missing STUDY.";
+      }
+    }
 
     if ($this->getMode() == 'execute') {
       $form['page_title'] = [
@@ -161,12 +166,14 @@ class ExecuteCloseStreamForm extends FormBase {
       '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];
-    $form['stream_instrument_instance'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Semantic Data Dictionary (SDD)'),
-      '#default_value' => $sddLabel,
-      '#disabled' => TRUE,
-    ];
+    if ($this->getStream()->method === 'Files') {
+      $form['stream_semanticDataDictionary_instance'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Semantic Data Dictionary (SDD)'),
+        '#default_value' => $sddLabel,
+        '#disabled' => TRUE,
+      ];
+    }
 
     // DEPLOYMENT IS VALID
     if ($validationError == NULL) {
@@ -221,7 +228,7 @@ class ExecuteCloseStreamForm extends FormBase {
     } else {
       $form['validation_notification'] = [
         '#type' => 'item',
-        '#title' => $this->t('<br><ul><h2>Streamt cannot be executed</h2></ul>'),
+        '#title' => $this->t('<br><ul><h2>Stream cannot be executed</h2></ul>'),
       ];
       $form['validation_reason'] = [
         '#type' => 'item',
@@ -287,37 +294,61 @@ class ExecuteCloseStreamForm extends FormBase {
         'messageIP'                 => $orig->messageIP,
         'messagePort'               => $orig->messagePort,
         'messageArchiveId'          => $orig->messageArchiveId,
-        'canUpdate'                 => $orig->canUpdate,
+        'canUpdate'                 => [$useremail],
         'designedAt'                => $orig->designedAt,
         'hasVersion'                => $orig->hasVersion,
         'studyUri'                  => $orig->studyUri,
-        'semanticDataDictionaryUri' => $orig->semanticDataDictionaryUri,
-        'deploymentUri'             => $orig->deploymentUri,
         'triggeringEvent'           => $orig->triggeringEvent,
         'numberDataPoints'          => $orig->numberDataPoints,
         'datasetPattern'            => $orig->datasetPattern,
         'datasetUri'                => $orig->datasetUri,
       ];
 
+      if ($this->getStream()->method === 'files') {
+        $clone['semanticDataDictionaryUri'] = $orig->semanticDataDictionaryUri;
+        $clone['deploymentUri']             = $orig->deploymentUri;
+      }
+
       if ($this->getMode() === 'execute') {
         $clone['startedAt']         = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
         $clone['hasStreamStatus']   = HASCO::ACTIVE;
-        $clone['hasMessageStatus']  = HASCO::SUSPENDED;
       }
       elseif ($this->getMode() === 'close') {
         $clone['startedAt']         = $orig->startedAt;
         $clone['endedAt']           = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
         $clone['hasStreamStatus']   = HASCO::CLOSED;
-        $clone['hasMessageStatus']  = HASCO::INACTIVE;
         $filename = $this->getStream()->messageArchiveId . '.txt';
         $this->stopSubscription($filename);
-      }
 
-      $streamJson = json_encode($clone, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+        // WE MUST INACTIVATE ALL TOPICS
+        if (!empty($orig->topics)){
+          $topicsList = $orig->topics;
+
+          foreach ($topicsList as $topicItem) {
+
+            $streamTopic = [
+              'uri'                       => $topicItem->uri,
+              'typeUri'                   => HASCO::STREAMTOPIC,
+              'hascoTypeUri'              => HASCO::STREAMTOPIC,
+              'streamUri'                 => $this->getStreamUri(),
+              'label'                     => $topicItem->label,
+              'deploymentUri'             => $topicItem->deploymentUri,
+              'semanticDataDictionaryUri' => $topicItem->semanticDataDictionaryUri,
+              'cellScopeUri'              => $topicItem->cellScopeUri,
+              'hasTopicStatus'            => HASCO::INACTIVE,
+            ];
+
+            \Drupal::service('rep.api_connector')->elementDel('streamtopic', $topicItem->uri);
+            \Drupal::service('rep.api_connector')->elementAdd('streamtopic', json_encode($streamTopic, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+          }
+        }
+
+      }
 
       $api = \Drupal::service('rep.api_connector');
       $api->elementDel('stream', $this->getStreamUri());
-      $api->elementAdd('stream', $streamJson);
+      $api->elementAdd('stream', json_encode($clone));
 
       // RENAME to execute because new end-points are still not working
       if ($this->getMode() === 'execute' && $this->getStream()->method === 'files') {
@@ -384,15 +415,8 @@ class ExecuteCloseStreamForm extends FormBase {
             $api->elementAdd('da', $mtJSON);
           }
         }
-      }elseif($this->getMode() === 'execute' && $this->getStream()->method === 'messages') {
-        $ip       = $this->getStream()->messageIP;
-        $port     = $this->getStream()->messagePort;
-        $topic    = 'wsaheadhin';
-        $filename = $this->getStream()->messageArchiveId . '.txt';
-      
-        $this->startSubscription($ip, $port, $topic, $filename);
       }
-
+      
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;
@@ -423,34 +447,34 @@ class ExecuteCloseStreamForm extends FormBase {
 
   private function startSubscription($ip, $port, $topic, $filename) {
     $fs = \Drupal::service('file_system');
-    $directory = 'private://streams/messageFiles/';
+    $directory = 'private://streams/messageFiles/live/';
     $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
-  
+
     $filepath = $directory . $filename;
     $realpath = $fs->realpath($filepath);
-  
+
     // Define caminho do ficheiro PID ao lado do ficheiro de log
     $pidpath = $realpath . '.pid';
-  
+
     // Comando MQTT
     $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
     $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
-  
+
     // Executa e guarda PID
     $pid = shell_exec($fullCmd);
     file_put_contents($pidpath, $pid);
-  
+
     \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
   }
-  
+
   private function stopSubscription($filename) {
     $fs = \Drupal::service('file_system');
-    $directory = 'private://streams/messageFiles/';
+    $directory = 'private://streams/messageFiles/live/';
     $filepath = $directory . $filename;
-  
+
     $realpath = $fs->realpath($filepath);
     $pidpath = $realpath . '.pid';
-  
+
     if (file_exists($pidpath)) {
       $pid = trim(file_get_contents($pidpath));
       if (is_numeric($pid)) {
@@ -463,5 +487,5 @@ class ExecuteCloseStreamForm extends FormBase {
     } else {
       \Drupal::logger('dpl')->warning("Ficheiro de PID não encontrado: {$pidpath}");
     }
-  }  
+  }
 }

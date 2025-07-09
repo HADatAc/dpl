@@ -279,14 +279,6 @@ class ManageDeploymentsForm extends FormBase {
       //     'class' => ['btn', 'btn-primary', 'edit-element-button'],
       //   ],
       // ];
-      // $form['card']['card_body']['stream_selected'] = [
-      //   '#type' => 'submit',
-      //   '#value' => $this->t('Streams of Selected'),
-      //   '#name' => 'manage_streams',
-      //   '#attributes' => [
-      //     'class' => ['btn', 'btn-primary', 'stream-button'],
-      //   ],
-      // ];
       // Create the button group container
 
       // Move each button into the 'actions' group
@@ -307,14 +299,6 @@ class ManageDeploymentsForm extends FormBase {
           'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
         ],
         '#disabled' => true,
-      ];
-      $form['card']['card_body']['actions']['stream_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Streams of Selected'),
-        '#name' => 'manage_streams',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'stream-button', 'me-1'],
-        ],
       ];
 
     }
@@ -470,25 +454,6 @@ class ManageDeploymentsForm extends FormBase {
         $url = Url::fromRoute('dpl.execute_close_deployment', [
           'mode' => 'close',
           'deploymenturi' => base64_encode($first)
-        ]);
-        $form_state->setRedirectUrl($url);
-      }
-    }
-
-    // MANAGE STREAM
-    if ($button_name === 'manage_streams') {
-      if (sizeof($rows) < 1) {
-        \Drupal::messenger()->addWarning(t("Select the exact deployment to have streams managed."));
-      } else if ((sizeof($rows) > 1)) {
-        \Drupal::messenger()->addWarning(t("To manage streams, select exactly one deployment."));
-      } else {
-        $first = array_shift($rows);
-        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.manage_streams_route');
-        $url = Url::fromRoute('dpl.manage_streams_route', [
-          'deploymenturi' => base64_encode($first),
-          'state' => 'active',
-          'page' => 1,
-          'pagesize' => 10,
         ]);
         $form_state->setRedirectUrl($url);
       }

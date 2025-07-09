@@ -59,7 +59,7 @@ dpl.edit_platform:
 # Stream CRUD options
 
 dpl.add_stream:
-  path: 'dpl/manage/addstream/{deploymenturi}'
+  path: 'dpl/manage/addstream'
   defaults:
     _form: '\Drupal\dpl\Form\AddStreamForm'
     _title: 'Add Stream'
@@ -84,6 +84,16 @@ dpl.execute_close_stream:
   path: 'dpl/manage/executeclosestream/{mode}/{streamuri}'
   defaults:
     _form: '\Drupal\dpl\Form\ExecuteCloseStreamForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+dpl.execute_expose_stream:
+  path: 'dpl/manage/executeexposestream/{mode}/{streamuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteExposeStreamForm'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'
@@ -136,9 +146,10 @@ dpl.manage_deployments_route:
     no_cache: 'TRUE'
 
 dpl.manage_streams_route:
-  path: 'dpl/manage/streams/{deploymenturi}/{state}/{page}/{pagesize}'
+  path: 'dpl/manage/streams/{state}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\ManageStreamsForm'
+    state: 'design'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'
@@ -263,29 +274,39 @@ dpl.platform_edit:
 
 
 # STREAM RELATED ROUTES
-dpl.stream_record:
-  path: '/dpl/stream/record/{streamUri}'
+dpl.stream_topic_subscribe:
+  path: '/dpl/streamtopic/subscribe/{topicuri}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamRecord'
-    _title: 'Start Stream Recording'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicSubscribe'
+    _title: 'Subscribe Stream Topic'
   methods: [POST]
   requirements:
     _permission: 'access content'
 
-dpl.stream_suspend:
-  path: '/dpl/stream/suspend/{streamUri}'
+dpl.stream_topic_unsubscribe:
+  path: '/dpl/streamtopic/unsubscribe/{topicuri}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamSuspend'
-    _title: 'Stream Suspend'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicUnsubscribe'
+    _title: 'Subscribe Stream Topic'
   methods: [POST]
   requirements:
     _permission: 'access content'
 
-dpl.stream_ingest:
-  path: '/dpl/stream/ingest/{streamUri}'
+dpl.stream_topic_status:
+  path: '/dpl/streamtopic/record/{topicuri}/{status}'
   defaults:
-    _controller: '\Drupal\dpl\Controller\StreamController::streamIngest'
-    _title: 'Stream Ingest'
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicStatus'
+    _title: 'Stream Topic Status Change'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+dpl.stream_topic_latest_message:
+  path: '/dpl/streamtopic/latest_message/{topicuri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicLatesMessage'
+    _title: 'Stream Topic Latest Message'
+  methods: [GET]
   requirements:
     _permission: 'access content'
 

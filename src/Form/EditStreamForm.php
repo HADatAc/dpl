@@ -10,42 +10,14 @@ use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
 
 /**
- * Form EditStreamForm.
- *
- * Provides a form to edit an existing Stream entity with two dynamic tabs:
+ * Provides a form to edit an existing Stream entity with dynamic tabs:
+ * - Basic Properties (always visible)
  * - File-Method Properties (only when method = 'files')
  * - Message-Method Properties (only when method = 'messages')
  *
- * Uses server-side #access to include or exclude tabs based on the chosen method,
- * and AJAX to rebuild tabs when the method changes.
+ * Uses server-side #access and AJAX to rebuild tabs when the method changes.
  */
 class EditStreamForm extends FormBase {
-
-  /**
-   * The Stream object loaded from API.
-   *
-   * @var object
-   */
-  protected $stream;
-
-  /**
-   * Getter for the Stream.
-   *
-   * @return object
-   */
-  public function getStream() {
-    return $this->stream;
-  }
-
-  /**
-   * Setter for the Stream.
-   *
-   * @param object $stream
-   *   Stream data returned from the API.
-   */
-  public function setStream($stream) {
-    $this->stream = $stream;
-  }
 
   /**
    * {@inheritdoc}
@@ -55,61 +27,106 @@ class EditStreamForm extends FormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * The Stream object loaded from the API.
    *
-   * Build the edit form with three tabs:
-   * - Basic Properties: always visible
-   * - File-Method Properties: visible when method = 'files'
-   * - Message-Method Properties: visible when method = 'messages'
+   * @var object
+   */
+  protected $stream;
+
+  /**
+   * Builds the edit form.
    *
-   * Tabs are rendered conditionally via #access, and rebuilt via AJAX on method change.
+   * @param array $form
+   *   Form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   Form state.
+   * @param string|null $streamuri
+   *   Base64-encoded URI of the Stream to edit.
+   *
+   * @return array
+   *   The built form.
    */
   public function buildForm(array $form, FormStateInterface $form_state, $streamuri = NULL) {
-    // Attach the custom tabs library and Drupal States for AJAX rebuild.
+    // Disable HTML5 native validation.
+    $form['#attributes']['novalidate'] = 'novalidate';
+
+    // Attach libraries for tabs and AJAX states.
     $form['#attached']['library'][] = 'dpl/dpl_onlytabs';
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
 
-    // 1) Load the existing Stream from the API.
+    // 1) Load the existing Stream via API.
     $api = \Drupal::service('rep.api_connector');
-    $decoded = base64_decode($streamuri);
-    $response = json_decode($api->getUri($decoded));
+    $decodedUri = base64_decode($streamuri);
+    $response = json_decode($api->getUri($decodedUri));
     if (empty($response->isSuccessful)) {
       \Drupal::messenger()->addError($this->t('Failed to retrieve Stream.'));
       $this->backUrl();
       return [];
     }
-    $this->setStream($response->body);
+    $this->stream = $response->body;
 
-    // dpm($this->getStream());
+    // === Initialize topics: only on first build, load from Stream; afterward, use form_state ===
+    if ($form_state->has('topics')) {
+      // On AJAX rebuilds: keep whatever is in form_state.
+      $topics = $form_state->get('topics');
+    }
+    else {
+      // First page load: pull from the API Stream object.
+      $topics = [];
+      if (!empty($this->stream->topics) && is_array($this->stream->topics)) {
+        foreach ($this->stream->topics as $item) {
+          $dplObj = !empty($item->deploymentUri)
+            ? $api->parseObjectResponse($api->getUri($item->deploymentUri), 'getUri')
+            : NULL;
+          $sddObj = !empty($item->semanticDataDictionaryUri)
+            ? $api->parseObjectResponse($api->getUri($item->semanticDataDictionaryUri), 'getUri')
+            : NULL;
+          $topics[] = [
+            'topic'      => $item->label ?? '',
+            'deployment' => $dplObj
+              ? Utils::trimAutoCompleteString($dplObj->label, $dplObj->uri)
+              : '',
+            'sdd'        => $sddObj
+              ? Utils::trimAutoCompleteString($sddObj->label, $sddObj->uri)
+              : '',
+            'cellscope'  => is_array($item->cellScopeUri)
+              ? ($item->cellScopeUri[0] ?? '')
+              : ($item->cellScopeUri ?? ''),
+          ];
+        }
+      }
+      // Save into form_state so AJAX keeps appending to it.
+      $form_state->set('topics', $topics);
+    }
 
-    // 2) Prepare the deployment autocomplete label.
+    // 3) Prepare default for deployment autocomplete.
     $deploymentLabel = '';
-    if (!empty($this->stream->deployment) && isset($this->stream->deployment->uri, $this->stream->deployment->label)) {
-      $deploymentLabel = Utils::fieldToAutocomplete(
-        $this->stream->deployment->uri,
-        $this->stream->deployment->label
+    if (!empty($this->stream->deployment->uri) && !empty($this->stream->deployment->label)) {
+      $deploymentLabel = Utils::trimAutoCompleteString(
+        $this->stream->deployment->label,
+        $this->stream->deployment->uri
       );
     }
 
-    // 3) Determine the current method, falling back to the Stream's value.
+    // 4) Determine selected method (from rebuild or loaded Stream).
     $method = $form_state->getValue('stream_method', $this->stream->method);
+    $form_state->set('selected_method', $method);
 
-    // 4) AJAX container wrapping all tabs.
+    // 5) AJAX wrapper for tabs.
     $form['tabs'] = [
-      '#type' => 'container',
+      '#type'   => 'container',
       '#prefix' => '<div id="method-properties-wrapper">',
       '#suffix' => '</div>',
       '#attributes' => ['class' => ['tabs']],
     ];
 
-    // 5) Build the tab navigation links.
+    // 6) Tab navigation links.
     $form['tabs']['tab_links'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['nav', 'nav-tabs']],
     ];
-
-    // --- Tab 1: Basic Properties link (always rendered) ---
+    // Basic Properties link (always shown).
     $form['tabs']['tab_links']['basic'] = [
       '#type' => 'html_tag',
       '#tag' => 'li',
@@ -117,68 +134,58 @@ class EditStreamForm extends FormBase {
       '#value' => '<a class="nav-link active" data-toggle="tab" href="#edit-tab1">'
         . $this->t('Basic Properties') . '</a>',
     ];
-
-    // --- Tab 2: File-Method Properties link (only when files) ---
+    // File-Method link.
     $form['tabs']['tab_links']['file'] = [
-      '#type' => 'html_tag',
-      '#tag' => 'li',
+      '#type'   => 'html_tag',
+      '#tag'    => 'li',
       '#access' => ($method === 'files'),
       '#attributes' => ['class' => ['nav-item']],
       '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab2">'
         . $this->t('File-Method Properties') . '</a>',
     ];
-
-    // --- Tab 3: Message-Method Properties link (only when messages) ---
+    // Message-Method link.
     $form['tabs']['tab_links']['message'] = [
-      '#type' => 'html_tag',
-      '#tag' => 'li',
+      '#type'   => 'html_tag',
+      '#tag'    => 'li',
       '#access' => ($method === 'messages'),
       '#attributes' => ['class' => ['nav-item']],
       '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab3">'
         . $this->t('Message-Method Properties') . '</a>',
     ];
 
-    // 6) Build the tab content container.
+    // 7) Tab contents container.
     $form['tabs']['tab_content'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['tab-content']],
     ];
 
     //
-    // === TAB 1 CONTENT: Basic Properties ===
+    // === TAB 1: Basic Properties ===
     //
     $form['tabs']['tab_content']['tab1'] = [
       '#type' => 'container',
       '#attributes' => [
         'class' => ['tab-pane', 'active', 'p-3', 'border', 'border-light'],
-        'id' => 'edit-tab1',
+        'id'    => 'edit-tab1',
       ],
-    ];
-    // Deployment field (disabled autocomplete).
-    $form['tabs']['tab_content']['tab1']['stream_deployment'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Deployment'),
-      '#default_value' => $deploymentLabel,
-      '#disabled' => TRUE,
-      '#required' => TRUE,
     ];
     // Method selector with AJAX callback.
     $form['tabs']['tab_content']['tab1']['stream_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Method'),
       '#options' => [
-        'files' => $this->t('Files'),
+        'files'    => $this->t('Files'),
         'messages' => $this->t('Messages'),
       ],
       '#default_value' => $method,
       '#required' => TRUE,
       '#ajax' => [
         'callback' => '::updateMethodProperties',
-        'event' => 'change',
-        'wrapper' => 'method-properties-wrapper',
+        'event'    => 'change',
+        'wrapper'  => 'method-properties-wrapper',
       ],
     ];
-    // Permission select.
+    // Permission selector.
     $form['tabs']['tab_content']['tab1']['permission_uri'] = [
       '#type' => 'select',
       '#title' => $this->t('Permission'),
@@ -186,31 +193,27 @@ class EditStreamForm extends FormBase {
         HASCO::PUBLIC  => $this->t('Public'),
         HASCO::PRIVATE => $this->t('Private'),
       ],
-      '#default_value' => $this->getStream()->permissionUri,
+      '#default_value' => $this->stream->permissionUri ?? HASCO::PUBLIC,
       '#required' => TRUE,
     ];
-    // Study autocomplete.
+    // Study autocomplete field.
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Study'),
       '#autocomplete_route_name' => 'std.study_autocomplete',
-      '#default_value' => Utils::fieldToAutocomplete($this->getStream()->studyUri, $this->getStream()->study->label),
+      '#default_value' => Utils::fieldToAutocomplete(
+        $this->stream->studyUri,
+        $this->stream->study->label
+      ),
     ];
-    // SDD autocomplete.
-    $form['tabs']['tab_content']['tab1']['stream_semanticdatadictionary'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('SDD'),
-      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
-      '#default_value' => Utils::fieldToAutocomplete($this->getStream()->semanticDataDictionaryUri, $this->getStream()->semanticDataDictionary->label),
-    ];
-    // Version (read-only).
+    // Version (readonly).
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
       '#default_value' => $this->stream->hasVersion,
       '#disabled' => TRUE,
     ];
-    // Description.
+    // Description textarea.
     $form['tabs']['tab_content']['tab1']['stream_description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
@@ -218,98 +221,164 @@ class EditStreamForm extends FormBase {
     ];
 
     //
-    // === TAB 2 CONTENT: File-Method Properties ===
+    // === TAB 2: File-Method Properties ===
     //
     $form['tabs']['tab_content']['tab2'] = [
-      '#type' => 'container',
+      '#type'   => 'container',
       '#access' => ($method === 'files'),
       '#attributes' => [
         'class' => ['tab-pane', 'p-3', 'border', 'border-light'],
-        'id' => 'edit-tab2',
+        'id'    => 'edit-tab2',
       ],
     ];
     // Datafile Pattern.
     $form['tabs']['tab_content']['tab2']['stream_datafile_pattern'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Datafile Pattern'),
-      '#default_value' => $this->stream->datafilePattern ?? '',
+      '#default_value' => $this->stream->datasetPattern ?? '',
       '#required' => ($method === 'files'),
     ];
-    // Cell Scope URI.
+    // Deployment field.
+    $form['tabs']['tab_content']['tab2']['stream_deployment'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Deployment'),
+      '#autocomplete_route_name' => 'std.deployment_autocomplete',
+      '#default_value' => $deploymentLabel,
+      '#required' => TRUE,
+    ];
+    // Semantic Data Dictionary autocomplete.
+    $form['tabs']['tab_content']['tab2']['stream_semanticdatadictionary'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Semantic Data Dictionary'),
+      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
+      '#default_value' => Utils::fieldToAutocomplete(
+        $this->stream->semanticDataDictionaryUri,
+        $this->stream->semanticDataDictionary->label
+      ),
+    ];
+    // Cell Scope URI field.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_uri'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Cell Scope URI'),
-      '#default_value' => $this->stream->cellScopeUri ?? '',
-      // '#required' => ($method === 'files'),
+      '#default_value' => is_array($this->stream->cellScopeUri)
+        ? ($this->stream->cellScopeUri[0] ?? '')
+        : ($this->stream->cellScopeUri ?? ''),
     ];
-    // Cell Scope Name.
+    // Cell Scope Name textarea.
     $form['tabs']['tab_content']['tab2']['stream_cell_scope_name'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Cell Scope Name'),
-      '#default_value' => $this->stream->cellScopeName ?? '',
-      // '#required' => ($method === 'files'),
+      '#default_value' => is_array($this->stream->cellScopeName)
+        ? ($this->stream->cellScopeName[0] ?? '')
+        : ($this->stream->cellScopeName ?? ''),
     ];
 
     //
-    // === TAB 3 CONTENT: Message-Method Properties ===
+    // === TAB 3: Message-Method Properties ===
     //
     $form['tabs']['tab_content']['tab3'] = [
-      '#type' => 'container',
+      '#type'   => 'container',
       '#access' => ($method === 'messages'),
       '#attributes' => [
         'class' => ['tab-pane', 'p-3', 'border', 'border-light'],
-        'id' => 'edit-tab3',
+        'id'    => 'edit-tab3',
       ],
     ];
-    // Protocol.
+    // Protocol selector.
     $form['tabs']['tab_content']['tab3']['stream_protocol'] = [
       '#type' => 'select',
       '#title' => $this->t('Protocol'),
       '#options' => ['MQTT' => 'MQTT', 'HTML' => 'HTML', 'ROS' => 'ROS'],
       '#default_value' => $this->stream->messageProtocol,
-      '#required' => ($method === 'messages'),
+      '#required' => TRUE,
     ];
-    // IP, Port, Header, Archive ID.
-    foreach ([
-      'stream_ip' => 'messageIP',
-      'stream_port' => 'messagePort',
-      // 'stream_header' => 'messageHeader',
+    // IP, Port, Archive ID fields.
+    $fields_map = [
+      'stream_ip'         => 'messageIP',
+      'stream_port'       => 'messagePort',
       'stream_archive_id' => 'messageArchiveId',
-    ] as $field => $property) {
-      $form['tabs']['tab_content']['tab3'][$field] = [
+    ];
+    foreach ($fields_map as $field_name => $property) {
+      $form['tabs']['tab_content']['tab3'][$field_name] = [
         '#type' => 'textfield',
         '#title' => $this->t(ucfirst(str_replace('message', '', $property))),
         '#default_value' => $this->stream->{$property} ?? '',
-        '#required' => ($method === 'messages'),
+        '#required' => TRUE,
       ];
     }
 
-    // Header
-    $form['tabs']['tab_content']['tab3']['stream_header'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Header'),
-      '#default_value' => '',
-      // '#required' => ($method === 'messages'),
+    // === Topics subsection (messages only) ===
+    $form['tabs']['tab_content']['tab3']['topics_title'] = [
+      '#type'   => 'markup',
+      '#markup' => '<h4>' . $this->t('Topics') . '</h4>',
+      '#access' => ($method === 'messages'),
     ];
 
-    // 7) Action buttons: Save and Cancel.
-    $form['save_submit'] = [
+    $form['tabs']['tab_content']['tab3']['topics'] = [
+      '#type' => 'container',
+      '#access' => ($method === 'messages'),
+      // This wrapper ID must match the AJAX callback wrapper.
+      '#attributes' => [
+        'id'    => 'topics-ajax-wrapper',
+        'class' => ['row', 'p-3', 'bg-light', 'border', 'rounded'],
+      ],
+    ];
+
+    // 1) Header row
+    $form['tabs']['tab_content']['tab3']['topics']['header'] = [
+      '#type' => 'markup',
+      '#markup' =>
+        '<div class="col bg-secondary text-white p-2 border border-white">' . $this->t('Topic Name') . '</div>' .
+        '<div class="col bg-secondary text-white p-2 border border-white">' . $this->t('Deployment') . '</div>' .
+        '<div class="col bg-secondary text-white p-2 border border-white">' . $this->t('Semantic Data Dictionary') . '</div>' .
+        '<div class="col bg-secondary text-white p-2 border border-white">' . $this->t('Cell Scope') . '</div>' .
+        '<div class="col-md-1 bg-secondary text-white p-2 border border-white">' . $this->t('Operations') . '</div>' .
+        '<div class="w-100"></div>',
+    ];
+
+    // 2) Data rows (rendered by our helper)
+    $form['tabs']['tab_content']['tab3']['topics']['rows'] = $this->renderTopicRows($form_state->get('topics'));
+
+    // 3) “New Topic” button at bottom
+    $form['tabs']['tab_content']['tab3']['topics']['actions'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['col-12', 'mb-3']],
+    ];
+    $form['tabs']['tab_content']['tab3']['topics']['actions']['add_row'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('New Topic'),
+      '#name'  => 'new_topic',
+      '#limit_validation_errors' => [],
+      '#ajax'  => [
+        'callback' => '::ajaxAddTopicCallback',
+        'wrapper'  => 'topics-ajax-wrapper',
+        'effect'   => 'fade',
+      ],
+      '#submit' => ['::submitAjaxAddTopic'],
+    ];
+    //
+    // === Action Buttons: Save & Cancel ===
+    //
+    $form['actions']['save'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
-      '#attributes' => ['class' => ['btn', 'btn-primary', 'save-button']],
+      '#attributes' => ['class' => ['btn', 'btn-primary']],
     ];
-    $form['cancel_submit'] = [
+    $form['actions']['cancel'] = [
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
       '#name' => 'back',
-      '#submit' => ['::backUrl'],
       '#limit_validation_errors' => [],
-      '#attributes' => ['class' => ['btn', 'btn-danger', 'cancel-button']],
+      // '#submit' => ['::backUrl'],
+      '#attributes' => ['class' => ['btn', 'btn-secondary']],
     ];
 
-    $form['space_0'] = [
+    $form['space'] = [
       '#type' => 'item',
-      '#markup' => '<br><br>',
+      '#value' => $this->t('<br><br><br>'),
+      '#wrapper_attributes' => [
+        'class' => ['mb-5']
+      ]
     ];
 
     return $form;
@@ -318,35 +387,64 @@ class EditStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    *
-   * Placeholder for validation logic if needed.
+   * Validates required fields based on the selected method.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    // Add any custom validation here.
+    $method = $form_state->getValue('stream_method');
+    if ($method === 'files') {
+      if (empty($form_state->getValue('stream_datafile_pattern'))) {
+        $form_state->setErrorByName('stream_datafile_pattern', $this->t('Datafile Pattern is required for Files method.'));
+      }
+      if (empty($form_state->getValue('stream_deployment'))) {
+        $form_state->setErrorByName('stream_deployment', $this->t('Deployment is required for Files method.'));
+      }
+    }
+    elseif ($method === 'messages') {
+      foreach (['stream_protocol','stream_ip','stream_port','stream_archive_id'] as $field) {
+        if (empty($form_state->getValue($field))) {
+          $label = $form[$field]['#title'] ?? $field;
+          $form_state->setErrorByName($field, $this->t('@label is required for Messages method.', ['@label' => $label]));
+        }
+      }
+    }
   }
 
   /**
    * {@inheritdoc}
    *
-   * Handles submit: updates via API or redirects on cancel.
+   * Handles form submission: updates Stream and Topics via the API.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Redirect if Cancel button was clicked.
     $trigger = $form_state->getTriggeringElement()['#name'];
     if ($trigger === 'back') {
       $this->backUrl();
       return;
     }
 
-    // Build JSON payload for update.
+    $api = \Drupal::service('rep.api_connector');
     $email = \Drupal::currentUser()->getEmail();
+
+    // Merge user input back into topics array.
+    $topics = $form_state->get('topics') ?: [];
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$item) {
+      $item['topic']      = $input['topic_topic_' . $delta]      ?? $item['topic'];
+      $item['deployment'] = $input['topic_deployment_' . $delta] ?? $item['deployment'];
+      $item['sdd']        = $input['topic_sdd_' . $delta]        ?? $item['sdd'];
+      $item['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $item['cellscope'];
+    }
+    unset($item);
+
+    // Build payload for Stream update.
     $payload = [
       'uri'                       => $this->stream->uri,
       'typeUri'                   => HASCO::STREAM,
       'hascoTypeUri'              => HASCO::STREAM,
       'label'                     => 'Stream',
       'method'                    => $form_state->getValue('stream_method'),
-      'deploymentUri'             => $this->stream->deploymentUri,
+      'permissionUri'             => $form_state->getValue('permission_uri'),
       'studyUri'                  => Utils::uriFromAutocomplete($form_state->getValue('stream_study')),
-      'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary')),
       'hasVersion'                => $form_state->getValue('stream_version') ?? $this->stream->hasVersion,
       'comment'                   => $form_state->getValue('stream_description'),
       'canUpdate'                 => [$email],
@@ -354,59 +452,262 @@ class EditStreamForm extends FormBase {
       'hasSIRManagerEmail'        => $email,
       'hasStreamStatus'           => $this->stream->hasStreamStatus,
     ];
-
-    if ($form_state->getValue('stream_method') === 'files') {
-      $payload['datasetPattern'] = $form_state->getValue('stream_datafile_pattern');
-      $payload['cellScopeUri']    = [$form_state->getValue('stream_cell_scope_uri')];
-      $payload['cellScopeName']   = [$form_state->getValue('stream_cell_scope_name')];
+    if ($payload['method'] === 'files') {
+      $payload['datasetPattern']   = $form_state->getValue('stream_datafile_pattern');
+      $payload['deploymentUri']    = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment'));
+      $payload['semanticDataDictionaryUri'] = Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary'));
+      $payload['cellScopeUri']     = [$form_state->getValue('stream_cell_scope_uri')];
+      $payload['cellScopeName']    = [$form_state->getValue('stream_cell_scope_name')];
+      // Clear message fields.
       $payload['messageProtocol']  = '';
       $payload['messageIP']        = '';
       $payload['messagePort']      = '';
       $payload['messageArchiveId'] = '';
-      // $payload['messageHeader']    = '';
     }
     else {
       $payload['messageProtocol']   = $form_state->getValue('stream_protocol');
       $payload['messageIP']         = $form_state->getValue('stream_ip');
       $payload['messagePort']       = $form_state->getValue('stream_port');
       $payload['messageArchiveId']  = $form_state->getValue('stream_archive_id');
-      // $payload['messageHeader']     = $form_state->getValue('stream_header');
-      $payload['datasetPattern']   = '';
+      // Clear file fields.
+      $payload['datasetPattern']    = '';
       $payload['cellScopeUri']      = [];
       $payload['cellScopeName']     = [];
-      $payload['hasMessageStatus']  = $this->stream->hasMessageStatus ?? HASCO::INACTIVE;
     }
 
     try {
-      $api = \Drupal::service('rep.api_connector');
-      // Delete and re-create to perform update.
+      // Delete then re-create the Stream.
       $api->elementDel('stream', $this->stream->uri);
-      $api->elementAdd('stream', json_encode($payload));
+      $api->elementAdd('stream', json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+      // Remove existing topics.
+      if (!empty($this->stream->topics)) {
+        foreach ($this->stream->topics as $old) {
+          $api->elementDel('streamtopic', $old->uri);
+        }
+      }
+      // Add updated topics.
+      foreach ($topics as $item) {
+        if (empty($item['topic'])) {
+          continue;
+        }
+        $uriTopic = Utils::uriGen('streamtopic');
+        $topicPayload = [
+          'uri'                       => $uriTopic,
+          'typeUri'                   => HASCO::STREAMTOPIC,
+          'hascoTypeUri'              => HASCO::STREAMTOPIC,
+          'streamUri'                 => $this->stream->uri,
+          'label'                     => $item['topic'],
+          'deploymentUri'             => Utils::uriFromAutocomplete($item['deployment']),
+          'semanticDataDictionaryUri' => Utils::uriFromAutocomplete($item['sdd']),
+          'cellScopeUri'              => [$item['cellscope']],
+          'hasTopicStatus'            => HASCO::INACTIVE,
+        ];
+        $api->elementAdd('streamtopic', json_encode($topicPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+      }
+
       \Drupal::messenger()->addMessage($this->t('Stream has been updated successfully.'));
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addError($this->t('An error occurred while updating the Stream: @msg', ['@msg' => $e->getMessage()]));
+      \Drupal::messenger()->addError($this->t('Error updating Stream: @msg', ['@msg' => $e->getMessage()]));
     }
 
+    // Redirect back.
     $this->backUrl();
   }
 
   /**
-   * Redirect helper to return to previous page.
+   * AJAX submit handler to add a new topic row.
    */
-  public function backUrl() {
-    $uid = \Drupal::currentUser()->id();
-    $previous = Utils::trackingGetPreviousUrl($uid, 'dpl.edit_stream');
-    if ($previous) {
-      (new RedirectResponse($previous))->send();
+  public function submitAjaxAddTopic(array &$form, FormStateInterface $form_state) {
+    $topics = $form_state->get('topics') ?: [];
+
+    // Preserve existing input.
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$item) {
+      $item['topic']      = $input['topic_topic_' . $delta]      ?? $item['topic'];
+      $item['deployment'] = $input['topic_deployment_' . $delta] ?? $item['deployment'];
+      $item['sdd']        = $input['topic_sdd_' . $delta]        ?? $item['sdd'];
+      $item['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $item['cellscope'];
     }
+    unset($item);
+
+    // Append an empty topic row.
+    $topics[] = ['topic' => '', 'deployment' => '', 'sdd' => '', 'cellscope' => ''];
+    $form_state->set('topics', $topics);
+    $form_state->setRebuild(TRUE);
   }
 
   /**
-   * AJAX callback to rebuild the tabs container when method changes.
+   * AJAX callback: rebuilds the topics container after adding a row.
    */
-  public function updateMethodProperties(array &$form, FormStateInterface $form_state) {
-    return $form['tabs'];
+  public function ajaxAddTopicCallback(array &$form, FormStateInterface $form_state) {
+    return $form['tabs']['tab_content']['tab3']['topics'];
   }
 
-}
+  /**
+   * AJAX submit handler to remove a topic row.
+   */
+  public function submitAjaxRemoveTopic(array &$form, FormStateInterface $form_state) {
+    $topics = $form_state->get('topics') ?: [];
+
+    // Preserve existing input.
+    $input = $form_state->getUserInput();
+    foreach ($topics as $delta => &$item) {
+      $item['topic']      = $input['topic_topic_' . $delta]      ?? $item['topic'];
+      $item['deployment'] = $input['topic_deployment_' . $delta] ?? $item['deployment'];
+      $item['sdd']        = $input['topic_sdd_' . $delta]        ?? $item['sdd'];
+      $item['cellscope']  = $input['topic_cellscope_' . $delta]  ?? $item['cellscope'];
+    }
+    unset($item);
+
+    // Determine which index to remove.
+    $trigger = $form_state->getTriggeringElement();
+    $parts = explode('_', $trigger['#name']);
+    $index = (int) end($parts);
+        if (isset($topics[$index])) {
+          unset($topics[$index]);
+          // Re-index the array to keep deltas sequential.
+          $topics = array_values($topics);
+        }
+        // Save updated topics and rebuild form.
+        $form_state->set('topics', $topics);
+        $form_state->setRebuild(TRUE);
+    }
+
+    /**
+     * AJAX callback: rebuilds the topics container after a row removal.
+     */
+    public function ajaxRemoveTopicCallback(array &$form, FormStateInterface $form_state) {
+      return $form['tabs']['tab_content']['tab3']['topics'];
+    }
+
+    /**
+     * AJAX callback to rebuild the tabs container when method changes.
+     */
+    public function updateMethodProperties(array &$form, FormStateInterface $form_state) {
+      return $form['tabs'];
+    }
+
+    /**
+     * Redirect helper to return to the previous page.
+     */
+    protected function backUrl() {
+      $uid = \Drupal::currentUser()->id();
+      $previous = Utils::trackingGetPreviousUrl($uid, 'dpl.edit_stream');
+      if ($previous) {
+        (new RedirectResponse($previous))->send();
+      }
+    }
+
+    /**
+     * Renders each topic row in the Topics section.
+     *
+     * @param array $topics
+     *   Array of topic items from form_state.
+     *
+     * @return array
+     *   Render array of topic row elements.
+     */
+    /**
+     * Render each Topic row in the Topics container.
+     *
+     * @param array $topics
+     *   Array of ['topic'=>'…','deployment'=>'…','sdd'=>'…','cellscope'=>'…'].
+     *
+     * @return array
+     *   A renderable array of rows.
+     */
+    protected function renderTopicRows(array $topics) {
+      $rows = [];
+      // Separator to force line‐break after each row.
+      $separator = '<div class="w-100"></div>';
+
+      foreach ($topics as $delta => $item) {
+        // Each row is a series of column wrappers…
+        $row = [];
+
+        // Topic Name column
+        $row['topic'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col', 'p-2', 'border', 'border-light']],
+          'input' => [
+            '#type'  => 'textfield',
+            '#name'  => "topic_topic_$delta",
+            '#value' => $item['topic'],
+            '#attributes' => ['class' => ['form-control']],
+          ],
+        ];
+
+        // Deployment column
+        $row['deployment'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col', 'p-2', 'border', 'border-light']],
+          'input' => [
+            '#type' => 'textfield',
+            '#name' => "topic_deployment_$delta",
+            '#value' => $item['deployment'],
+            '#autocomplete_route_name' => 'std.deployment_autocomplete',
+            '#attributes' => ['class' => ['form-control']],
+          ],
+        ];
+
+        // Semantic Data Dictionary column
+        $row['sdd'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col', 'p-2', 'border', 'border-light']],
+          'input' => [
+            '#type' => 'textfield',
+            '#name' => "topic_sdd_$delta",
+            '#value' => $item['sdd'],
+            '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
+            '#attributes' => ['class' => ['form-control']],
+          ],
+        ];
+
+        // Cell Scope column
+        $row['cellscope'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col', 'p-2', 'border', 'border-light']],
+          'input' => [
+            '#type'  => 'textfield',
+            '#name'  => "topic_cellscope_$delta",
+            '#value' => $item['cellscope'],
+            '#attributes' => ['class' => ['form-control']],
+          ],
+        ];
+
+        // Operations column (Remove button)
+        $row['operations'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col-md-1', 'p-2', 'border', 'border-light']],
+          'button' => [
+            '#type' => 'submit',
+            '#value' => $this->t('Remove'),
+            '#name' => "topic_remove_$delta",
+            '#limit_validation_errors' => [],
+            '#attributes' => ['class' => ['btn', 'btn-sm', 'btn-danger']],
+            '#ajax' => [
+              'callback' => '::ajaxRemoveTopicCallback',
+              'wrapper'  => 'topics-ajax-wrapper',
+              'effect'   => 'fade',
+            ],
+            '#submit' => ['::submitAjaxRemoveTopic'],
+          ],
+        ];
+
+        // Add the line‐break after this row
+        $row['separator'] = [
+          '#type' => 'markup',
+          '#markup' => $separator,
+        ];
+
+        // Wrap the entire set under a unique key.
+        $rows['row' . $delta] = $row;
+      }
+
+      return $rows;
+    }
+
+
+} // end of class

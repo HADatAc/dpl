@@ -6,6 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Component\Utility\Xss;
+use Drupal\rep\Vocabulary\VSTOI;
 
 /**
  * Class AutocompleteController
@@ -25,6 +26,10 @@ class AutocompleteController extends ControllerBase{
     return self::exec($request, 'detector');
   }
 
+  public function execActuator(Request $request) {
+    return self::exec($request, 'actuator');
+  }
+
   public function execPlatformInstance(Request $request) {
     return self::exec($request, 'platforminstance');
   }
@@ -35,6 +40,10 @@ class AutocompleteController extends ControllerBase{
 
   public function execDetectorInstance(Request $request) {
     return self::exec($request, 'detectorinstance');
+  }
+
+  public function execActuatorInstance(Request $request) {
+    return self::exec($request, 'actuatorinstance');
   }
 
   /**
@@ -59,10 +68,29 @@ class AutocompleteController extends ControllerBase{
     if ($obj->isSuccessful) {
       $elements = $obj->body;
     }
+    // foreach ($elements as $element) {
+    //   if (isset($element) &&
+    //       isset($element->label) && ($element->label != "") &&
+    //       isset($element->uri) && ($element->uri != "")) {
+    //     $results[] = [
+    //       'value' => $element->label . ' [' . $element->uri . ']',
+    //       'label' => $element->label,
+    //     ];
+    //   }
+    // }
     foreach ($elements as $element) {
-      if (isset($element) &&
-          isset($element->label) && ($element->label != "") &&
-          isset($element->uri) && ($element->uri != "")) {
+      if ($elementtype === 'instrumentinstance') {
+        // 1) Se vier status “Deprecated” ou “Deployed”, pula este elemento
+        if (isset($element->hasStatus)
+            && in_array($element->hasStatus, [VSTOI::DEPLOYED, VSTOI::DEPRECATED], TRUE)) {
+          continue;
+        }
+      }
+
+      // 2) Mantém somente os que têm label e URI válidos
+      if (isset($element->label, $element->uri)
+          && $element->label !== ''
+          && $element->uri !== '') {
         $results[] = [
           'value' => $element->label . ' [' . $element->uri . ']',
           'label' => $element->label,

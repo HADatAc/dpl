@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Vocabulary\HASCO;
 
 class ExecuteCloseStreamForm extends FormBase {
 
@@ -18,11 +19,22 @@ class ExecuteCloseStreamForm extends FormBase {
 
   protected $stream;
 
+  protected $deployment;
+
+  protected $deploymentUri;
+
   public function getMode() {
     return $this->mode;
   }
   public function setMode($mode) {
     return $this->mode = $mode;
+  }
+
+  public function getStream() {
+    return $this->stream;
+  }
+  public function setStream($stream) {
+    return $this->stream = $stream;
   }
 
   public function getStreamUri() {
@@ -39,6 +51,13 @@ class ExecuteCloseStreamForm extends FormBase {
     return $this->deployment = $deployment;
   }
 
+  public function getDeploymentUri() {
+    return $this->deploymentUri;
+  }
+  public function setDeploymentUri($deploymentUri) {
+    return $this->deploymentUri = $deploymentUri;
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -49,7 +68,10 @@ class ExecuteCloseStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $deploymenturi = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $streamuri = NULL) {
+
+    // Globals
+    $api = \Drupal::service('rep.api_connector');
 
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
@@ -59,92 +81,107 @@ class ExecuteCloseStreamForm extends FormBase {
     }
     $this->setMode($mode);
 
-    $uri=$deploymenturi;
+    // GET STREAM FROM API
+    $uri=$streamuri;
     $uri_decode=base64_decode($uri);
-    $this->setDeploymentUri($uri_decode);
+    $this->setStreamUri($uri_decode);
 
-    $api = \Drupal::service('rep.api_connector');
-    $rawresponse = $api->getUri($this->getDeploymentUri());
+    $rawresponse = $api->getUri($this->getStreamUri());
     $obj = json_decode($rawresponse);
 
     if ($obj->isSuccessful) {
-      $this->setDeployment($obj->body);
+      $this->setStream($obj->body);
+      $this->setDeployment($this->getStream()->deployment);
+      $this->setDeploymentUri($this->getStream()->deployment->uri);
     } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve Deployment."));
+      \Drupal::messenger()->addError(t("Failed to retrieve Stream."));
       self::backUrl();
       return;
     }
 
-    $platformLabel = ' ';
-    if (isset($this->getDeployment()->platform) &&
-        isset($this->getDeployment()->platform->uri) &&
-        isset($this->getDeployment()->platform->label)) {
-      $platformLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platform->uri,
-        $this->getDeployment()->platform->label
+    // DEBBUG
+    // kint([
+    //   'Stream' => $this->getStream(),
+    //   'Deployment' => $this->getDeployment(),
+    // ]);
+
+    $studyLabel = ' ';
+    if (isset($this->getStream()->study) &&
+        isset($this->getStream()->study->uri) &&
+        isset($this->getStream()->study->label)) {
+      $studyLabel = Utils::fieldToAutocomplete(
+        $this->getStream()->study->uri,
+        $this->getStream()->study->label
       );
     }
-    $instrumentLabel = ' ';
-    if (isset($this->getDeployment()->platform) &&
-        isset($this->getDeployment()->platform->uri) &&
-        isset($this->getDeployment()->platform->label)) {
-      $instrumentLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrument->uri,
-        $this->getDeployment()->instrument->label
+    $sddLabel = ' ';
+    if (isset($this->getStream()->semanticDataDictionary) &&
+        isset($this->getStream()->semanticDataDictionary->uri) &&
+        isset($this->getStream()->semanticDataDictionary->label)) {
+      $sddLabel = Utils::fieldToAutocomplete(
+        $this->getStream()->semanticDataDictionary->uri,
+        $this->getStream()->semanticDataDictionary->label
       );
     }
 
     $validationError = NULL;
-    if (!isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing both PLATFORM instance and INSTRUMENT instance.";
-    }
-    if (!isset($this->getDeployment()->platform) && isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing associated PLATFORM instance.";
-    }
-    if (isset($this->getDeployment()->platform) && !isset($this->getDeployment()->instrument)) {
-      $validationError = "Deployment is missing associated INSTRUMENT instance.";
-    }
 
-    //dpm($this->getDeployment());
+    if ($this->getStream()->method === 'Files') {
+      if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
+      }
+      if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing associated STUDY.";
+      }
+      if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
+        $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
+      }
+    } else {
+      if (!isset($this->getStream()->study) ) {
+        $validationError = "Stream is missing STUDY.";
+      }
+    }
 
     if ($this->getMode() == 'execute') {
       $form['page_title'] = [
         '#type' => 'item',
-        '#title' => $this->t('<h3>Execute Deployment</h3>'),
+        '#title' => $this->t('<h3>Execute Stream</h3>'),
       ];
     }
     if ($this->getMode() == 'close') {
       $form['page_title'] = [
         '#type' => 'item',
-        '#title' => $this->t('<h3>Close Deployment</h3>'),
+        '#title' => $this->t('<h3>Close Streamt</h3>'),
       ];
     }
-    $form['deployment_name'] = [
+    $form['stream_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
-      '#default_value' => $this->getDeployment()->label,
+      '#default_value' => $this->getStream()->label,
       '#disabled' => TRUE,
     ];
-    $form['deployment_platform_instance'] = [
+    $form['stream_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
-      '#default_value' => $platformLabel,
+      '#title' => $this->t('Study'),
+      '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];
-    $form['deployment_instrument_instance'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
-      '#default_value' => $instrumentLabel,
-      '#disabled' => TRUE,
-    ];
+    if ($this->getStream()->method === 'Files') {
+      $form['stream_semanticDataDictionary_instance'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Semantic Data Dictionary (SDD)'),
+        '#default_value' => $sddLabel,
+        '#disabled' => TRUE,
+      ];
+    }
 
     // DEPLOYMENT IS VALID
     if ($validationError == NULL) {
       if ($this->getMode() == 'execute') {
-        $form['deployment_start_datetime'] = [
+        $form['stream_start_datetime'] = [
           '#type' => 'datetime',
           '#title' => $this->t('Starting Date/Time'),
-          '#default_value' => $this->getDeployment()->startedAt ? $this->getDeployment()->startedAt : '',
+          '#default_value' => $this->getStream()->startedAt ? $this->getStream()->startedAt : '',
           '#date_date_element' => 'date', // Use a date element
           '#date_time_element' => 'time', // Use a time element
           '#date_format' => 'Y-m-d', // Date format
@@ -160,10 +197,10 @@ class ExecuteCloseStreamForm extends FormBase {
         ];
         }
       if ($this->getMode() == 'close') {
-        $form['deployment_end_datetime'] = [
+        $form['stream_end_datetime'] = [
           '#type' => 'datetime',
           '#title' => $this->t('Ending Date/Time'),
-          '#default_value' => $this->getDeployment()->endedAt ? $this->getDeployment()->endedAt : '',
+          '#default_value' => $this->getStream()->endedAt ? $this->getStream()->endedAt : '',
           '#date_date_element' => 'date', // Use a date element
           '#date_time_element' => 'time', // Use a time element
           '#date_format' => 'Y-m-d', // Date format
@@ -191,7 +228,7 @@ class ExecuteCloseStreamForm extends FormBase {
     } else {
       $form['validation_notification'] = [
         '#type' => 'item',
-        '#title' => $this->t('<br><ul><h2>Deployment cannot be executed</h2></ul>'),
+        '#title' => $this->t('<br><ul><h2>Stream cannot be executed</h2></ul>'),
       ];
       $form['validation_reason'] = [
         '#type' => 'item',
@@ -199,7 +236,7 @@ class ExecuteCloseStreamForm extends FormBase {
       ];
       $form['cancel_submit'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Back to Manage Deployments'),
+        '#value' => $this->t('Back to Manage Streams'),
         '#name' => 'back',
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'back-button'],
@@ -221,8 +258,8 @@ class ExecuteCloseStreamForm extends FormBase {
     $button_name = $triggering_element['#name'];
 
     if ($button_name != 'back') {
-      if(strlen($form_state->getValue('deployment_name')) < 1) {
-        $form_state->setErrorByName('deployment_name', $this->t('Please enter a valid name'));
+      if(strlen($form_state->getValue('stream_name')) < 1) {
+        $form_state->setErrorByName('stream_name', $this->t('Please enter a valid name'));
       }
     }
   }
@@ -244,58 +281,211 @@ class ExecuteCloseStreamForm extends FormBase {
       $uid = \Drupal::currentUser()->id();
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $deploymentJson = '{"uri":"'.$this->getDeploymentUri().'",'.
-        '"typeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"hascoTypeUri":"'.VSTOI::DEPLOYMENT.'",'.
-        '"label":"'.$this->getDeployment()->label.'",'.
-        '"hasVersion":"'.$this->getDeployment()->hasVersion.'",'.
-        '"comment":"'.$this->getDeployment()->comment.'",'.
-        '"platformUri":"'.$this->getDeployment()->platformUri.'",'.
-        '"instrumentUri":"'.$this->getDeployment()->instrumentUri.'",'.
-        //'"detectorUri":"'.$detectorUri.'",'.
-        '"canUpdate":["'.$useremail.'"],'.
-        '"designedAt":"'.$this->getDeployment()->designedAt.'",';
-        if ($this->getMode() == 'execute') {
-        $deploymentJson .=
-          '"startedAt":"'.$form_state->getValue('deployment_start_datetime')->format('Y-m-d\TH:i:s.v').'",';
+      $orig = $this->getStream();
+
+      $clone = [
+        'uri'                       => $this->getStreamUri(),
+        'typeUri'                   => HASCO::STREAM,
+        'hascoTypeUri'              => HASCO::STREAM,
+        'label'                     => $orig->label,
+        'comment'                   => $orig->comment,
+        'method'                    => $orig->method,
+        'messageProtocol'           => $orig->messageProtocol,
+        'messageIP'                 => $orig->messageIP,
+        'messagePort'               => $orig->messagePort,
+        'messageArchiveId'          => $orig->messageArchiveId,
+        'canUpdate'                 => [$useremail],
+        'designedAt'                => $orig->designedAt,
+        'hasVersion'                => $orig->hasVersion,
+        'studyUri'                  => $orig->studyUri,
+        'triggeringEvent'           => $orig->triggeringEvent,
+        'numberDataPoints'          => $orig->numberDataPoints,
+        'datasetPattern'            => $orig->datasetPattern,
+        'datasetUri'                => $orig->datasetUri,
+      ];
+
+      if ($this->getStream()->method === 'files') {
+        $clone['semanticDataDictionaryUri'] = $orig->semanticDataDictionaryUri;
+        $clone['deploymentUri']             = $orig->deploymentUri;
       }
-      if ($this->getMode() == 'close') {
-        $deploymentJson .=
-          '"startedAt":"'.$this->getDeployment()->startedAt.'",'.
-          '"endedAt":"'.$form_state->getValue('deployment_end_datetime')->format('Y-m-d\TH:i:s.v').'",';
+
+      if ($this->getMode() === 'execute') {
+        $clone['startedAt']         = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']   = HASCO::ACTIVE;
       }
-      $deploymentJson .= '"hasSIRManagerEmail":"'.$useremail.'"}';
+      elseif ($this->getMode() === 'close') {
+        $clone['startedAt']         = $orig->startedAt;
+        $clone['endedAt']           = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        $clone['hasStreamStatus']   = HASCO::CLOSED;
+        $filename = $this->getStream()->messageArchiveId . '.txt';
+        $this->stopSubscription($filename);
 
-      //$updatedDeployment = clone $this->getDeployment();
-      //$deploymentJson = json_encode($updatedDeployment);
+        // WE MUST INACTIVATE ALL TOPICS
+        if (!empty($orig->topics)){
+          $topicsList = $orig->topics;
 
-      //dpm($deploymentJson);
+          foreach ($topicsList as $topicItem) {
 
-      // UPDATE BY DELETING AND CREATING
+            $streamTopic = [
+              'uri'                       => $topicItem->uri,
+              'typeUri'                   => HASCO::STREAMTOPIC,
+              'hascoTypeUri'              => HASCO::STREAMTOPIC,
+              'streamUri'                 => $this->getStreamUri(),
+              'label'                     => $topicItem->label,
+              'deploymentUri'             => $topicItem->deploymentUri,
+              'semanticDataDictionaryUri' => $topicItem->semanticDataDictionaryUri,
+              'cellScopeUri'              => $topicItem->cellScopeUri,
+              'hasTopicStatus'            => HASCO::INACTIVE,
+            ];
+
+            \Drupal::service('rep.api_connector')->elementDel('streamtopic', $topicItem->uri);
+            \Drupal::service('rep.api_connector')->elementAdd('streamtopic', json_encode($streamTopic, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+          }
+        }
+
+      }
+
       $api = \Drupal::service('rep.api_connector');
-      $api->elementDel('deployment',$this->getDeploymentUri());
-      $api->elementAdd('deployment',$deploymentJson);
+      $api->elementDel('stream', $this->getStreamUri());
+      $api->elementAdd('stream', json_encode($clone));
 
-      \Drupal::messenger()->addMessage(t("Deployment has been updated successfully."));
+      // RENAME to execute because new end-points are still not working
+      if ($this->getMode() === 'execute' && $this->getStream()->method === 'files') {
+
+        $useremail = \Drupal::currentUser()->getEmail();
+        $streamUri = $this->getStreamUri();
+        $studyUri  = $this->getStream()->studyUri;
+        $pattern   = $this->getStream()->datasetPattern;
+
+        // 2.1) Get all Data Acquisitions (DAs) from the study:
+        $allItems = $api->parseObjectResponse($api->getStudyDAsByStudy($studyUri, 99999, 0),'getStudyDAsByStudy');
+
+        $unassociated = array_filter($allItems, function ($item) {
+          return empty($item->hasDataFile->streamUri);
+        });
+
+        foreach ($unassociated as $da) {
+          // 2.2) Only interested in those whose streamUri is still empty/null:
+          $filename = $da->hasDataFile->filename;
+
+          // 2.4) If the filename matches (at the beginning) the datasetPattern, then recycle:
+          if (preg_match('/^' . $pattern . '/', $filename)) {
+            // Store some old values to copy
+            $oldDataFileUri = $da->hasDataFile->uri;
+            $oldDAUri       = $da->uri;
+            $oldFileId      = $da->hasDataFile->id;
+
+            // 2.5) Delete the original DA and DataFile:
+            $api->elementDel('da', $oldDAUri);
+            $api->elementDel('datafile', $oldDataFileUri);
+
+            // 2.6) Recreate a new DataFile with the same name and id, but linking to the current stream:
+            //     (this is exactly the snippet you already sent, just adapted for these variables):
+            $newDataFileUri = Utils::uriGen('datafile');
+            $datafileArr = [
+              'uri'                => $newDataFileUri,
+              'typeUri'            => HASCO::DATAFILE,
+              'hascoTypeUri'       => HASCO::DATAFILE,
+              'label'              => $filename,
+              'filename'           => $filename,
+              'id'                 => $oldFileId,
+              'studyUri'           => $studyUri,
+              'streamUri'          => $streamUri,
+              'fileStatus'         => Constant::FILE_STATUS_UNPROCESSED,
+              'hasSIRManagerEmail' => $useremail,
+            ];
+            $datafileJSON = json_encode($datafileArr);
+            $api->datafileAdd($datafileJSON);
+
+            // 2.7) Recreate the Data Acquisition (DA) pointing to the new DataFile:
+            $newMTUri = str_replace("DFL", Utils::elementPrefix('da'), $newDataFileUri);
+            $mtArr = [
+              'uri'               => $newMTUri,
+              'typeUri'           => HASCO::DATA_ACQUISITION,
+              'hascoTypeUri'      => HASCO::DATA_ACQUISITION,
+              'isMemberOfUri'     => $studyUri,
+              'label'             => $filename,
+              'hasDataFileUri'    => $newDataFileUri,
+              'hasVersion'        => '',
+              'comment'           => '',
+              'hasSIRManagerEmail'=> $useremail,
+            ];
+            $mtJSON = json_encode($mtArr);
+            $api->elementAdd('da', $mtJSON);
+          }
+        }
+      }
+      
+      \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;
 
     } catch(\Exception $e) {
-      \Drupal::messenger()->addError(t("An error occurred while updating the Deployment: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t("An error occurred while updating the Stream: ".$e->getMessage()));
       self::backUrl();
       return;
     }
   }
 
   function backUrl() {
-    $uid = \Drupal::currentUser()->id();
-    $previousUrl = Utils::trackingGetPreviousUrl($uid, 'dpl.execute_close_deployment');
-    if ($previousUrl) {
-      $response = new RedirectResponse($previousUrl);
-      $response->send();
-      return;
-    }
+    $route_name = 'dpl.manage_streams_route';
+    $route_params = [
+      'deploymenturi' => base64_encode($this->getDeployment()->uri),
+      'state'         => 'active',
+      'page'          => '1',
+      'pagesize'      => '10',
+    ];
+    // cria a URL de rota já com parâmetros e converte em string
+    $url = Url::fromRoute($route_name, $route_params)->toString();
+
+    $response = new RedirectResponse($url);
+    $response->send();
+
+    return;
   }
 
+  private function startSubscription($ip, $port, $topic, $filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/live/';
+    $fs->prepareDirectory($directory, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
 
+    $filepath = $directory . $filename;
+    $realpath = $fs->realpath($filepath);
+
+    // Define caminho do ficheiro PID ao lado do ficheiro de log
+    $pidpath = $realpath . '.pid';
+
+    // Comando MQTT
+    $cmd = "mosquitto_sub -h {$ip} -p {$port} -t '{$topic}'";
+    $fullCmd = "$cmd >> " . escapeshellarg($realpath) . " 2>&1 & echo $!";
+
+    // Executa e guarda PID
+    $pid = shell_exec($fullCmd);
+    file_put_contents($pidpath, $pid);
+
+    \Drupal::logger('dpl')->notice("Subscrição iniciada com PID $pid para {$filename}");
+  }
+
+  private function stopSubscription($filename) {
+    $fs = \Drupal::service('file_system');
+    $directory = 'private://streams/messageFiles/live/';
+    $filepath = $directory . $filename;
+
+    $realpath = $fs->realpath($filepath);
+    $pidpath = $realpath . '.pid';
+
+    if (file_exists($pidpath)) {
+      $pid = trim(file_get_contents($pidpath));
+      if (is_numeric($pid)) {
+        exec("kill $pid");
+        unlink($pidpath);
+        \Drupal::logger('dpl')->notice("Subscrição terminada (PID $pid) para {$filename}");
+      } else {
+        \Drupal::logger('dpl')->error("PID inválido em {$pidpath}: $pid");
+      }
+    } else {
+      \Drupal::logger('dpl')->warning("Ficheiro de PID não encontrado: {$pidpath}");
+    }
+  }
 }

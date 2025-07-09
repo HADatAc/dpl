@@ -59,7 +59,7 @@ dpl.edit_platform:
 # Stream CRUD options
 
 dpl.add_stream:
-  path: 'dpl/manage/addstream/{deploymenturi}'
+  path: 'dpl/manage/addstream'
   defaults:
     _form: '\Drupal\dpl\Form\AddStreamForm'
     _title: 'Add Stream'
@@ -84,6 +84,16 @@ dpl.execute_close_stream:
   path: 'dpl/manage/executeclosestream/{mode}/{streamuri}'
   defaults:
     _form: '\Drupal\dpl\Form\ExecuteCloseStreamForm'
+  requirements:
+    _permission: 'access content'
+    _custom_access_check: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+dpl.execute_expose_stream:
+  path: 'dpl/manage/executeexposestream/{mode}/{streamuri}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ExecuteExposeStreamForm'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'
@@ -136,9 +146,10 @@ dpl.manage_deployments_route:
     no_cache: 'TRUE'
 
 dpl.manage_streams_route:
-  path: 'dpl/manage/streams/{deploymenturi}/{state}/{page}/{pagesize}'
+  path: 'dpl/manage/streams/{state}/{page}/{pagesize}'
   defaults:
     _form: '\Drupal\dpl\Form\ManageStreamsForm'
+    state: 'design'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'
@@ -202,6 +213,14 @@ dpl.detector_autocomplete:
   requirements:
     _permission: 'access content'
 
+dpl.actuator_autocomplete:
+  path: '/dpl/type/autocomplete/actuator'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuator'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
 dpl.platforminstance_autocomplete:
   path: '/dpl/type/autocomplete/platforminstance'
   defaults:
@@ -226,6 +245,14 @@ dpl.detectorinstance_autocomplete:
   requirements:
     _permission: 'access content'
 
+dpl.actuatorinstance_autocomplete:
+  path: '/dpl/type/autocomplete/actuatorinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuatorInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
 # API RUI TEST OPTIONS
 
 dpl.platform_list:
@@ -244,3 +271,66 @@ dpl.platform_edit:
   requirements:
     _access: 'TRUE'
   methods: [POST]
+
+
+# STREAM RELATED ROUTES
+dpl.stream_topic_subscribe:
+  path: '/dpl/streamtopic/subscribe/{topicuri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicSubscribe'
+    _title: 'Subscribe Stream Topic'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+dpl.stream_topic_unsubscribe:
+  path: '/dpl/streamtopic/unsubscribe/{topicuri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicUnsubscribe'
+    _title: 'Subscribe Stream Topic'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+dpl.stream_topic_status:
+  path: '/dpl/streamtopic/record/{topicuri}/{status}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicStatus'
+    _title: 'Stream Topic Status Change'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+dpl.stream_topic_latest_message:
+  path: '/dpl/streamtopic/latest_message/{topicuri}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicLatesMessage'
+    _title: 'Stream Topic Latest Message'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+# STREAM FILES (and messages when applicable)
+dpl.file_ingest_ajax:
+  path: '/dpl/file-ingest-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::fileIngestAjax'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+dpl.file_uningest_ajax:
+  path: '/dpl/file-uningest-ajax'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::fileUningestAjax'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+dpl.view_deployment_form:
+  path: '/dpl/view-deployment/{deploymenturi}'
+  defaults:
+    _form: '\Drupal\dpl\Form\ViewDeploymentForm'
+    _title: 'View Deployment'
+  requirements:
+    _permission: 'access content'

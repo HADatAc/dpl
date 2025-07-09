@@ -4,13 +4,14 @@ namespace Drupal\dpl\Form;
 
 use Drupal\rep\Vocabulary\REPGUI;
 
-class ListStreamStateByDeploymentPage {
+class ListStreamStatePage {
 
-  public static function exec($state, $useremail, $deploymenturi, $page, $pagesize) {
-    if ($state == NULL || $deploymenturi == NULL || $page == NULL || $pagesize == NULL) {
+  public static function exec($state, $useremail, $page, $pagesize) {
+    if ($state == NULL || $page == NULL || $pagesize == NULL) {
         $resp = array();
         return $resp;
     }
+    // dpm($state);
     $offset = -1;
     if ($page <= 1) {
       $offset = 0;
@@ -19,18 +20,18 @@ class ListStreamStateByDeploymentPage {
     }
     $api = \Drupal::service('rep.api_connector');
     $elements = $api->parseObjectResponse(
-      $api->streamByStateEmailDeployment($state, $useremail, $deploymenturi, $pagesize, $offset),
-      'streamByStateEmailDeployment'
+      $api->streamByStateEmail($state, $useremail, $pagesize, $offset),
+      'streamByStateEmail'
     );
     return $elements;
   }
 
-  public static function total($state, $useremail, $deploymenturi) {
+  public static function total($state, $useremail) {
     if ($state == NULL) {
       return -1;
     }
     $api = \Drupal::service('rep.api_connector');
-    $response = $api->streamSizeByStateEmailDeployment($state, $useremail, $deploymenturi);
+    $response = $api->streamSizeByStateEmail($state, $useremail);
     $listSize = -1;
     if ($response != NULL) {
       $obj = json_decode($response);
@@ -44,16 +45,15 @@ class ListStreamStateByDeploymentPage {
 
   }
 
-  public static function link($state, $deploymenturi, $page, $pagesize) {
+  public static function link($state, $page, $pagesize) {
     $root_url = \Drupal::request()->getBaseUrl();
     if ($page > 0 && $pagesize > 0) {
-     return $root_url . REPGUI::MANAGE_STREAMS . 
+     return $root_url . REPGUI::MANAGE_STREAMS .
           $state . '/' .
-          base64_encode($deploymenturi) . '/' .
-          strval($page) . '/' . 
+          strval($page) . '/' .
           strval($pagesize);
     }
-    return ''; 
+    return '';
   }
 
 }

@@ -85,6 +85,20 @@ dpl.manage_detector_instances:
   requirements:
     _permission: 'access content'
 
+dpl.manage_actuator_instances:
+  title: Manage Actuator Instances
+  description: Manage Actuator Instances
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'actuatorinstance'
+    page: '1'
+    pagesize: '9'
+  parent: dpl.manage_top_level
+  menu_name: main
+  weight: 24
+  requirements:
+    _permission: 'access content'
+
 dpl.manage_deployments:
   title: Manage Deployments
   description: Manage Deployments
@@ -95,21 +109,21 @@ dpl.manage_deployments:
     pagesize: '9'
   parent: dpl.manage_top_level
   menu_name: main
-  weight: 24
+  weight: 25
   requirements:
     _permission: 'access content'
 
-#dpl.manage_streams:
-#  title: Manage Streams
-#  description: Manage Streams
-#  route_name: dpl.manage_streams_route
-#  route_parameters:
-#    state: 'design'
-#    page: '1'
-#    pagesize: '10'
-#  parent: dpl.top_level
-#  menu_name: main
-#  weight: 25
-#  requirements:
-#    _permission: 'access content'
+dpl.manage_streams:
+  title: Manage Streams
+  description: Manage Streams
+  route_name: dpl.manage_streams_route
+  route_parameters:
+    state: 'design'
+    page: '1'
+    pagesize: '10'
+  parent: dpl.manage_top_level
+  menu_name: main
+  weight: 26
+  requirements:
+    _permission: 'access content'
 

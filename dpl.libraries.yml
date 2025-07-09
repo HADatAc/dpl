@@ -1,7 +1,8 @@
 dpl_tabs:
   version: VERSION
   css:
-    css/dpl_tabs.css: {}
+    theme:
+      css/dpl_tabs.css: {}
   js:
     js/tabs.js: {}
     js/dpl.js: {}
@@ -14,3 +15,25 @@ dpl_accordion:
       css/dpl_accordion.css: {}
   js:
     js/dpl_accordion.js: {}
+dpl_onlytabs:
+  version: VERSION
+  css:
+    theme:
+      css/dpl_tabs.css: {}
+  js:
+    js/tabs.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.states
+    - core/drupal.ajax
+    - core/jquery.once
+
+stream_recorder:
+  version: 1.x
+  js:
+    js/stream_recorder.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.ajax

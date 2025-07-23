@@ -429,7 +429,7 @@ class DPLSelectForm extends FormBase {
       ];
 
       // Image Column
-      $image_uri = Utils::getAPIImage($item['element_uri'], $item['element_image'], UTILS::placeholderImage($item['element_hascotypeuri'],'deployment', '/'));
+      $image_uri = Utils::getAPIImage($item['element_uri'], $item['element_image'], UTILS::placeholderImage($item['element_hascotypeuri'],$this->element_type, '/'));
       $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['image'] = [
         '#type' => 'container',
         '#attributes' => [

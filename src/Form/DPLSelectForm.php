@@ -134,6 +134,7 @@ class DPLSelectForm extends FormBase {
         $this->plural_class_name = "Platforms";
         $header = Platform::generateHeader();
         $output = Platform::generateOutput($this->getList());
+        $outputCard = Platform::generateCardOutput($this->getList());
         break;
 
       // PLATFORM INSTANCE
@@ -142,6 +143,7 @@ class DPLSelectForm extends FormBase {
         $this->plural_class_name = "Platform Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
         break;
 
       // INSTRUMENT INSTANCE
@@ -150,6 +152,7 @@ class DPLSelectForm extends FormBase {
         $this->plural_class_name = $preferred_instrument . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
         break;
 
       // DETECTOR INSTANCE
@@ -158,6 +161,7 @@ class DPLSelectForm extends FormBase {
         $this->plural_class_name = $preferred_detector . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
         break;
 
       // ACTUATOR INSTANCE
@@ -166,6 +170,7 @@ class DPLSelectForm extends FormBase {
         $this->plural_class_name = $preferred_actuator . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
         break;
 
       // STREAM
@@ -173,7 +178,7 @@ class DPLSelectForm extends FormBase {
         $this->single_class_name = "Stream";
         $this->plural_class_name = "Streams";
         $header = Stream::generateHeader();
-        $output = Stream::generateOutput($this->getList());
+        $output = $outputCard = Stream::generateOutput($this->getList());
         break;
 
       // DEPLOYMENT
@@ -181,7 +186,7 @@ class DPLSelectForm extends FormBase {
         $this->single_class_name = "Deployment";
         $this->plural_class_name = "Deployments";
         $header = Deployment::generateHeader();
-        $output = Deployment::generateOutput($this->getList());
+        $output = $outputCard = Deployment::generateOutput($this->getList());
         break;
 
       default:
@@ -259,7 +264,7 @@ class DPLSelectForm extends FormBase {
       ];
 
     } elseif ($view_type == 'card') {
-      $this->buildCardView($form, $form_state, $header, $output);
+      $this->buildCardView($form, $form_state, $header, $outputCard);
 
       $total_items = $this->getListSize();
       $current_page_size = $form_state->get('page_size') ?? 9;
@@ -374,9 +379,6 @@ class DPLSelectForm extends FormBase {
    */
   protected function buildCardView(array &$form, FormStateInterface $form_state, $header, $output)
   {
-    // IMAGE PLACEHOLDER
-    $placeholder_image = base_path() . \Drupal::service('extension.list.module')->getPath('rep') . '/images/semVar_placeholder.png';
-
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
     $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
 
@@ -390,7 +392,7 @@ class DPLSelectForm extends FormBase {
 
       $form['element_cards_wrapper'][$sanitized_key] = [
         '#type' => 'container',
-        '#attributes' => ['class' => ['col-md-4']],
+        '#attributes' => ['class' => ['col-md-4', 'mt-3']],
       ];
 
       $form['element_cards_wrapper'][$sanitized_key]['card'] = [
@@ -399,9 +401,6 @@ class DPLSelectForm extends FormBase {
       ];
 
       $header_text = '';
-
-      // Definir a URL da imagem, usar placeholder se não houver imagem no item
-      $image_uri = !empty($item['image']) ? $item['image'] : $placeholder_image;
 
       foreach ($header as $column_key => $column_label) {
         if ($column_label == 'Name') {
@@ -429,7 +428,8 @@ class DPLSelectForm extends FormBase {
         ],
       ];
 
-      // Coluna para a imagem
+      // Image Column
+      $image_uri = Utils::getAPIImage($item['element_uri'], $item['element_image'], UTILS::placeholderImage($item['element_hascotypeuri'],'deployment', '/'));
       $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['image'] = [
         '#type' => 'container',
         '#attributes' => [
@@ -443,20 +443,20 @@ class DPLSelectForm extends FormBase {
               'src' => $image_uri,
               'alt' => $header_text,
               'style' => 'max-width: 70%; height: auto;',
+              'class' => ['img-fluid', 'mb-3', 'border', 'border-5', 'rounded', 'rounded-5', 'p-3'],
           ]
         ],
       ];
 
-      // Coluna para o conteúdo existente
+      // Content Column
       $form['element_cards_wrapper'][$sanitized_key]['card']['content_wrapper']['content'] = [
         '#type' => 'container',
         '#attributes' => [
-          'class' => ['col-md-7', 'card-body'],
+          'class' => ['col-md-7', 'card-body', 'justify-content-center'],
           'style' => 'margin-bottom:0!important;',
         ],
       ];
-
-      // Iterando sobre o conteúdo existente e adicionando-o à coluna de conteúdo
+      // Loop through each header column and add it to the card
       foreach ($header as $column_key => $column_label) {
         $value = isset($item[$column_key]) ? $item[$column_key] : '';
         if ($column_label == 'Name') {

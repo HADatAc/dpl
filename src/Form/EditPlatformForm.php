@@ -96,6 +96,9 @@ class EditPlatformForm extends FormBase {
         '#markup' => '</div>',
       ],
     ];
+    $form['platform_type']['main'] += [
+      '#maxlength' => 999,
+    ];
 
     $form['platform_name'] = [
       '#type' => 'textfield',

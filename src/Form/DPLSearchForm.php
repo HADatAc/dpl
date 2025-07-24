@@ -115,7 +115,8 @@ class DPLSearchForm extends FormBase {
         'detectorinstance' => $this->t('Detector Instances'),
         'actuatorinstance' => $this->t('Actuator Instances'),
         'deployment' => $this->t('Deployments'),
-        'stream' => $this->t('Streams'),
+        'stream' => $this->t('Message Streams'),
+        'stream2' => $this->t('File Streams'),
       ],
       '#default_value' => $this->getElementType(),
       '#ajax' => [
@@ -156,8 +157,13 @@ class DPLSearchForm extends FormBase {
       $this->setKeyword("_");
     }
 
+    // ^TODO: must be removed in the future
+    if ($form_state->getValue('search_element_type') === 'stream2') {
+      $form_state->setValue('search_element_type', 'stream');
+    }
+
     // IF ELEMENT TYPE IS CLASS
-        if ($form_state->getValue('search_element_type') == 'platform') {
+    if ($form_state->getValue('search_element_type') == 'platform') {
       $url = Url::fromRoute('rep.browse_tree');
       $url->setRouteParameter('mode', 'browse');
       $url->setRouteParameter('elementtype', $form_state->getValue('search_element_type'));

@@ -160,6 +160,9 @@ class EditInstanceForm extends FormBase {
         '#markup' => '</div>',
       ],
     ];
+    $form['instance_type']['main'] += [
+      '#maxlength' => 999,
+    ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
       '#title' => $this->t('ID Number'),

@@ -59,10 +59,19 @@ class DPLSearchForm extends FormBase {
     return $this->pagesize = $pgsize;
   }
 
+  public function iconSubmitForm(array &$form, FormStateInterface $form_state) {
+  $clicked_button = $form_state->getTriggeringElement()['#name'];
+  $form_state->setValue('search_element_type', $clicked_button);
+  $form_state->setValue('search_keyword', '');
+}
+
+
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $form['#attached']['library'][] = 'dpl/dpl_icons';
+
 
     // RETRIEVE PARAMETERS FROM HTML REQUEST
     $request = \Drupal::request();
@@ -102,27 +111,42 @@ class DPLSearchForm extends FormBase {
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
 
-    $form['search_element_type'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Element Type'),
-      '#required' => TRUE,
-      '#options' => [
-        //'dp2' => $this->t('DP2s'),
-        //'str' => $this->t('STRs'),
-        'platform' => $this->t('Platforms'),
-        'platforminstance' => $this->t('Platform Instances'),
-        'instrumentinstance' => $this->t('Instrument Instances'),
-        'detectorinstance' => $this->t('Detector Instances'),
-        'actuatorinstance' => $this->t('Actuator Instances'),
-        'deployment' => $this->t('Deployments'),
-        'stream' => $this->t('Message Streams'),
-        'stream2' => $this->t('File Streams'),
-      ],
-      '#default_value' => $this->getElementType(),
-      '#ajax' => [
-        'callback' => '::ajaxSubmitForm',
-      ],
-    ];
+   $form['element_icons'] = [
+  '#type' => 'container',
+  '#attributes' => ['class' => ['element-icons-grid']],
+];
+
+$element_types = [
+  'platform' => ['label' => 'Platforms', 'image' => 'platform_placeholder.png'],
+  'platforminstance' => ['label' => 'Platform Instances', 'image' => 'platform_instance_placeholder.png'],
+  'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'instrument_instance_placeholder.png'],
+  'detectorinstance' => ['label' => 'Detector Instances', 'image' => 'detector_instance_placeholder.png'],
+  'actuatorinstance' => ['label' => 'Actuator Instances', 'image' => 'actuator_instance_placeholder.png'],
+  'deployment' => ['label' => 'Deployments', 'image' => 'deployment_placeholder.png'],
+  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.png'],
+  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.png'],
+];
+
+
+foreach ($element_types as $type => $info) {
+  $form['element_icons'][$type] = [
+    '#type' => 'submit',
+    '#value' => '',
+    '#attributes' => [
+      'class' => ['element-icon-button'],
+      'style' => "background-image: url('/modules/custom/rep/images/placeholders/{$info['image']}');",
+      'title' => $this->t($info['label']),
+      'aria-label' => $this->t($info['label']),
+    ],
+    '#name' => $type,
+    '#submit' => ['::iconSubmitForm'],
+    '#limit_validation_errors' => [],
+    '#ajax' => [
+      'callback' => '::ajaxSubmitForm',
+    ],
+  ];
+}
+
     $form['search_keyword'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Keyword'),

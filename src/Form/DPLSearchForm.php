@@ -100,20 +100,17 @@ class DPLSearchForm extends FormBase {
     }
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component');
 
     $form['search_element_type'] = [
       '#type' => 'select',
       '#title' => $this->t('Element Type'),
       '#required' => TRUE,
       '#options' => [
-        //'dp2' => $this->t('DP2s'),
-        //'str' => $this->t('STRs'),
         'platform' => $this->t('Platforms'),
         'platforminstance' => $this->t('Platform Instances'),
         'instrumentinstance' => $this->t('Instrument Instances'),
-        'detectorinstance' => $this->t('Detector Instances'),
-        'actuatorinstance' => $this->t('Actuator Instances'),
+        'componentinstance' => $this->t('Component Instances'),
         'deployment' => $this->t('Deployments'),
         'stream' => $this->t('Message Streams'),
         'stream2' => $this->t('File Streams'),

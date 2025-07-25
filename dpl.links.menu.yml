@@ -71,31 +71,17 @@ dpl.manage_instrument_instances:
   requirements:
     _permission: 'access content'
 
-dpl.manage_detector_instances:
-  title: Manage Detector Instances
-  description: Manage Detector Instances
+dpl.manage_component_instances:
+  title: Manage Component Instances
+  description: Manage Component Instances
   route_name: dpl.select_element
   route_parameters:
-    elementtype: 'detectorinstance'
+    elementtype: 'componentinstance'
     page: '1'
     pagesize: '9'
   parent: dpl.manage_top_level
   menu_name: main
   weight: 23
-  requirements:
-    _permission: 'access content'
-
-dpl.manage_actuator_instances:
-  title: Manage Actuator Instances
-  description: Manage Actuator Instances
-  route_name: dpl.select_element
-  route_parameters:
-    elementtype: 'actuatorinstance'
-    page: '1'
-    pagesize: '9'
-  parent: dpl.manage_top_level
-  menu_name: main
-  weight: 24
   requirements:
     _permission: 'access content'
 

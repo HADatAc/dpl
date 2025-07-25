@@ -39,11 +39,6 @@ class AddDeploymentForm extends FormBase {
       '#title' => $this->t('Instrument Instance'),
       '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
     ];
-    //$form['deployment_detector_instance'] = [
-    //  '#type' => 'textfield',
-    //  '#title' => $this->t('Detector Instance'),
-    //  '#autocomplete_route_name' => 'dpl.detectorinstance_autocomplete',
-    //];
     $form['deployment_version'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Version'),
@@ -115,10 +110,6 @@ class AddDeploymentForm extends FormBase {
       $instrumentInstanceUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
       $instrumentInstanceName = Utils::labelFromAutocomplete($form_state->getValue('deployment_instrument_instance'));
     }
-    //$detectorUri = '';
-    //if ($form_state->getValue('deployment_detector_instance') != NULL && $form_state->getValue('deployment_detector_instance') != '') {
-    //  $detectorUri = Utils::uriFromAutocomplete($form_state->getValue('deployment_detector_instance'));
-    //}
 
     $finalLabel = 'a deployment';
     if ($platformInstanceName == '' && $instrumentInstanceName != '') {
@@ -143,7 +134,6 @@ class AddDeploymentForm extends FormBase {
         '"comment":"'.$form_state->getValue('deployment_description').'",'.
         '"platformInstanceUri":"'.$platformInstanceUri.'",'.
         '"instrumentInstanceUri":"'.$instrumentInstanceUri.'",'.
-        //'"detectorInstanceUri":"'.$detectorInstanceUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$formattedNow.'",'.
         '"hasSIRManagerEmail":"'.$useremail.'"}';

@@ -65,10 +65,6 @@ class DPLSearchForm extends FormBase {
   $form_state->setValue('search_keyword', '');
 }
 
-
-  /**
-   * {@inheritdoc}
-   */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form['#attached']['library'][] = 'dpl/dpl_icons';
 
@@ -117,24 +113,25 @@ class DPLSearchForm extends FormBase {
 ];
 
 $element_types = [
-  'platform' => ['label' => 'Platforms', 'image' => 'platform_placeholder.png'],
+  'platform' => ['label' => 'Platform', 'image' => 'platform_placeholder.png'],
   'platforminstance' => ['label' => 'Platform Instances', 'image' => 'platform_instance_placeholder.png'],
   'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'instrument_instance_placeholder.png'],
   'detectorinstance' => ['label' => 'Detector Instances', 'image' => 'detector_instance_placeholder.png'],
   'actuatorinstance' => ['label' => 'Actuator Instances', 'image' => 'actuator_instance_placeholder.png'],
   'deployment' => ['label' => 'Deployments', 'image' => 'deployment_placeholder.png'],
-  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.png'],
-  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.png'],
+  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.svg'],
+  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.svg'],
 ];
 
-
 foreach ($element_types as $type => $info) {
+  $placeholder_image = '../modules/custom/rep/images/placeholders/' . $info['image'];
+
   $form['element_icons'][$type] = [
     '#type' => 'submit',
     '#value' => '',
     '#attributes' => [
       'class' => ['element-icon-button'],
-      'style' => "background-image: url('/modules/custom/rep/images/placeholders/{$info['image']}');",
+      'style' => "background-image: url('$placeholder_image');",
       'title' => $this->t($info['label']),
       'aria-label' => $this->t($info['label']),
     ],
@@ -142,8 +139,11 @@ foreach ($element_types as $type => $info) {
     '#submit' => ['::iconSubmitForm'],
     '#limit_validation_errors' => [],
     '#ajax' => [
-      'callback' => '::ajaxSubmitForm',
-    ],
+    'callback' => '::ajaxSubmitForm',
+    'progress' => [
+    'type' => 'none',
+  ],
+],
   ];
 }
 

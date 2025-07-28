@@ -37,3 +37,9 @@ stream_recorder:
     - core/drupal
     - core/drupalSettings
     - core/drupal.ajax
+
+dpl_icons:
+  version: 1.x
+  css:
+    theme:
+      css/dpl_icons.css: {}

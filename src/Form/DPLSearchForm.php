@@ -107,10 +107,16 @@ class DPLSearchForm extends FormBase {
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
     $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
 
-   $form['element_icons'] = [
-  '#type' => 'container',
-  '#attributes' => ['class' => ['element-icons-grid']],
-];
+    $form['element_icons'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['element-icons-grid-wrapper']],
+    ];
+
+    $form['element_icons']['grid'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['element-icons-grid']],
+    ];
+
 
 $element_types = [
   'platform' => ['label' => 'Platform', 'image' => 'platform_placeholder.png'],
@@ -119,22 +125,29 @@ $element_types = [
   'detectorinstance' => ['label' => 'Detector Instances', 'image' => 'detector_instance_placeholder.png'],
   'actuatorinstance' => ['label' => 'Actuator Instances', 'image' => 'actuator_instance_placeholder.png'],
   'deployment' => ['label' => 'Deployments', 'image' => 'deployment_placeholder.png'],
-  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.svg'],
-  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.svg'],
+  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.png'],
+  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.png'],
 ];
 
 foreach ($element_types as $type => $info) {
-  $placeholder_image = '../modules/custom/rep/images/placeholders/' . $info['image'];
 
-  $form['element_icons'][$type] = [
+  $module_path = \Drupal::request()->getBaseUrl(). '/' . \Drupal::service('extension.list.module')->getPath('rep');
+  $placeholder_image = $module_path . '/images/placeholders/' . $info['image'];
+  
+  $button_classes = ['element-icon-button'];
+if ($type === $this->getElementType()) {
+  $button_classes[] = 'selected';
+}
+
+  $form['element_icons']['grid'][$type] = [
     '#type' => 'submit',
     '#value' => '',
-    '#attributes' => [
-      'class' => ['element-icon-button'],
-      'style' => "background-image: url('$placeholder_image');",
-      'title' => $this->t($info['label']),
-      'aria-label' => $this->t($info['label']),
-    ],
+    '#attributes' => [      
+    'class' => $button_classes,
+    'style' => "background-image: url('$placeholder_image');",
+    'title' => $this->t($info['label']),
+    'aria-label' => $this->t($info['label']),
+],
     '#name' => $type,
     '#submit' => ['::iconSubmitForm'],
     '#limit_validation_errors' => [],

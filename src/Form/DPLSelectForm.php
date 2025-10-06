@@ -123,8 +123,7 @@ class DPLSelectForm extends FormBase {
     $this->plural_class_name = "";
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
-    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     switch ($this->element_type) {
 
@@ -155,19 +154,10 @@ class DPLSelectForm extends FormBase {
         $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
         break;
 
-      // DETECTOR INSTANCE
-      case "detectorinstance":
-        $this->single_class_name = $preferred_detector . " Instance";
-        $this->plural_class_name = $preferred_detector . " Instances";
-        $header = VSTOIInstance::generateHeader($this->element_type);
-        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
-        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
-        break;
-
-      // ACTUATOR INSTANCE
-      case "actuatorinstance":
-        $this->single_class_name = $preferred_actuator . " Instance";
-        $this->plural_class_name = $preferred_actuator . " Instances";
+      // COMPONENT INSTANCE
+      case "componentinstance":
+        $this->single_class_name = $preferred_component . " Instance";
+        $this->plural_class_name = $preferred_component . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
         $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
@@ -325,8 +315,7 @@ class DPLSelectForm extends FormBase {
    */
   protected function buildTableView(array &$form, FormStateInterface $form_state, $header, $output)
   {
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
-    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $form['edit_selected_element'] = [
       '#type' => 'submit',
@@ -345,21 +334,11 @@ class DPLSelectForm extends FormBase {
         'class' => ['btn', 'btn-primary', 'delete-element-button'],
       ],
     ];
-    if ($this->element_type == 'detectorstem') {
-      $form['derive_detectorstem'] = [
+    if ($this->element_type == 'componentstem') {
+      $form['derive_componentstem'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Derive New ' . $preferred_detector. ' Stem from Selected'),
-        '#name' => 'derive_detectorstem',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'derive-button'],
-        ],
-      ];
-    }
-    if ($this->element_type == 'actuatorstem') {
-      $form['derive_actuatorstem'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Derive New ' . $preferred_actuator . ' Stem from Selected'),
-        '#name' => 'derive_actuatorstem',
+        '#value' => $this->t('Derive New ' . $preferred_component. ' Stem from Selected'),
+        '#name' => 'derive_componentstem',
         '#attributes' => [
           'class' => ['btn', 'btn-primary', 'derive-button'],
         ],
@@ -379,8 +358,7 @@ class DPLSelectForm extends FormBase {
    */
   protected function buildCardView(array &$form, FormStateInterface $form_state, $header, $output)
   {
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
-    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $form['element_cards_wrapper'] = [
       '#type' => 'container',
@@ -532,30 +510,16 @@ class DPLSelectForm extends FormBase {
         '#element_uri' => $key
       ];
 
-      // DERIVE DETECTOR STEM BUTTON
-      if ($this->element_type == 'detectorstem') {
+      // DERIVE COMPONENT STEM BUTTON
+      if ($this->element_type == 'componentstem') {
         $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['ingest'] = [
           '#type' => 'submit',
-          '#value' => $this->t('Derive New ' . $preferred_detector),
-          '#name' => 'derive_detectorstem_' . $sanitized_key,
+          '#value' => $this->t('Derive New ' . $preferred_component),
+          '#name' => 'derive_componentstem_' . $sanitized_key,
           '#attributes' => [
             'class' => ['btn', 'btn-success', 'btn-sm', 'derive-button'],
           ],
-          '#submit' => ['::deriveDetectorStemSubmit'],
-          '#limit_validation_errors' => [],
-          '#element_uri' => $key
-        ];
-      }
-      // DERIVE ACTUATOR BUTTON
-      if ($this->element_type == 'actuator') {
-        $form['element_cards_wrapper'][$sanitized_key]['card']['footer']['actions']['ingest'] = [
-          '#type' => 'submit',
-          '#value' => $this->t('Derive New ' . $preferred_actuator),
-          '#name' => 'derive_actuator_' . $sanitized_key,
-          '#attributes' => [
-            'class' => ['btn', 'btn-success', 'btn-sm', 'derive-button'],
-          ],
-          '#submit' => ['::deriveActuatorSubmit'],
+          '#submit' => ['::deriveComponentStemSubmit'],
           '#limit_validation_errors' => [],
           '#element_uri' => $key
         ];
@@ -662,8 +626,7 @@ class DPLSelectForm extends FormBase {
       }
       if ($this->element_type == 'platforminstance' ||
           $this->element_type == 'instrumentinstance' ||
-          $this->element_type == 'detectorinstance' ||
-          $this->element_type == 'actuatorinstance') {
+          $this->element_type == 'componentinstance') {
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_instance');
         $url = Url::fromRoute('dpl.add_instance');
         $url->setRouteParameter('elementtype', $this->element_type);
@@ -693,8 +656,7 @@ class DPLSelectForm extends FormBase {
         }
         if ($this->element_type == 'platforminstance' ||
             $this->element_type == 'instrumentinstance' ||
-            $this->element_type == 'detectorinstance' ||
-            $this->element_type == 'actuatorinstance') {
+            $this->element_type == 'componentinstance') {
           Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
           $url = Url::fromRoute('dpl.edit_instance');
           $url->setRouteParameter('instanceuri', base64_encode($first));

@@ -205,18 +205,10 @@ dpl.instrument_autocomplete:
   requirements:
     _permission: 'access content'
 
-dpl.detector_autocomplete:
-  path: '/dpl/type/autocomplete/detector'
+dpl.component_autocomplete:
+  path: '/dpl/type/autocomplete/component'
   defaults:
-    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetector'
-    _format: json
-  requirements:
-    _permission: 'access content'
-
-dpl.actuator_autocomplete:
-  path: '/dpl/type/autocomplete/actuator'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuator'
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execComponent'
     _format: json
   requirements:
     _permission: 'access content'
@@ -237,18 +229,10 @@ dpl.instrumentinstance_autocomplete:
   requirements:
     _permission: 'access content'
 
-dpl.detectorinstance_autocomplete:
-  path: '/dpl/type/autocomplete/detectorinstance'
+dpl.componentinstance_autocomplete:
+  path: '/dpl/type/autocomplete/componentinstance'
   defaults:
-    _controller: '\Drupal\dpl\Controller\AutocompleteController::execDetectorInstance'
-    _format: json
-  requirements:
-    _permission: 'access content'
-
-dpl.actuatorinstance_autocomplete:
-  path: '/dpl/type/autocomplete/actuatorinstance'
-  defaults:
-    _controller: '\Drupal\dpl\Controller\AutocompleteController::execActuatorInstance'
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execComponentInstance'
     _format: json
   requirements:
     _permission: 'access content'

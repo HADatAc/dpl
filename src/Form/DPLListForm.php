@@ -77,8 +77,7 @@ class DPLListForm extends FormBase {
     $this->setList(ListKeywordPage::exec($elementtype, $keyword, $page, $pagesize));
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
-    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $class_name = "";
     switch ($elementtype) {
@@ -118,16 +117,9 @@ class DPLListForm extends FormBase {
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
 
-      // DETECTOR INSTANCE
-      case "detectorinstance":
-        $class_name = $preferred_detector . " Instances";
-        $header = VSTOIInstance::generateHeader($elementtype);
-        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
-        break;
-
-      // ACTUATOR INSTANCE
-      case "actuatorinstance":
-        $class_name = $preferred_actuator . " Instances";
+      // COMPONENT INSTANCE
+      case "componentinstance":
+        $class_name = $preferred_component . " Instances";
         $header = VSTOIInstance::generateHeader($elementtype);
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;

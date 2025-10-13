@@ -91,7 +91,7 @@ class DPLListForm extends FormBase {
 
       // STREAM
       case "stream":
-        $class_name = $preferred_instrument . "s";
+        $class_name = 'Message Stream' . "s";
         $header = Stream::generateHeader();
         $output = Stream::generateOutput($this->getList());
         break;
@@ -129,12 +129,24 @@ class DPLListForm extends FormBase {
         $class_name = "Objects of Unknown Types";
     }
 
+    $form['header'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['header-container'],
+        'style' => 'display: flex; justify-content: space-between; align-items: center;',
+      ],
+    ];
+    $form['header']['title'] = [
+      '#type' => 'item',
+      '#markup' => t('<h3>Available <font style="color:DarkGreen;">' . $class_name . '</font></h3>'),
+    ];
+
     // PUT FORM TOGETHER
     $form['element_table'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $output,
-      '#empty' => t('No response options found'),
+      '#empty' => t('No results found'),
     ];
 
     $form['pager'] = [

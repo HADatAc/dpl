@@ -21,4 +21,4 @@ visibility:
   request_path:
     id: request_path
     negate: false
-    pages: "/dpl/list/*\r\n/dpl/list"
+    pages: "/dpl/list/*\r\n/dpl/list\r\n/rep/hierarchy/browse/platform"

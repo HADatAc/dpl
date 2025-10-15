@@ -93,18 +93,12 @@ class EditInstanceForm extends FormBase {
       $autocomplete = 'dpl.instrument_autocomplete';
       $treepath = 'instrument';
       $treename = 'Instrument';
-    } else if ($this->getElement()->hascoTypeUri == VSTOI::DETECTOR_INSTANCE) {
-      $this->setElementName("Detector Instance");
-      $this->setElementType("detectorinstance");
-      $autocomplete = 'dpl.detector_autocomplete';
-      $treepath = 'detector';
-      $treename = 'Detector';
-    } else if ($this->getElement()->hascoTypeUri == VSTOI::ACTUATOR_INSTANCE) {
-      $this->setElementName("Actuator Instance");
-      $this->setElementType("actuatorinstance");
-      $autocomplete = 'dpl.actuator_autocomplete';
-      $treepath = 'actuator';
-      $treename = 'Actuator';
+    } else if ($this->getElement()->hascoTypeUri == VSTOI::COMPONENT_INSTANCE) {
+      $this->setElementName("Component Instance");
+      $this->setElementType("componentinstance");
+      $autocomplete = 'dpl.component_autocomplete';
+      $treepath = 'component';
+      $treename = 'Component';
     }
 
     if ($this->getElementName() == NULL) {

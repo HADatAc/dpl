@@ -241,7 +241,6 @@ class ExecuteCloseDeploymentForm extends FormBase {
         '"comment":"'.$this->getDeployment()->comment.'",'.
         '"platformInstanceUri":"'.$this->getDeployment()->platformInstanceUri.'",'.
         '"instrumentInstanceUri":"'.$this->getDeployment()->instrumentInstanceUri.'",'.
-        //'"detectorUri":"'.$detectorUri.'",'.
         '"canUpdate":["'.$useremail.'"],'.
         '"designedAt":"'.$this->getDeployment()->designedAt.'",';
       if ($this->getMode() == 'execute') {

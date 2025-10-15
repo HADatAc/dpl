@@ -77,8 +77,7 @@ class DPLListForm extends FormBase {
     $this->setList(ListKeywordPage::exec($elementtype, $keyword, $page, $pagesize));
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
-    $preferred_actuator = \Drupal::config('rep.settings')->get('preferred_actuator');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $class_name = "";
     switch ($elementtype) {
@@ -92,7 +91,7 @@ class DPLListForm extends FormBase {
 
       // STREAM
       case "stream":
-        $class_name = $preferred_instrument . "s";
+        $class_name = 'Message Stream' . "s";
         $header = Stream::generateHeader();
         $output = Stream::generateOutput($this->getList());
         break;
@@ -118,16 +117,9 @@ class DPLListForm extends FormBase {
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
 
-      // DETECTOR INSTANCE
-      case "detectorinstance":
-        $class_name = $preferred_detector . " Instances";
-        $header = VSTOIInstance::generateHeader($elementtype);
-        $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
-        break;
-
-      // ACTUATOR INSTANCE
-      case "actuatorinstance":
-        $class_name = $preferred_actuator . " Instances";
+      // COMPONENT INSTANCE
+      case "componentinstance":
+        $class_name = $preferred_component . " Instances";
         $header = VSTOIInstance::generateHeader($elementtype);
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
@@ -137,12 +129,24 @@ class DPLListForm extends FormBase {
         $class_name = "Objects of Unknown Types";
     }
 
+    $form['header'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['header-container'],
+        'style' => 'display: flex; justify-content: space-between; align-items: center;',
+      ],
+    ];
+    $form['header']['title'] = [
+      '#type' => 'item',
+      '#markup' => t('<h3>Available <font style="color:DarkGreen;">' . $class_name . '</font></h3>'),
+    ];
+
     // PUT FORM TOGETHER
     $form['element_table'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $output,
-      '#empty' => t('No response options found'),
+      '#empty' => t('No results found'),
     ];
 
     $form['pager'] = [

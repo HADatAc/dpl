@@ -119,21 +119,21 @@ class DPLSearchForm extends FormBase {
 
 
 $element_types = [
-  'platform' => ['label' => 'Platform', 'image' => 'platform_placeholder.png'],
-  'platforminstance' => ['label' => 'Platform Instances', 'image' => 'platform_instance_placeholder.png'],
-  'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'instrument_instance_placeholder.png'],
-  'detectorinstance' => ['label' => 'Detector Instances', 'image' => 'detector_instance_placeholder.png'],
-  'actuatorinstance' => ['label' => 'Actuator Instances', 'image' => 'actuator_instance_placeholder.png'],
-  'deployment' => ['label' => 'Deployments', 'image' => 'deployment_placeholder.png'],
-  'stream' => ['label' => 'Message Streams', 'image' => 'message_stream_placeholder.png'],
-  'stream2' => ['label' => 'File Streams', 'image' => 'datafile_stream_placeholder.png'],
+  'platform' => ['label' => 'Platform', 'image' => 'white/platform_placeholder.png'],
+  'platforminstance' => ['label' => 'Platform Instances', 'image' => 'white/platform_instance_placeholder.png'],
+  'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'white/instrument_instance_placeholder.png'],
+  'detectorinstance' => ['label' => 'Detector Instances', 'image' => 'white/detector_instance_placeholder.png'],
+  'actuatorinstance' => ['label' => 'Actuator Instances', 'image' => 'white/actuator_instance_placeholder.png'],
+  'deployment' => ['label' => 'Deployments', 'image' => 'white/deployment_placeholder.png'],
+  'stream' => ['label' => 'Message Streams', 'image' => 'white/message_stream_placeholder.png'],
+  'stream2' => ['label' => 'File Streams', 'image' => 'white/datafile_stream_placeholder.png'],
 ];
 
 foreach ($element_types as $type => $info) {
 
   $module_path = \Drupal::request()->getBaseUrl(). '/' . \Drupal::service('extension.list.module')->getPath('rep');
   $placeholder_image = $module_path . '/images/placeholders/' . $info['image'];
-  
+
   $button_classes = ['element-icon-button'];
 if ($type === $this->getElementType()) {
   $button_classes[] = 'selected';
@@ -142,7 +142,7 @@ if ($type === $this->getElementType()) {
   $form['element_icons']['grid'][$type] = [
     '#type' => 'submit',
     '#value' => '',
-    '#attributes' => [      
+    '#attributes' => [
     'class' => $button_classes,
     'style' => "background-image: url('$placeholder_image');",
     'title' => $this->t($info['label']),

@@ -72,17 +72,11 @@ class AddInstanceForm extends FormBase {
       $treepath = 'instrument';
       $treename = 'Instrument';
     }
-    if ($elementtype == 'detectorinstance') {
-      $this->setElementName("Detector Instance");
-      $autocomplete = 'dpl.detector_autocomplete';
-      $treepath = 'detector';
-      $treename = 'Detector';
-    }
-    if ($elementtype == 'actuatorinstance') {
-      $this->setElementName("Actuator Instance");
-      $autocomplete = 'dpl.actuator_autocomplete';
-      $treepath = 'actuator';
-      $treename = 'Actuator';
+    if ($elementtype == 'componentinstance') {
+      $this->setElementName("Component Instance");
+      $autocomplete = 'dpl.component_autocomplete';
+      $treepath = 'component';
+      $treename = 'Component';
     }
 
     if ($this->getElementName() == NULL) {
@@ -131,6 +125,9 @@ class AddInstanceForm extends FormBase {
         '#type' => 'markup',
         '#markup' => '</div>',
       ],
+    ];
+    $form['instance_type']['main'] += [
+      '#maxlength' => 999,
     ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
@@ -274,11 +271,8 @@ class AddInstanceForm extends FormBase {
     if ($this->getElementType() == 'instrumentinstance') {
       $hascoType = VSTOI::INSTRUMENT_INSTANCE;
     }
-    if ($this->getElementType() == 'detectorinstance') {
-      $hascoType = VSTOI::DETECTOR_INSTANCE;
-    }
-    if ($this->getElementType() == 'actuatorinstance') {
-      $hascoType = VSTOI::ACTUATOR_INSTANCE;
+    if ($this->getElementType() == 'componentinstance') {
+      $hascoType = VSTOI::COMPONENT_INSTANCE;
     }
 
     $typeUri = '';

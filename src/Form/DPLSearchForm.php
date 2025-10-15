@@ -59,10 +59,15 @@ class DPLSearchForm extends FormBase {
     return $this->pagesize = $pgsize;
   }
 
-  /**
-   * {@inheritdoc}
-   */
+  public function iconSubmitForm(array &$form, FormStateInterface $form_state) {
+  $clicked_button = $form_state->getTriggeringElement()['#name'];
+  $form_state->setValue('search_element_type', $clicked_button);
+  $form_state->setValue('search_keyword', '');
+}
+
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $form['#attached']['library'][] = 'dpl/dpl_icons';
+
 
     // RETRIEVE PARAMETERS FROM HTML REQUEST
     $request = \Drupal::request();
@@ -100,28 +105,60 @@ class DPLSearchForm extends FormBase {
     }
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
-    $preferred_detector = \Drupal::config('rep.settings')->get('preferred_detector');
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
-    $form['search_element_type'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Element Type'),
-      '#required' => TRUE,
-      '#options' => [
-        //'dp2' => $this->t('DP2s'),
-        //'str' => $this->t('STRs'),
-        'platform' => $this->t('Platforms'),
-        'platforminstance' => $this->t('Platform Instances'),
-        'instrumentinstance' => $this->t('Instrument Instances'),
-        'detectorinstance' => $this->t('Detector Instances'),
-        'actuatorinstance' => $this->t('Actuator Instances'),
-        'deployment' => $this->t('Deployments'),
-        'stream' => $this->t('Streams'),
-      ],
-      '#default_value' => $this->getElementType(),
-      '#ajax' => [
-        'callback' => '::ajaxSubmitForm',
-      ],
+    $form['element_icons'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['element-icons-grid-wrapper']],
     ];
+
+    $form['element_icons']['grid'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['element-icons-grid']],
+    ];
+
+
+$element_types = [
+  'platform' => ['label' => 'Platform', 'image' => 'white/platform_placeholder.png'],
+  'platforminstance' => ['label' => 'Platform Instances', 'image' => 'white/platform_instance_placeholder.png'],
+  'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'white/instrument_instance_placeholder.png'],
+  'componentinstance' => ['label' => 'Component Instances', 'image' => 'white/component_instance_placeholder.png'],
+  'deployment' => ['label' => 'Deployments', 'image' => 'white/deployment_placeholder.png'],
+  'stream' => ['label' => 'Message Streams', 'image' => 'white/message_stream_placeholder.png'],
+  'stream2' => ['label' => 'File Streams', 'image' => 'white/datafile_stream_placeholder.png'],
+];
+
+foreach ($element_types as $type => $info) {
+
+  $module_path = \Drupal::request()->getBaseUrl(). '/' . \Drupal::service('extension.list.module')->getPath('rep');
+  $placeholder_image = $module_path . '/images/placeholders/' . $info['image'];
+
+  $button_classes = ['element-icon-button'];
+if ($type === $this->getElementType()) {
+  $button_classes[] = 'selected';
+}
+
+  $form['element_icons']['grid'][$type] = [
+    '#type' => 'submit',
+    '#value' => '',
+    '#attributes' => [
+    'class' => $button_classes,
+    'style' => "background-image: url('$placeholder_image');",
+    'title' => $this->t($info['label']),
+    'aria-label' => $this->t($info['label']),
+],
+    '#name' => $type,
+    '#submit' => ['::iconSubmitForm'],
+    '#limit_validation_errors' => [],
+    '#ajax' => [
+    'callback' => '::ajaxSubmitForm',
+    'progress' => [
+    'type' => 'none',
+  ],
+],
+  ];
+}
+
     $form['search_keyword'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Keyword'),
@@ -156,8 +193,13 @@ class DPLSearchForm extends FormBase {
       $this->setKeyword("_");
     }
 
+    // ^TODO: must be removed in the future
+    if ($form_state->getValue('search_element_type') === 'stream2') {
+      $form_state->setValue('search_element_type', 'stream');
+    }
+
     // IF ELEMENT TYPE IS CLASS
-        if ($form_state->getValue('search_element_type') == 'platform') {
+    if ($form_state->getValue('search_element_type') == 'platform') {
       $url = Url::fromRoute('rep.browse_tree');
       $url->setRouteParameter('mode', 'browse');
       $url->setRouteParameter('elementtype', $form_state->getValue('search_element_type'));

@@ -299,7 +299,7 @@ dpl.stream_topic_expose:
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamTopicExpose'
     _title: 'Stream Topic Expose'
-  methods: [POST]
+  methods: [GET]
   requirements:
     _permission: 'access content'
 

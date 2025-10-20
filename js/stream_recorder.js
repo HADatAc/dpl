@@ -4,7 +4,7 @@
 
     function disableAllActionButtons() {
       actionsDisabled = true;
-      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend')
+      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend, .stream-topic-expose')
         .attr('aria-disabled', 'true')
         .css({
           'pointer-events': 'none',
@@ -13,7 +13,7 @@
     }
     function enableAllActionButtons() {
       actionsDisabled = false;
-      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend')
+      $('.stream-topic-subscribe, .stream-topic-unsubscribe, .stream-topic-record, .stream-topic-ingest, .stream-topic-suspend, .stream-topic-expose')
         .removeAttr('aria-disabled')
         .css({
           'pointer-events': 'auto',
@@ -119,6 +119,7 @@
     handleAction('.stream-topic-record',  'Record');
     handleAction('.stream-topic-ingest',  'Ingest');
     handleAction('.stream-topic-suspend', 'Suspend');
+    handleAction('.stream-topic-expose',  'Expose');
 
     // function reloadTopics(streamUri) {
     //   if (!drupalSettings.std || !drupalSettings.std.ajaxUrl || !drupalSettings.std.studyUri) {

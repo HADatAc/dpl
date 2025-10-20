@@ -295,11 +295,11 @@ dpl.stream_topic_latest_message:
     _permission: 'access content'
 
 dpl.stream_topic_expose:
-  path: '/dpl/streamtopic/record/{topicuri}/{brokerip}/{brokerport}'
+  path: '/dpl/streamtopic/expose/{topicuri}/{brokerip}/{brokerport}'
   defaults:
     _controller: '\Drupal\dpl\Controller\StreamController::streamTopicExpose'
     _title: 'Stream Topic Expose'
-  methods: [GET]
+  methods: [POST]
   requirements:
     _permission: 'access content'
 

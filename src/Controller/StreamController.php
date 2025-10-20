@@ -145,10 +145,10 @@ class StreamController extends ControllerBase {
     }
   }
 
-  public function streamTopicExpose($topicuri, $brokerIp, $brokerPort ) {
+  public function streamTopicExpose($topicuri, $brokerip, $brokerport ) {
     $streamtopicUri = base64_decode($topicuri);
-    $brokerIp = base64_decode($$brokerIp);
-    $brokerPort = intval(base64_decode($brokerPort));
+    $brokerIp = base64_decode($brokerip);
+    $brokerPort = intval(base64_decode($brokerport));
 
     try {
       $api = \Drupal::service('rep.api_connector');
@@ -161,14 +161,14 @@ class StreamController extends ControllerBase {
         return new JsonResponse(['status' => 'error', 'message' => 'Stream Topic not found.'], 404);
       }
 
-      $api->streamTopicExpose($streamTopic->uri, $$brokerIp, $brokerPort);
+      $api->streamTopicExpose($streamTopic->uri, $brokerIp, $brokerPort);
 
       $message = $this->t(
         'Stream Topic on @brokerIP:@brokerPort.',
         ['@brokerIP' => Utils::plainStatus($$brokerIp), '@brokerPort' => Utils::plainStatus($brokerPort)]
       );
 
-      $message = 'Stream Topic has ' . Utils::plainStatus($$brokerIp) . ':' . Utils::plainStatus($brokerPort) . '.';
+      $message = 'Stream Topic exposing to ' . $brokerIp . ':' .$brokerPort;
 
       return new JsonResponse([
         'status'  => 'ok',

@@ -294,6 +294,15 @@ dpl.stream_topic_latest_message:
   requirements:
     _permission: 'access content'
 
+dpl.stream_topic_expose:
+  path: '/dpl/streamtopic/record/{topicuri}/{brokerip}/{brokerport}'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\StreamController::streamTopicExpose'
+    _title: 'Stream Topic Expose'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
 # STREAM FILES (and messages when applicable)
 dpl.file_ingest_ajax:
   path: '/dpl/file-ingest-ajax'

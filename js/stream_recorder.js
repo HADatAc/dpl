@@ -2,9 +2,15 @@
   $(document).ready(function () {
     var actionsDisabled = false;
 
-    // --- Constants (adjust selectors if needed) ---
-    var CONTAINER_SELECTOR = '#stream-topic-list-container';
+    // --- Tunables ---
+    var CONTAINER_SELECTOR   = '#stream-topic-list-container';
     var TABLE_SCOPE_SELECTOR = '#topic-list-table';
+    var CLICK_DEBOUNCE_MS    = 300;   // prevent double taps
+    var SAFETY_TIMEOUT_MS    = 15000; // overlay safety timeout
+
+    // --- State for debounce & safety timers ---
+    var lastActionAt = 0;
+    var overlaySafetyTimer = null;
 
     // --- One-time CSS injection for the overlay/spinner ---
     function injectLoadingStylesOnce() {
@@ -19,25 +25,19 @@
           justify-content: center;
           background: rgba(255,255,255,0.75);
           z-index: 9999;
-          pointer-events: none; /* clicks are still blocked by disabled state */
+          pointer-events: none;
         }
         .std-loading-box {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          padding: 12px 16px;
-          border-radius: 10px;
+          display: flex; gap: 10px; align-items: center;
+          padding: 12px 16px; border-radius: 10px;
           background: rgba(0,0,0,0.05);
           box-shadow: 0 2px 10px rgba(0,0,0,0.08);
           font: 500 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
           color: #333;
         }
         .std-spinner {
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(0,0,0,0.15);
-          border-top-color: #555;
-          border-radius: 50%;
+          width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.15);
+          border-top-color: #555; border-radius: 50%;
           animation: std-spin 0.8s linear infinite;
         }
         @keyframes std-spin { to { transform: rotate(360deg); } }
@@ -50,7 +50,6 @@
 
     // --- Accessibility helpers ---
     function setBusy($el, busy) {
-      // Communicate loading state to assistive tech
       if (!$el || !$el.length) return;
       if (busy) $el.attr('aria-busy', 'true');
       else $el.removeAttr('aria-busy');
@@ -60,7 +59,6 @@
     function showLoadingOverlay($container, message) {
       if (!$container || !$container.length) return;
       injectLoadingStylesOnce();
-
       $container.addClass('std-relative');
       var $overlay = $container.children('.std-loading-overlay');
       if (!$overlay.length) {
@@ -80,14 +78,29 @@
       if ($overlay.length) $overlay.hide();
     }
 
+    // --- Safety timeout for overlays ---
+    function startOverlaySafety($container) {
+      clearOverlaySafety();
+      overlaySafetyTimer = setTimeout(function () {
+        // Safety fallback: never leave the UI locked if something hangs.
+        console.warn('[safety-timeout] Update took too long; unlocking UI.');
+        hideLoadingOverlay($container);
+        setBusy($container, false);
+        enableAllActionButtons();
+      }, SAFETY_TIMEOUT_MS);
+    }
+    function clearOverlaySafety() {
+      if (overlaySafetyTimer) {
+        clearTimeout(overlaySafetyTimer);
+        overlaySafetyTimer = null;
+      }
+    }
+
     // --- Capture & restore “open state” (Bootstrap collapse/accordions) ---
     function captureOpenState($root) {
-      // Collect IDs of elements currently expanded (.collapse.show)
       var openIds = [];
       if ($root && $root.length) {
-        $root.find('.collapse.show[id]').each(function () {
-          openIds.push(this.id);
-        });
+        $root.find('.collapse.show[id]').each(function () { openIds.push(this.id); });
       }
       return openIds;
     }
@@ -96,9 +109,7 @@
       openIds.forEach(function (id) {
         var $collapse = $root.find('#' + CSS.escape(id));
         if ($collapse.length) {
-          // Force show class and aria-expanded on toggle (if any)
-          $collapse.addClass('show').attr('aria-expanded', 'true').attr('aria-hidden', 'false');
-          // If there is a toggle button/link targeting this collapse, set aria-expanded
+          $collapse.addClass('show').attr({ 'aria-expanded': 'true', 'aria-hidden': 'false' });
           var $toggles = $root.find('[data-bs-target="#' + id + '"], [data-target="#' + id + '"], a[href="#' + id + '"]');
           $toggles.attr('aria-expanded', 'true');
         }
@@ -126,7 +137,7 @@
       var frames = (opts && opts.frames) || 2;
       var idleTimeout = (opts && opts.idleTimeout) || 200;
 
-      var raf = function () { return new Promise(function (r) { requestAnimationFrame(function () { r(); }); }); };
+      var raf  = function () { return new Promise(function (r) { requestAnimationFrame(function () { r(); }); }); };
       var idle = function () {
         return new Promise(function (r) {
           if ('requestIdleCallback' in window) requestIdleCallback(function () { r(); }, { timeout: idleTimeout });
@@ -138,22 +149,25 @@
         if (!$imgs.length) return Promise.resolve();
         var tasks = Array.prototype.map.call($imgs, function (img) {
           if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          if (img.decode) return img.decode().catch(function () {});
+          if (img.decode) return img.decode().catch(function () { /* ignore */ });
           return new Promise(function (res) { img.onload = img.onerror = function () { res(); }; });
         });
         return Promise.all(tasks);
       };
 
-      return (function () {
-        var chain = Promise.resolve();
-        for (var i = 0; i < frames; i++) chain = chain.then(raf);
-        return chain.then(imagesReady).then(idle);
-      })();
+      var p = Promise.resolve();
+      for (var i = 0; i < frames; i++) p = p.then(raf);
+      return p.then(imagesReady).then(idle);
     }
 
-    // --- General action handler (Subscribe/Unsubscribe/etc.) ---
+    // --- General action handler (Subscribe/Unsubscribe/etc.) with debounce + safety ---
     function handleAction(selector, logLabel) {
       $(document).on('click', selector, function (e) {
+        // Debounce: ignore clicks fired too close in time
+        var now = Date.now();
+        if (now - lastActionAt < CLICK_DEBOUNCE_MS) { e.preventDefault(); return; }
+        lastActionAt = now;
+
         if (actionsDisabled) { e.preventDefault(); return; }
         e.preventDefault();
 
@@ -167,20 +181,26 @@
         var $container = $(CONTAINER_SELECTOR);
         setBusy($container, true);
         showLoadingOverlay($container, 'Updating ' + (logLabel || 'data') + '…');
+        startOverlaySafety($container); // <-- start safety timer
 
         $.ajax({ url: url, method: 'POST', dataType: 'json' })
           .done(function (data) {
             if (data.status === 'ok') {
               // console.log(data.message || (logLabel + ' succeeded'));
-
-              // Manual finally: success & error paths, then cleanup
               reloadTopics(streamValue, topicValue)
                 .then(function () { enableAllActionButtons(); }, function () { enableAllActionButtons(); })
-                .then(function () { setBusy($container, false); hideLoadingOverlay($container); },
-                      function () { setBusy($container, false); hideLoadingOverlay($container); });
-
+                .then(function () {
+                  clearOverlaySafety();
+                  setBusy($container, false);
+                  hideLoadingOverlay($container);
+                }, function () {
+                  clearOverlaySafety();
+                  setBusy($container, false);
+                  hideLoadingOverlay($container);
+                });
             } else {
               console.error(data.message);
+              clearOverlaySafety();
               enableAllActionButtons();
               setBusy($container, false);
               hideLoadingOverlay($container);
@@ -191,6 +211,7 @@
               ? xhr.responseJSON.message
               : 'Unexpected error occurred.';
             console.error(err);
+            clearOverlaySafety();
             enableAllActionButtons();
             setBusy($container, false);
             hideLoadingOverlay($container);
@@ -216,13 +237,11 @@
         var $container = $(CONTAINER_SELECTOR);
         var $scope     = $(TABLE_SCOPE_SELECTOR);
 
-        // 1) Capture which collapses are open inside the Stream Topic List container
+        // Capture which collapses are open inside the Stream Topic List container
         var previouslyOpenIds = captureOpenState($container);
 
-        // IMPORTANT: Do NOT hide the Stream Topic List container, just use the overlay
-        // Keep other blocks as you wish, but avoid collapsing the Stream Topic List.
+        // Avoid hiding the Stream Topic List container (keep it visible with overlay)
         $('#edit-ajax-cards-container').hide();
-        // $('#stream-topic-list-container').show(); // keep visible
         $('#stream-data-files-container').hide();
         $('#message-stream-container').hide();
 
@@ -232,39 +251,29 @@
         })
         .done(function (data) {
           try {
-            // 2) Inject the new table HTML
             $scope.html(data.topics);
 
-            // 3) Reattach Drupal behaviors
             if (Drupal && Drupal.attachBehaviors) {
               var scopeEl = document.getElementById('topic-list-table');
               if (scopeEl) Drupal.attachBehaviors(scopeEl);
             }
 
-            // 4) Restore open collapse state for Stream Topic List card(s)
             restoreOpenState($container, previouslyOpenIds);
 
-            // 5) Re-select the radio, trigger "change" (safer than click) and ensure card stays open
             if (topicUri) {
               var $radio = $scope.find('input.topic-radio[value="' + topicUri + '"]');
               if ($radio.length) {
                 $radio.prop('checked', true).trigger('change');
-                // If the radio normally opens a collapse via data-target, open it explicitly
                 var targetId = $radio.attr('data-bs-target') || $radio.attr('data-target');
-                if (targetId) {
-                  var clean = targetId.replace(/^#/, '');
-                  restoreOpenState($container, [clean]);
-                }
+                if (targetId) restoreOpenState($container, [targetId.replace(/^#/, '')]);
               }
             }
 
-            // 6) Reveal the rest of the layout (but keep Stream Topic List visible all the time)
             $('#edit-ajax-cards-container').show();
-            $('#stream-topic-list-container').show(); // ensure visible, not collapsed
+            $('#stream-topic-list-container').show();
             $('#stream-data-files-container').removeClass('col-md-12').addClass('col-md-7').show();
             $('#message-stream-container').removeClass('col-md-12').addClass('col-md-5').show();
 
-            // 7) Wait for paints/images/idle then resolve
             waitForStableUI($scope, { frames: 2, idleTimeout: 200 })
               .then(resolve, resolve);
           } catch (ex) {

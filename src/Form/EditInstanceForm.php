@@ -57,6 +57,9 @@ class EditInstanceForm extends FormBase {
     // Does the repo have a social network?
     $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
+
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
     $form['#attached']['library'][] = 'core/drupal.dialog';
@@ -88,17 +91,17 @@ class EditInstanceForm extends FormBase {
       $treepath = 'platform';
       $treename = 'Platform';
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
-      $this->setElementName("Instrument Instance");
+      $this->setElementName(ucfirst($preferred_instrument)." Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
       $treepath = 'instrument';
-      $treename = 'Instrument';
+      $treename = ucfirst($preferred_instrument);
     } else if ($this->getElement()->hascoTypeUri == VSTOI::COMPONENT_INSTANCE) {
-      $this->setElementName("Component Instance");
+      $this->setElementName(ucfirst($preferred_component)." Instance");
       $this->setElementType("componentinstance");
       $autocomplete = 'dpl.component_autocomplete';
       $treepath = 'component';
-      $treename = 'Component';
+      $treename = ucfirst($preferred_component);
     }
 
     if ($this->getElementName() == NULL) {

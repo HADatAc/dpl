@@ -98,6 +98,8 @@ class ViewDeploymentForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi = NULL) {
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     // ROOT URL
     $root_url = \Drupal::request()->getBaseUrl();
 
@@ -133,7 +135,7 @@ class ViewDeploymentForm extends FormBase {
 
       // If the API call failed or returned an error flag, show error and go back.
       if (empty($resultInstrumentInstance->isSuccessful) || !$resultInstrumentInstance->isSuccessful) {
-        \Drupal::messenger()->addError($this->t('Failed to retrieve Instrument Instance.'));
+        \Drupal::messenger()->addError($this->t('Failed to retrieve '.$preferred_instrument.' Instance.'));
         return;
       }
 
@@ -144,7 +146,7 @@ class ViewDeploymentForm extends FormBase {
 
       // If the API call failed or returned an error flag, show error and go back.
       if (empty($resultInstrument->isSuccessful) || !$resultInstrument->isSuccessful) {
-        \Drupal::messenger()->addError($this->t('Failed to retrieve Instrument of Instance.'));
+        \Drupal::messenger()->addError($this->t('Failed to retrieve '.$preferred_instrument.' of Instance.'));
         // return;
         $this->instrument = [];
       } else {
@@ -343,7 +345,7 @@ class ViewDeploymentForm extends FormBase {
     //
     $form['instrument_instance'] = [
       '#type' => 'details',
-      '#title' => $this->t('Instrument Instance'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Instance'),
       '#group' => 'tabs',
     ];
 
@@ -352,7 +354,7 @@ class ViewDeploymentForm extends FormBase {
       // If no instrumentInstance was provided, show a warning message.
       $form['instrument_instance']['no_instrument'] = [
         '#type' => 'item',
-        '#markup' => '<p class="text-warning">' . $this->t('This Deployment has no associated Instrument Instance.') . '</p>',
+        '#markup' => '<p class="text-warning">' . $this->t('This Deployment has no associated '.ucfirst($preferred_instrument).' Instance.') . '</p>',
       ];
     }
     else {
@@ -440,7 +442,7 @@ class ViewDeploymentForm extends FormBase {
     //
     $form['instrument_elements'] = [
       '#type' => 'details',
-      '#title' => $this->t('Instrument Container'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Container'),
       '#group' => 'tabs',
     ];
 
@@ -448,7 +450,7 @@ class ViewDeploymentForm extends FormBase {
       // If no instrumentInstance, we cannot fetch elements.
       $form['instrument_elements']['no_instrument_elements'] = [
         '#type' => 'item',
-        '#markup' => '<p class="text-warning">' . $this->t('No Instrument Instance available to show elements.') . '</p>',
+        '#markup' => '<p class="text-warning">' . $this->t('No '.ucfirst($preferred_instrument).' Instance available to show elements.') . '</p>',
       ];
     }
     else {

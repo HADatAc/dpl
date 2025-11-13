@@ -25,6 +25,8 @@ class AddDeploymentForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     //$form['deployment_name'] = [
     //  '#type' => 'textfield',
     //  '#title' => $this->t('Name'),
@@ -36,7 +38,7 @@ class AddDeploymentForm extends FormBase {
     ];
     $form['deployment_instrument_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Instance'),
       '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
     ];
     $form['deployment_version'] = [
@@ -93,6 +95,8 @@ class AddDeploymentForm extends FormBase {
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     if ($button_name === 'back') {
       self::backUrl();
       return;
@@ -117,7 +121,7 @@ class AddDeploymentForm extends FormBase {
 
     $finalLabel = 'a deployment';
     if ($platformInstanceName == '' && $instrumentInstanceName != '') {
-      $finalLabel = 'a deployment with instrument ' . $instrumentInstanceName;
+      $finalLabel = 'a deployment with '.lcfirst($preferred_instrument).' ' . $instrumentInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName == '') {
       $finalLabel = 'a deployment @ ' . $platformInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName != '') {

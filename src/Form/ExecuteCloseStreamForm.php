@@ -73,6 +73,9 @@ class ExecuteCloseStreamForm extends FormBase {
     // Globals
     $api = \Drupal::service('rep.api_connector');
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
       \Drupal::messenger()->addError(t("Invalid Deployment execute/close operation."));
@@ -128,17 +131,17 @@ class ExecuteCloseStreamForm extends FormBase {
 
     if ($this->getStream()->method === 'Files') {
       if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
+        $validationError = "Stream is missing both ".$preferred_study." and SEMANTIC DATA DICTIONARY.";
       }
       if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing associated STUDY.";
+        $validationError = "Stream is missing associated ".$preferred_study.".";
       }
       if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
         $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
       }
     } else {
       if (!isset($this->getStream()->study) ) {
-        $validationError = "Stream is missing STUDY.";
+        $validationError = "Stream is missing ".$preferred_study.".";
       }
     }
 
@@ -162,7 +165,7 @@ class ExecuteCloseStreamForm extends FormBase {
     ];
     $form['stream_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];
@@ -416,7 +419,7 @@ class ExecuteCloseStreamForm extends FormBase {
           }
         }
       }
-      
+
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;

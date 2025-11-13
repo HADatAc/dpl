@@ -122,7 +122,7 @@ class DPLSelectForm extends FormBase {
     $this->single_class_name = "";
     $this->plural_class_name = "";
 
-    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     switch ($this->element_type) {

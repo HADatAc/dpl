@@ -76,7 +76,7 @@ class DPLListForm extends FormBase {
     // RETRIEVE ELEMENTS
     $this->setList(ListKeywordPage::exec($elementtype, $keyword, $page, $pagesize));
 
-    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $class_name = "";

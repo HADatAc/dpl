@@ -104,7 +104,7 @@ class DPLSearchForm extends FormBase {
       $this->setPageSize((int)$pathElements[6]);
     }
 
-    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
 
     $form['element_icons'] = [
@@ -121,8 +121,8 @@ class DPLSearchForm extends FormBase {
 $element_types = [
   'platform' => ['label' => 'Platform', 'image' => 'white/platform_placeholder.png'],
   'platforminstance' => ['label' => 'Platform Instances', 'image' => 'white/platform_instance_placeholder.png'],
-  'instrumentinstance' => ['label' => 'Instrument Instances', 'image' => 'white/instrument_instance_placeholder.png'],
-  'componentinstance' => ['label' => 'Component Instances', 'image' => 'white/component_instance_placeholder.png'],
+  'instrumentinstance' => ['label' => ucfirst($preferred_instrument).' Instances', 'image' => 'white/instrument_instance_placeholder.png'],
+  'componentinstance' => ['label' => ucfirst($preferred_component).' Instances', 'image' => 'white/component_instance_placeholder.png'],
   'deployment' => ['label' => 'Deployments', 'image' => 'white/deployment_placeholder.png'],
   'stream' => ['label' => 'Message Streams', 'image' => 'white/message_stream_placeholder.png'],
   'stream2' => ['label' => 'File Streams', 'image' => 'white/datafile_stream_placeholder.png'],

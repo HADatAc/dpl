@@ -35,6 +35,9 @@ class AddStreamForm extends FormBase {
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     // 1) Inicializa “topics” no form_state.
     if ($form_state->has('topics')) {
       $topics = $form_state->get('topics');
@@ -152,7 +155,7 @@ class AddStreamForm extends FormBase {
     // Study autocomplete.
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#autocomplete_route_name' => 'std.study_autocomplete',
     ];
     // Version (fixo) e Description.

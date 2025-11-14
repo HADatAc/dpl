@@ -55,6 +55,9 @@ class EditStreamForm extends FormBase {
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     // 1) Load the existing Stream via API.
     $api = \Drupal::service('rep.api_connector');
     $decodedUri = base64_decode($streamuri);
@@ -199,7 +202,7 @@ class EditStreamForm extends FormBase {
     // Study autocomplete field.
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#autocomplete_route_name' => 'std.study_autocomplete',
       '#default_value' => Utils::fieldToAutocomplete(
         $this->stream->studyUri,

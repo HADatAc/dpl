@@ -503,10 +503,7 @@ class AddStreamForm extends FormBase {
       }
     }
 
-    // dpm($stream);return false;
-
     try {
-      dpm($stream);return false;
       \Drupal::service('rep.api_connector')
         ->elementAdd('stream', json_encode($stream, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
@@ -578,7 +575,6 @@ class AddStreamForm extends FormBase {
     $separator = '<div class="w-100"></div>';
 
     foreach ($topics as $delta => $topic) {
-      // dpm($topic);
       $form_row = [
         'topic' => [
           'top' => [

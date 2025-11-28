@@ -15,7 +15,7 @@ use Drupal\rep\Vocabulary\HASCO;
  * Provides a form to create a Stream entity with two dynamic tabs:
  * - File-Method Properties (only when method = 'files')
  * - Message-Method Properties (only when method = 'messages')
- * Adds dynamic “Topics” functionality in the Messages tab, mirroring EditStreamForm.
+ * Adds dynamic "Topics" functionality in the Messages tab, mirroring EditStreamForm.
  */
 class AddStreamForm extends FormBase {
 
@@ -30,7 +30,7 @@ class AddStreamForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // Anexa bibliotecas de tabs e estados.
+    // Attach tabs and states libraries.
     $form['#attached']['library'][] = 'dpl/dpl_onlytabs';
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
@@ -38,7 +38,7 @@ class AddStreamForm extends FormBase {
     // Study Prefered name
     $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
 
-    // 1) Inicializa “topics” no form_state.
+    // 1) Initializes "topics" in form_state.
     if ($form_state->has('topics')) {
       $topics = $form_state->get('topics');
     }
@@ -51,9 +51,9 @@ class AddStreamForm extends FormBase {
       $form_state->set('topics', $topics);
     }
 
-    // 2) Recupera “selected_method” salvo em form_state ou, se não houver,
-    //    pega o valor vindo de getValue('stream_method'). Se nenhuma existir,
-    //    usa 'files' como padrão.
+    // 2) Recovers "selected_method" saved in form_state or, if not,
+    //    gets the value from getValue('stream_method'). If none exists,
+    //    uses 'files' as default.
     if ($form_state->hasValue('stream_method')) {
       $method = $form_state->getValue('stream_method');
     }
@@ -63,10 +63,23 @@ class AddStreamForm extends FormBase {
     else {
       $method = 'files';
     }
-    // Salva de volta para o próximo rebuild.
+    // Saves back for next rebuild.
     $form_state->set('selected_method', $method);
 
-    // 3) Contêiner AJAX que envolve as três abas.
+    // 2b) Recovers "selected_protocol" for field visibility control.
+    if ($form_state->hasValue('stream_protocol')) {
+      $protocol = $form_state->getValue('stream_protocol');
+    }
+    elseif ($form_state->has('selected_protocol')) {
+      $protocol = $form_state->get('selected_protocol');
+    }
+    else {
+      $protocol = 'MQTT';
+    }
+    // Saves back for next rebuild.
+    $form_state->set('selected_protocol', $protocol);
+
+    // 3) AJAX container that wraps the three tabs.
     $form['tabs'] = [
       '#type' => 'container',
       '#prefix' => '<div id="method-properties-wrapper">',
@@ -74,58 +87,56 @@ class AddStreamForm extends FormBase {
       '#attributes' => ['class' => ['tabs']],
     ];
 
-    // 4) Links de navegação das abas.
+    // 4) Navigation links for tabs.
     $form['tabs']['tab_links'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['nav', 'nav-tabs']],
     ];
-    // Aba 1: Basic Properties (sempre visível).
+    // Tab 1: Basic Properties (active when method != messages).
     $form['tabs']['tab_links']['basic'] = [
       '#type' => 'html_tag',
       '#tag' => 'li',
       '#attributes' => ['class' => ['nav-item']],
-      '#value' => '<a class="nav-link active" data-toggle="tab" href="#edit-tab1">'
-        . $this->t('Basic Properties') .
+      '#value' => '<a class="nav-link' . ($method !== 'messages' ? ' active' : '') . '" data-toggle="tab" href="#edit-tab1">' .
+        $this->t('Basic Properties') .
         '</a>',
     ];
-    // Aba 2: File-Method (só se $method === 'files').
+    // Tab 2: File-Method (only if $method === 'files').
     $form['tabs']['tab_links']['file'] = [
       '#type'   => 'html_tag',
       '#tag'    => 'li',
       '#access' => ($method === 'files'),
       '#attributes' => ['class' => ['nav-item']],
-      '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab2">'
-        . $this->t('File-Method Properties') .
+      '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab2">' .
+        $this->t('File-Method Properties') .
         '</a>',
     ];
-    // Aba 3: Message-Method (só se $method === 'messages').
+    // Tab 3: Message-Method (only if $method === 'messages').
     $form['tabs']['tab_links']['message'] = [
       '#type'   => 'html_tag',
       '#tag'    => 'li',
       '#access' => ($method === 'messages'),
       '#attributes' => ['class' => ['nav-item']],
-      '#value' => '<a class="nav-link" data-toggle="tab" href="#edit-tab3">'
-        . $this->t('Message-Method Properties') .
+      '#value' => '<a class="nav-link' . ($method === 'messages' ? ' active' : '') . '" data-toggle="tab" href="#edit-tab3">' .
+        $this->t('Message-Method Properties') .
         '</a>',
     ];
 
-    // 5) Contêiner de conteúdo das abas.
+    // 5) Content container for tabs.
     $form['tabs']['tab_content'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['tab-content']],
     ];
 
-    //
-    // === ABA 1: Basic Properties ===
-    //
+    // === Tab 1: Basic Properties ===
     $form['tabs']['tab_content']['tab1'] = [
       '#type' => 'container',
       '#attributes' => [
-        'class' => ['tab-pane', 'active', 'p-3', 'border', 'border-light'],
+        'class' => array_merge(['tab-pane', 'p-3', 'border', 'border-light'], $method !== 'messages' ? ['active'] : []),
         'id'    => 'edit-tab1',
       ],
     ];
-    // Select “Method” com AJAX para rebuild das abas.
+    // Select "Method" with AJAX for tab rebuild.
     $form['tabs']['tab_content']['tab1']['stream_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Method'),
@@ -157,6 +168,7 @@ class AddStreamForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t($preferred_study),
       '#autocomplete_route_name' => 'std.study_autocomplete',
+      '#required' => TRUE,
     ];
     // Version (fixo) e Description.
     $form['tabs']['tab_content']['tab1']['stream_version'] = [
@@ -170,9 +182,7 @@ class AddStreamForm extends FormBase {
       '#title' => $this->t('Description'),
     ];
 
-    //
-    // === ABA 2: File-Method Properties ===
-    //
+    // === Tab 2: File-Method Properties ===
     $form['tabs']['tab_content']['tab2'] = [
       '#type'   => 'container',
       '#access' => ($method === 'files'),
@@ -213,49 +223,81 @@ class AddStreamForm extends FormBase {
       // '#required' => ($method === 'files'),
     ];
 
-    //
-    // === ABA 3: Message-Method Properties ===
-    //
+    // === Tab 3: Message-Method Properties ===
     $form['tabs']['tab_content']['tab3'] = [
       '#type'   => 'container',
       '#access' => ($method === 'messages'),
       '#attributes' => [
-        'class' => ['tab-pane', 'p-3', 'border', 'border-light'],
+        'class' => array_merge(['tab-pane', 'p-3', 'border', 'border-light'], $method === 'messages' ? ['active'] : []),
         'id'    => 'edit-tab3',
       ],
     ];
-    // Protocol select.
+    // Protocol select with AJAX.
     $form['tabs']['tab_content']['tab3']['stream_protocol'] = [
       '#type' => 'select',
       '#title' => $this->t('Protocol'),
-      '#options' => ['MQTT' => 'MQTT', 'HTML' => 'HTML', 'ROS' => 'ROS'],
-      '#default_value' => 'MQTT',
+      '#options' => [
+        'MQTT' => 'MQTT',
+        'HTML' => 'HTML',
+        'ROS' => 'ROS',
+        'RestFULL' => 'RestFULL',
+        'OPC-UA' => 'OPC-UA',
+      ],
+      '#default_value' => $protocol,
+      '#required' => ($method === 'messages'),
+      '#ajax' => [
+        'callback' => '::updateProtocolProperties',
+        'event'    => 'change',
+        'wrapper'  => 'method-properties-wrapper',
+      ],
+    ];
+    // IP/URL field.
+    $form['tabs']['tab_content']['tab3']['stream_ip'] = [
+      '#type' => 'textfield',
+      '#title' => ($protocol === 'RestFULL') ? $this->t('URL') : $this->t('IP'),
       '#required' => ($method === 'messages'),
     ];
-    // IP, Port, Archive ID.
-    foreach ([
-      'stream_ip'         => $this->t('IP'),
-      'stream_port'       => $this->t('Port'),
-      // 'stream_header'     => $this->t('Header'),
-      'stream_archive_id' => $this->t('Archive ID'),
-    ] as $field => $label) {
-      $form['tabs']['tab_content']['tab3'][$field] = [
-        '#type' => 'textfield',
-        '#title' => $label,
-        '#required' => ($method === 'messages'),
-      ];
-    }
-
-    //
-    // === SEÇÃO DE TOPICS (apenas se method = messages) ===
-    //
-    $form['tabs']['tab_content']['tab3']['topics_title'] = [
-      '#type' => 'markup',
-      '#markup' => '<h4 class="mt-4">' . $this->t('Topics') . '</h4>',
-      '#access' => ($method === 'messages'),
+    // Port field (hidden for RestFULL).
+    $form['tabs']['tab_content']['tab3']['stream_port'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Port'),
+      '#required' => ($method === 'messages' && $protocol !== 'RestFULL'),
+      '#access' => ($protocol !== 'RestFULL'),
+    ];
+    // Archive ID.
+    $form['tabs']['tab_content']['tab3']['stream_archive_id'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Archive ID'),
+      '#required' => ($method === 'messages'),
     ];
 
-    // Container que será substituído via AJAX.
+    // Deployment and Semantic Data Dictionary (only for RestFULL).
+    $form['tabs']['tab_content']['tab3']['stream_deployment_restfull'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Deployment'),
+      '#autocomplete_route_name' => 'std.deployment_autocomplete',
+      '#access' => ($method === 'messages' && $protocol === 'RestFULL'),
+      '#required' => ($method === 'messages' && $protocol === 'RestFULL'),
+    ];
+    $form['tabs']['tab_content']['tab3']['stream_semanticdatadictionary_restfull'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Semantic Data Dictionary'),
+      '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
+      '#access' => ($method === 'messages' && $protocol === 'RestFULL'),
+      '#required' => ($method === 'messages' && $protocol === 'RestFULL'),
+    ];
+
+    //
+    // === TOPICS SECTION (only if method = messages and protocol != RestFULL) ===
+    //
+    $topicsTitle = ($protocol === 'OPC-UA') ? $this->t('Objects') : $this->t('Topics');
+    $form['tabs']['tab_content']['tab3']['topics_title'] = [
+      '#type' => 'markup',
+      '#markup' => '<h4 class="mt-4">' . $topicsTitle . '</h4>',
+      '#access' => ($method === 'messages' && $protocol !== 'RestFULL'),
+    ];
+
+    // Container that will be replaced via AJAX (hidden for RestFULL).
     $form['tabs']['tab_content']['tab3']['topics'] = [
       '#type' => 'container',
       '#attributes' => [
@@ -265,17 +307,18 @@ class AddStreamForm extends FormBase {
           'border', 'border-secondary', 'rounded',
         ],
       ],
-      '#access'   => ($method === 'messages'),
-      '#attached' => [],  // Garante que não seja null no AJAX response.
+      '#access'   => ($method === 'messages' && $protocol !== 'RestFULL'),
+      '#attached' => [],  // Ensures it's not null in the AJAX response.
     ];
 
     $separator = '<div class="w-100"></div>';
 
-    // Cabeçalho da tabela de Topics.
+    // Table header for Topics (label changes to OPC-UA).
+    $topicLabel = ($protocol === 'OPC-UA') ? $this->t('Object') : $this->t('Topic Name');
     $form['tabs']['tab_content']['tab3']['topics']['header'] = [
       '#type' => 'markup',
       '#markup' =>
-        '<div class="p-2 col bg-secondary text-white border border-white">' . $this->t('Topic Name') . '</div>' .
+        '<div class="p-2 col bg-secondary text-white border border-white">' . $topicLabel . '</div>' .
         '<div class="p-2 col bg-secondary text-white border border-white">' . $this->t('Deployment') . '</div>' .
         '<div class="p-2 col bg-secondary text-white border border-white">' . $this->t('Semantic Data Dictionary') . '</div>' .
         '<div class="p-2 col bg-secondary text-white border border-white">' . $this->t('Cell Scope') . '</div>' .
@@ -283,16 +326,16 @@ class AddStreamForm extends FormBase {
         $separator,
     ];
 
-    // Linhas existentes de “topics”.
+    // Existing "topics" rows.
     $form['tabs']['tab_content']['tab3']['topics']['rows'] = $this->renderTopicRows($topics);
 
-    // Espaço extra.
+    // Extra space.
     $form['tabs']['tab_content']['tab3']['topics']['space_3'] = [
       '#type' => 'markup',
       '#markup' => $separator,
     ];
 
-    // Botão “New Topic” (AJAX).
+    // "New Topic" button (AJAX).
     $form['tabs']['tab_content']['tab3']['topics']['actions'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['col-12', 'mb-3']],
@@ -311,7 +354,7 @@ class AddStreamForm extends FormBase {
       '#submit' => ['::submitAjaxAddTopic'],
     ];
 
-    // “Header” extra (apenas em mensagens).
+    // "Header" extra (only for messages).
     $form['tabs']['tab_content']['tab3']['stream_header'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Header'),
@@ -322,7 +365,7 @@ class AddStreamForm extends FormBase {
     ];
 
     //
-    // === BOTÕES FINAIS: Save / Cancel ===
+    // === FINAL BUTTONS: Save / Cancel ===
     //
     $form['save_submit'] = [
       '#type' => 'submit',
@@ -342,7 +385,7 @@ class AddStreamForm extends FormBase {
       '#markup' => '<br><br>',
     ];
 
-    // Persiste o array de topics para próximos rebuilds.
+    // Persist the array of topics for future rebuilds.
     $form_state->set('topics', $topics);
 
     return $form;
@@ -351,9 +394,14 @@ class AddStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    *
-   * Valida campos obrigatórios conforme método selecionado.
+   * Validates mandatory fields according to the selected method.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+    
+    $study = $form_state->getValue('stream_study');
+    if (empty($study)) {
+      $form_state->setErrorByName('stream_study', $this->t('Study is mandatory.'));
+    }
     $method = $form_state->getValue('stream_method');
     if ($method === 'files') {
       foreach ([
@@ -365,15 +413,20 @@ class AddStreamForm extends FormBase {
       }
     }
     elseif ($method === 'messages') {
+      $protocol = $form_state->getValue('stream_protocol');
+      // Basic validation for all protocols.
       foreach ([
         'stream_protocol'    => $this->t('Protocol'),
         'stream_ip'          => $this->t('IP'),
-        'stream_port'        => $this->t('Port'),
         'stream_archive_id'  => $this->t('Archive ID'),
       ] as $key => $label) {
         if (empty($form_state->getValue($key))) {
           $form_state->setErrorByName($key, $this->t('@label is mandatory for Messages method.', ['@label' => $label]));
         }
+      }
+      // Port is not mandatory for RestFULL.
+      if ($protocol !== 'RestFULL' && empty($form_state->getValue('stream_port'))) {
+        $form_state->setErrorByName('stream_port', $this->t('Port is mandatory for Messages method.'));
       }
     }
   }
@@ -381,7 +434,7 @@ class AddStreamForm extends FormBase {
   /**
    * {@inheritdoc}
    *
-   * Submit handler final: salva Stream ou cancela.
+   * Submit handler final: saves Stream or cancels.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $trigger = $form_state->getTriggeringElement()['#name'];
@@ -391,7 +444,7 @@ class AddStreamForm extends FormBase {
       return;
     }
 
-    // Recupera e atualiza valores de “topics” antes de montar o payload.
+    // Retrieves and updates "topics" values before building the payload.
     $topics = $form_state->get('topics') ?: [];
     $input = $form_state->getUserInput();
     foreach ($topics as $delta => &$topicItem) {
@@ -402,7 +455,7 @@ class AddStreamForm extends FormBase {
     }
     unset($topicItem);
 
-    // Monta data/hora e demais campos.
+    // Builds date/time and other fields.
     $now = new \DateTime();
     $timestamp = $now->format('Y-m-d\TH:i:s') . '.' . $now->format('v') . $now->format('O');
     $deployment = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment'));
@@ -444,15 +497,17 @@ class AddStreamForm extends FormBase {
       $stream['datasetPattern']    = '';
       $stream['cellScopeUri']      = [];
       $stream['cellScopeName']     = [];
+      if ($stream['messageProtocol'] === 'RestFULL') {
+        $stream['deploymentUri']             = Utils::uriFromAutocomplete($form_state->getValue('stream_deployment_restfull'));
+        $stream['semanticDataDictionaryUri'] = Utils::uriFromAutocomplete($form_state->getValue('stream_semanticdatadictionary_restfull'));
+      }
     }
-
-    // dpm($stream);return false;
 
     try {
       \Drupal::service('rep.api_connector')
         ->elementAdd('stream', json_encode($stream, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
-      // Anexa “topics” só se existir ao menos um.
+      // Attach "topics" only if at least one exists.
       if (!empty($topics)) {
 
         foreach ($topics as $topicItem) {
@@ -482,14 +537,21 @@ class AddStreamForm extends FormBase {
       \Drupal::messenger()->addError($this->t('Error adding Stream: @msg', ['@msg' => $e->getMessage()]));
     }
 
-    // Redireciona de volta.
+    // Redirect back.
     $this->backUrl();
   }
 
   /**
-   * AJAX callback para rebuild das abas quando “Method” muda.
+   * AJAX callback for rebuild tabs when "Method" changes.
    */
   public function updateMethodProperties(array &$form, FormStateInterface $form_state) {
+    return $form['tabs'];
+  }
+
+  /**
+   * AJAX callback for rebuild when "Protocol" changes.
+   */
+  public function updateProtocolProperties(array &$form, FormStateInterface $form_state) {
     return $form['tabs'];
   }
 
@@ -500,20 +562,19 @@ class AddStreamForm extends FormBase {
    ******************************/
 
   /**
-   * Renders each Topic row no container de tópicos.
+   * Renders each Topic row in the topics container.
    *
    * @param array $topics
-   *   Array de tópicos salvo em form_state.
+   *   Array of topics saved in form_state.
    *
    * @return array
-   *   Render array das linhas de tópicos.
+   *   Render array of topic rows.
    */
   protected function renderTopicRows(array $topics) {
     $form_rows = [];
     $separator = '<div class="w-100"></div>';
 
     foreach ($topics as $delta => $topic) {
-      // dpm($topic);
       $form_row = [
         'topic' => [
           'top' => [
@@ -614,12 +675,12 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * AJAX submit handler para adicionar nova linha de topic.
+   * AJAX submit handler for adding new topic row.
    */
   public function submitAjaxAddTopic(array &$form, FormStateInterface $form_state) {
     $topics = $form_state->get('topics') ?: [];
 
-    // Preserva valores atuais antes de adicionar nova linha.
+    // Preserves current values before adding new row.
     $input = $form_state->getUserInput();
     foreach ($topics as $delta => &$topicItem) {
       $topicItem['topic']      = $input['topic_topic_' . $delta]      ?? $topicItem['topic'];
@@ -629,7 +690,7 @@ class AddStreamForm extends FormBase {
     }
     unset($topicItem);
 
-    // Anexa uma linha vazia ao array.
+    // Appends an empty row to the array.
     $topics[] = [
       'topic'      => '',
       'deployment' => '',
@@ -642,7 +703,7 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * AJAX callback: retorna o container “topics” (atualizado).
+   * AJAX callback: returns the "topics" container (updated).
    */
   public function ajaxAddTopicCallback(array &$form, FormStateInterface $form_state) {
     $build = $form['tabs']['tab_content']['tab3']['topics'];
@@ -653,12 +714,12 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * AJAX submit handler para remover uma linha de topic.
+   * AJAX submit handler for removing a topic row.
    */
   public function submitAjaxRemoveTopic(array &$form, FormStateInterface $form_state) {
     $topics = $form_state->get('topics') ?: [];
 
-    // Preserva valores, exceto o que será removido.
+    // Preserves values, except the one being removed.
     $input = $form_state->getUserInput();
     foreach ($topics as $delta => &$topicItem) {
       $topicItem['topic']      = $input['topic_topic_' . $delta]      ?? $topicItem['topic'];
@@ -683,7 +744,7 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * AJAX callback: retorna o container “topics” após remoção.
+   * AJAX callback: returns the "topics" container after removal.
    */
   public function ajaxRemoveTopicCallback(array &$form, FormStateInterface $form_state) {
     $build = $form['tabs']['tab_content']['tab3']['topics'];
@@ -694,7 +755,7 @@ class AddStreamForm extends FormBase {
   }
 
   /**
-   * Redirect helper para a rota manage_streams_route.
+   * Redirect helper to the manage_streams_route.
    */
   public function backUrl() {
     // $url = Url::fromRoute('dpl.manage_streams_route');

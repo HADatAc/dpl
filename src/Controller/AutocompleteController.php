@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Component\Utility\Xss;
 use Drupal\rep\Vocabulary\VSTOI;
+use Drupal\rep\Utils;
 
 /**
  * Class AutocompleteController
@@ -84,7 +85,9 @@ class AutocompleteController extends ControllerBase{
           && $element->label !== ''
           && $element->uri !== '') {
         $results[] = [
-          'value' => $element->label . ' [' . $element->uri . ']',
+          // 'value' => $element->label . ' [' . $element->uri . ']',
+          // 'label' => $element->label,
+          'value' => UTILS::trimAutoCompleteString($element->label, $element->uri),
           'label' => $element->label,
         ];
       }

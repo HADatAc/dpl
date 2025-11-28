@@ -98,42 +98,53 @@ class AddInstanceForm extends FormBase {
     //   '#title' => $this->t('Type'),
     //   '#autocomplete_route_name' => $autocomplete,
     // ];
-    $form['instance_type'] = [
-      'top' => [
-        '#type' => 'markup',
-        '#markup' => '<div class="pt-3 col border border-white">',
-      ],
-      'main' => [
-        '#type' => 'textfield',
-        '#title' => $treename,
-        '#name' => 'instance_type',
-        '#default_value' => '',
-        '#id' => 'instance_type',
-        '#parents' => ['instance_type'],
-        '#attributes' => [
-          'class' => ['open-tree-modal'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => json_encode(['width' => 800]),
-          'data-url' => Url::fromRoute('rep.tree_form', [
-            'mode' => 'modal',
-            'elementtype' => $treepath,
-          ], ['query' => ['field_id' => 'instance_type']])->toString(),
-          'data-field-id' => 'instance_type',
-          'data-elementtype' => $treepath,
-          'autocomplete' => 'off',
+    if ($elementtype != 'componentinstance')
+    {
+      $form['instance_type'] = [
+        'top' => [
+          '#type' => 'markup',
+          '#markup' => '<div class="pt-3 col border border-white">',
         ],
-      ],
-      'bottom' => [
-        '#type' => 'markup',
-        '#markup' => '</div>',
-      ],
-    ];
-    $form['instance_type']['main'] += [
-      '#maxlength' => 999,
-    ];
+        'main' => [
+          '#type' => 'textfield',
+          '#title' => $treename,
+          '#name' => 'instance_type',
+          '#default_value' => '',
+          '#id' => 'instance_type',
+          '#parents' => ['instance_type'],
+          '#attributes' => [
+            'class' => ['open-tree-modal'],
+            'data-dialog-type' => 'modal',
+            'data-dialog-options' => json_encode(['width' => 800]),
+            'data-url' => Url::fromRoute('rep.tree_form', [
+              'mode' => 'modal',
+              'elementtype' => $treepath,
+            ], ['query' => ['field_id' => 'instance_type']])->toString(),
+            'data-field-id' => 'instance_type',
+            'data-elementtype' => $treepath,
+            'autocomplete' => 'off',
+          ],
+        ],
+        'bottom' => [
+          '#type' => 'markup',
+          '#markup' => '</div>',
+        ],
+      ];
+      $form['instance_type']['main'] += [
+        '#maxlength' => 999,
+      ];
+    } else {
+      // Autocomplete
+      $form['instance_type'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Component'),
+        '#default_value' => '',
+        '#autocomplete_route_name' => 'sir.containerslot_component_autocomplete',
+      ];
+    }
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('ID Number'),
+      '#title' => $this->t('Serial Number'),
     ];
     $form['instance_acquisition_date'] = [
       '#type' => 'date',
@@ -288,7 +299,7 @@ class AddInstanceForm extends FormBase {
     }
 
     // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
-    $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number (" . $form_state->getValue('instance_serial_number').")";
+    $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #Serial Number (" . $form_state->getValue('instance_serial_number').")";
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();

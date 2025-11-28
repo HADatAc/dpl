@@ -162,7 +162,7 @@ class EditInstanceForm extends FormBase {
     ];
     $form['instance_serial_number'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('ID Number'),
+      '#title' => $this->t('Serial Number'),
       '#default_value' => $this->getElement()->hasSerialNumber,
     ];
     $form['instance_acquisition_date'] = [
@@ -312,8 +312,7 @@ class EditInstanceForm extends FormBase {
       $hascoTypeUri = $this->getElement()->hascoTypeUri;
     }
 
-        $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #ID Number (" . $form_state->getValue('instance_serial_number').")";
-    // $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with ID# " . $form_state->getValue('instance_serial_number');
+        $label = Utils::labelFromAutocomplete($form_state->getValue('instance_type')) . " with #Serial Number (" . $form_state->getValue('instance_serial_number').")";
 
     try{
       $useremail = \Drupal::currentUser()->getEmail();

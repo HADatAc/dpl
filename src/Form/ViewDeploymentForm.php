@@ -213,7 +213,7 @@ class ViewDeploymentForm extends FormBase {
       $form['platform_instance']['platform_type'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Type URI'),
-        '#default_value' => UTILS::fieldToAutocomplete($platform->typeUri, $platform->typeLabel),
+        '#default_value' => Utils::trimPreserveBracket(Utils::fieldToAutocomplete($platform->typeUri, $platform->typeLabel), 127),
         '#disabled' => TRUE,
       ];
 
@@ -382,7 +382,7 @@ class ViewDeploymentForm extends FormBase {
       $form['instrument_instance']['instrument_type'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Type URI'),
-        '#default_value' => UTILS::fieldToAutocomplete($instrument->typeUri, $instrument->typeLabel),
+        '#default_value' => Utils::trimPreserveBracket(Utils::fieldToAutocomplete($instrument->typeUri, $instrument->typeLabel), 127),
         '#disabled' => TRUE,
       ];
 

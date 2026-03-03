@@ -53,18 +53,24 @@ class EditDeploymentForm extends FormBase {
     if (isset($this->getDeployment()->platformInstance) &&
         isset($this->getDeployment()->platformInstance->uri) &&
         isset($this->getDeployment()->platformInstance->label)) {
-      $platformInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platformInstance->uri,
-        $this->getDeployment()->platformInstance->label
+      $platformInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->platformInstance->uri,
+          $this->getDeployment()->platformInstance->label
+        ),
+        127
       );
     }
     $instrumentInstanceLabel = ' ';
     if (isset($this->getDeployment()->instrumentInstance) &&
         isset($this->getDeployment()->instrumentInstance->uri) &&
         isset($this->getDeployment()->instrumentInstance->label)) {
-      $instrumentInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrumentInstance->uri,
-        $this->getDeployment()->instrumentInstance->label
+      $instrumentInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->instrumentInstance->uri,
+          $this->getDeployment()->instrumentInstance->label
+        ),
+        127
       );
     }
 

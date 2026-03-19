@@ -79,7 +79,7 @@
     //   });
     // }
 
-    // — Handlers existentes —
+    // - Handlers existentes -
 
     function handleAction(selector, logLabel, reloadOnSuccess = true) {
       $(document).on('click', selector, function (e) {

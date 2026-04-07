@@ -106,6 +106,13 @@ class ManageDeploymentsForm extends FormBase {
     $this->setManagerEmail($user->getEmail());
     $this->setManagerName($user->getAccountName());
 
+    // View mode (table/card)
+    $session = \Drupal::request()->getSession();
+    $view_type = $form_state->get('view_type') ?? $session->get('dpl_select_view_type') ?? 'table';
+    $form_state->set('view_type', $view_type);
+    $table_active_class = ($view_type === 'table') ? ['selected-button'] : [];
+    $card_active_class = ($view_type === 'card') ? ['selected-button'] : [];
+
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setState($state);
 
@@ -160,6 +167,38 @@ class ManageDeploymentsForm extends FormBase {
     $form['page_subtitle'] = [
       '#type' => 'item',
       '#title' => $this->t('<h4>Deployments maintained by <font color="DarkGreen">' . $this->getManagerName() . ' (' . $this->getManagerEmail() . ')</font></h4>'),
+    ];
+
+    // View toggle (Table / Card)
+    $form['view_toggle'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['view-toggle', 'd-flex', 'justify-content-end']],
+    ];
+
+    $form['view_toggle']['table_view'] = [
+      '#type' => 'submit',
+      '#value' => '',
+      '#name' => 'view_table',
+      '#attributes' => [
+        'style' => 'padding: 20px;',
+        'class' => array_merge(['table-view-button', 'fa-xl', 'mx-1'], $table_active_class),
+        'title' => $this->t('Table View'),
+      ],
+      '#submit' => ['::viewTableSubmit'],
+      '#limit_validation_errors' => [],
+    ];
+
+    $form['view_toggle']['card_view'] = [
+      '#type' => 'submit',
+      '#value' => '',
+      '#name' => 'view_card',
+      '#attributes' => [
+        'style' => 'padding: 20px;',
+        'class' => array_merge(['card-view-button', 'fa-xl'], $card_active_class),
+        'title' => $this->t('Card View'),
+      ],
+      '#submit' => ['::viewCardSubmit'],
+      '#limit_validation_errors' => [],
     ];
 
     $form['pills_card'] = [
@@ -227,89 +266,250 @@ class ManageDeploymentsForm extends FormBase {
       '#weight' => -10,
     ];
 
-    if ($this->getState() == 'design') {
-      $form['card']['card_body']['actions']['add_element'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Create Deployment'),
-        '#name' => 'add_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],
-        ],
-      ];
-      $form['card']['card_body']['actions']['edit_selected_element'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Edit Selected'),
-        '#name' => 'edit_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
-        ],
-      ];
-      $form['card']['card_body']['actions']['execute_selected_element'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Execute Selected'),
-        '#name' => 'execute_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'play-button', 'me-1'],
-        ],
-      ];
-      $form['card']['card_body']['actions']['delete_selected_element'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Delete Selected'),
-        '#name' => 'delete_element',
-        '#attributes' => [
-          'onclick' => 'if(!confirm("Really Delete?")){return false;}',
-          'class' => ['btn', 'btn-primary', 'delete-element-button', 'me-1']
-        ],
+    if ($view_type === 'table') {
+      if ($this->getState() == 'design') {
+        $form['card']['card_body']['actions']['add_element'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Create Deployment'),
+          '#name' => 'add_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],
+          ],
+        ];
+        $form['card']['card_body']['actions']['edit_selected_element'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Edit Selected'),
+          '#name' => 'edit_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
+          ],
+        ];
+        $form['card']['card_body']['actions']['execute_selected_element'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Execute Selected'),
+          '#name' => 'execute_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'play-button', 'me-1'],
+          ],
+        ];
+        $form['card']['card_body']['actions']['delete_selected_element'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Delete Selected'),
+          '#name' => 'delete_element',
+          '#attributes' => [
+            'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+            'class' => ['btn', 'btn-primary', 'delete-element-button', 'me-1']
+          ],
+        ];
+      }
+
+      if ($this->getState() == 'active') {
+        $form['card']['card_body']['actions']['close_selected'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Close Selected'),
+          '#name' => 'close_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'close-button', 'me-1'],
+            'onclick' => 'return confirm("Are you sure you want to close the Deployment? If you continue, all ACTIVE Streams will also be closed!");',
+          ],
+        ];
+        $form['card']['card_body']['actions']['modify_selected'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Modify Selected'),
+          '#name' => 'modify_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
+          ],
+          '#disabled' => true,
+        ];
+      }
+
+      $form['card']['card_body']['element_table'] = [
+        '#type' => 'tableselect',
+        '#header' => $header,
+        '#options' => $output,
+        '#js_select' => FALSE,
+        '#empty' => t('No deployment has been found'),
+        '#weight' => 0,
       ];
     }
-    if ($this->getState() == 'active') {
-      // $form['card']['card_body']['close_selected'] = [
-      //   '#type' => 'submit',
-      //   '#value' => $this->t('Close Selected'),
-      //   '#name' => 'close_element',
-      //   '#attributes' => [
-      //     'class' => ['btn', 'btn-primary', 'close-button'],
-      //   ],
-      // ];
-      // $form['card']['card_body']['modify_selected'] = [
-      //   '#type' => 'submit',
-      //   '#value' => $this->t('Modify Selected'),
-      //   '#name' => 'modify_element',
-      //   '#attributes' => [
-      //     'class' => ['btn', 'btn-primary', 'edit-element-button'],
-      //   ],
-      // ];
-      // Create the button group container
+    else {
+      // In card view, only keep actions that make sense without row selection.
+      if ($this->getState() == 'design') {
+        $form['card']['card_body']['actions']['add_element'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Create Deployment'),
+          '#name' => 'add_element',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'add-element-button', 'me-1'],
+          ],
+        ];
+      }
 
-      // Move each button into the 'actions' group
-      $form['card']['card_body']['actions']['close_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Close Selected'),
-        '#name' => 'close_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'close-button', 'me-1'],
-          'onclick' => 'return confirm("Are you sure you want to close the Deployment? If you continue, all ACTIVE Streams will also be closed!");',
-        ],
-      ];
-      $form['card']['card_body']['actions']['modify_selected'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Modify Selected'),
-        '#name' => 'modify_element',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'edit-element-button', 'me-1'],
-        ],
-        '#disabled' => true,
+      $placeholder_image = base_path() . \Drupal::service('extension.list.module')->getPath('rep') . '/images/placeholders/deployment_placeholder.png';
+
+      $deployments_by_uri = [];
+      if (is_array($this->getList())) {
+        foreach ($this->getList() as $deployment) {
+          if (is_object($deployment) && !empty($deployment->uri)) {
+            $deployments_by_uri[$deployment->uri] = $deployment;
+          }
+        }
+      }
+
+      $form['card']['card_body']['element_cards_wrapper'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['row', 'mt-3']],
       ];
 
+      foreach ($output as $uri => $row) {
+        $safe_key = md5($uri);
+
+        $deployment_obj = $deployments_by_uri[$uri] ?? NULL;
+        $header_text = '';
+        if ($deployment_obj && !empty($deployment_obj->label)) {
+          $header_text = (string) $deployment_obj->label;
+        }
+        if ($header_text === '') {
+          $header_text = strip_tags($row['element_uri'] ?? $uri);
+        }
+
+        $image_uri = $placeholder_image;
+        if ($deployment_obj && !empty($deployment_obj->uri)) {
+          $image_uri = Utils::getAPIImage($deployment_obj->uri, $deployment_obj->hasImageUri ?? NULL, $placeholder_image);
+        }
+
+        $content = '';
+        foreach ($header as $column_key => $column_label) {
+          $label = (string) $column_label;
+          $value = $row[$column_key] ?? '';
+          $content .= '<p class="mb-0 pb-0"><strong>' . $label . ':</strong> ' . $value . '</p>';
+        }
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['col-md-4', 'mt-3']],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['card', 'mb-4']],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['header'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'style' => 'margin-bottom:0!important;',
+            'class' => ['card-header'],
+          ],
+          '#markup' => '<h5 class="mb-0">' . $header_text . '</h5>',
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['content_wrapper'] = [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['row']],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['content_wrapper']['image'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => ['col-md-5', 'text-align-center'],
+            'style' => 'text-align:center!important;margin-bottom:0px;',
+          ],
+          'image' => [
+            '#type' => 'html_tag',
+            '#tag' => 'img',
+            '#attributes' => [
+              'src' => $image_uri,
+              'alt' => $header_text,
+              'style' => 'max-width: 70%; height: auto;',
+              'class' => ['img-fluid', 'mb-3', 'border', 'border-5', 'rounded', 'rounded-5', 'p-3'],
+            ],
+          ],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['content_wrapper']['content'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => ['col-md-7', 'card-body', 'justify-content-center'],
+            'style' => 'margin-bottom:0!important;',
+          ],
+          'text' => [
+            '#markup' => $content,
+          ],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'style' => 'margin-bottom:0!important;',
+            'class' => ['d-flex', 'card-footer', 'justify-content-end'],
+          ],
+        ];
+
+        $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer']['actions'] = [
+          '#type' => 'actions',
+          '#attributes' => [
+            'style' => 'margin-bottom:0!important;',
+            'class' => ['mb-0'],
+          ],
+        ];
+
+        if ($this->getState() == 'design') {
+          $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer']['actions']['edit'] = [
+            '#type' => 'submit',
+            '#value' => $this->t('Edit'),
+            '#name' => 'edit_element_' . $safe_key,
+            '#attributes' => [
+              'class' => ['btn', 'btn-primary', 'btn-sm', 'edit-element-button', 'me-1'],
+            ],
+            '#submit' => ['::editDeploymentSubmit'],
+            '#limit_validation_errors' => [],
+            '#deployment_uri' => $uri,
+          ];
+
+          $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer']['actions']['execute'] = [
+            '#type' => 'submit',
+            '#value' => $this->t('Execute'),
+            '#name' => 'execute_element_' . $safe_key,
+            '#attributes' => [
+              'class' => ['btn', 'btn-primary', 'btn-sm', 'play-button', 'me-1'],
+            ],
+            '#submit' => ['::executeDeploymentSubmit'],
+            '#limit_validation_errors' => [],
+            '#deployment_uri' => $uri,
+          ];
+
+          $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer']['actions']['delete'] = [
+            '#type' => 'submit',
+            '#value' => $this->t('Delete'),
+            '#name' => 'delete_element_' . $safe_key,
+            '#attributes' => [
+              'class' => ['btn', 'btn-danger', 'btn-sm', 'delete-element-button'],
+              'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+            ],
+            '#submit' => ['::deleteDeploymentSubmit'],
+            '#limit_validation_errors' => [],
+            '#deployment_uri' => $uri,
+          ];
+        }
+
+        if ($this->getState() == 'active') {
+          $form['card']['card_body']['element_cards_wrapper'][$safe_key]['card']['footer']['actions']['close'] = [
+            '#type' => 'submit',
+            '#value' => $this->t('Close'),
+            '#name' => 'close_element_' . $safe_key,
+            '#attributes' => [
+              'class' => ['btn', 'btn-primary', 'btn-sm', 'close-button'],
+              'onclick' => 'return confirm("Are you sure you want to close the Deployment? If you continue, all ACTIVE Streams will also be closed!");',
+            ],
+            '#submit' => ['::closeDeploymentSubmit'],
+            '#limit_validation_errors' => [],
+            '#deployment_uri' => $uri,
+          ];
+        }
+      }
     }
-    $form['card']['card_body']['element_table'] = [
-      '#type' => 'tableselect',
-      '#header' => $header,
-      '#options' => $output,
-      '#js_select' => FALSE,
-      '#empty' => t('No deployment has been found'),
-      '#weight' => 0,
-    ];
     $form['card']['card_body']['pager'] = [
       '#theme' => 'list-page',
       '#items' => [
@@ -344,6 +544,104 @@ class ManageDeploymentsForm extends FormBase {
   }
 
   /**
+   * Toggle to Table view.
+   */
+  public function viewTableSubmit(array &$form, FormStateInterface $form_state) {
+    $form_state->set('view_type', 'table');
+    $session = \Drupal::request()->getSession();
+    $session->set('dpl_select_view_type', 'table');
+    $form_state->setRebuild();
+  }
+
+  /**
+   * Toggle to Card view.
+   */
+  public function viewCardSubmit(array &$form, FormStateInterface $form_state) {
+    $form_state->set('view_type', 'card');
+    $session = \Drupal::request()->getSession();
+    $session->set('dpl_select_view_type', 'card');
+    $form_state->setRebuild();
+  }
+
+  /**
+   * Per-card action: Edit.
+   */
+  public function editDeploymentSubmit(array &$form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $deployment_uri = $triggering_element['#deployment_uri'] ?? NULL;
+    if (empty($deployment_uri)) {
+      \Drupal::messenger()->addError($this->t('Missing deployment URI.'));
+      return;
+    }
+
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = \Drupal::request()->getRequestUri();
+    Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
+
+    $form_state->setRedirect('dpl.edit_deployment', ['deploymenturi' => base64_encode($deployment_uri)]);
+  }
+
+  /**
+   * Per-card action: Execute.
+   */
+  public function executeDeploymentSubmit(array &$form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $deployment_uri = $triggering_element['#deployment_uri'] ?? NULL;
+    if (empty($deployment_uri)) {
+      \Drupal::messenger()->addError($this->t('Missing deployment URI.'));
+      return;
+    }
+
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = \Drupal::request()->getRequestUri();
+    Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
+
+    $form_state->setRedirect('dpl.execute_close_deployment', [
+      'mode' => 'execute',
+      'deploymenturi' => base64_encode($deployment_uri),
+    ]);
+  }
+
+  /**
+   * Per-card action: Close.
+   */
+  public function closeDeploymentSubmit(array &$form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $deployment_uri = $triggering_element['#deployment_uri'] ?? NULL;
+    if (empty($deployment_uri)) {
+      \Drupal::messenger()->addError($this->t('Missing deployment URI.'));
+      return;
+    }
+
+    $uid = \Drupal::currentUser()->id();
+    $previousUrl = \Drupal::request()->getRequestUri();
+    Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.execute_close_deployment');
+
+    $form_state->setRedirect('dpl.execute_close_deployment', [
+      'mode' => 'close',
+      'deploymenturi' => base64_encode($deployment_uri),
+    ]);
+  }
+
+  /**
+   * Per-card action: Delete.
+   */
+  public function deleteDeploymentSubmit(array &$form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $deployment_uri = $triggering_element['#deployment_uri'] ?? NULL;
+    if (empty($deployment_uri)) {
+      \Drupal::messenger()->addError($this->t('Missing deployment URI.'));
+      return;
+    }
+
+    $api = \Drupal::service('rep.api_connector');
+    $api->elementDel('deployment', Utils::plainUri($deployment_uri));
+    \Drupal::messenger()->addMessage($this->t('Selected deployment has been deleted successfully.'));
+
+    $form_state->setRebuild();
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
@@ -357,6 +655,9 @@ class ManageDeploymentsForm extends FormBase {
 
     // RETRIEVE SELECTED ROWS, IF ANY
     $selected_rows = $form_state->getValue('element_table');
+    if (!is_array($selected_rows)) {
+      $selected_rows = [];
+    }
     $rows = [];
     foreach ($selected_rows as $index => $selected) {
       if ($selected) {

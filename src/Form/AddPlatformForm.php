@@ -20,9 +20,20 @@ class AddPlatformForm extends FormBase {
   }
 
   /**
+   * Dynamic page title based on preferred platform name.
+   */
+  public static function pageTitle() {
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    return t('Add @platform', ['@platform' => ucfirst($preferred_platform)]);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
 
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -36,7 +47,7 @@ class AddPlatformForm extends FormBase {
       ],
       'main' => [
         '#type' => 'textfield',
-        '#title' => $this->t('Platform Type'),
+        '#title' => $this->t($platform_label . ' Type'),
         '#name' => 'platform_type',
         '#default_value' => '',
         '#id' => 'platform_type',
@@ -119,6 +130,8 @@ class AddPlatformForm extends FormBase {
     $submitted_values = $form_state->cleanValues()->getValues();
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
 
     if ($button_name === 'back') {
       self::backUrl();
@@ -140,12 +153,12 @@ class AddPlatformForm extends FormBase {
 
       $api = \Drupal::service('rep.api_connector');
       $api->elementAdd('platform',$platformJson);
-      \Drupal::messenger()->addMessage(t("Platform has been added successfully."));
+      \Drupal::messenger()->addMessage(t('@platform has been added successfully.', ['@platform' => $platform_label]));
       self::backUrl();
       return;
 
     }catch(\Exception $e){
-      \Drupal::messenger()->addMessage(t("An error occurred while adding platform: ".$e->getMessage()));
+      \Drupal::messenger()->addMessage(t('An error occurred while adding @platform: @error', ['@platform' => lcfirst($platform_label), '@error' => $e->getMessage()]));
       self::backUrl();
       return;
  }

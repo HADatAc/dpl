@@ -45,6 +45,9 @@ class ExecuteCloseDeploymentForm extends FormBase {
     $api = \Drupal::service('rep.api_connector');
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
+    $instrument_label = ucfirst($preferred_instrument);
 
     // CHECK MODE
     if (($mode == NULL) ||
@@ -94,13 +97,13 @@ class ExecuteCloseDeploymentForm extends FormBase {
 
     $validationError = NULL;
     if (!isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing both PLATFORM instance and INSTRUMENT instance.";
+      $validationError = "Deployment is missing both " . $platform_label . " instance and " . $instrument_label . " instance.";
     }
     if (!isset($this->getDeployment()->platformInstance) && isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing associated PLATFORM instance.";
+      $validationError = "Deployment is missing associated " . $platform_label . " instance.";
     }
     if (isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing associated INSTRUMENT instance.";
+      $validationError = "Deployment is missing associated " . $instrument_label . " instance.";
     }
 
     //dpm($this->getDeployment());
@@ -125,7 +128,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
     ];
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t($platform_label . ' Instance'),
       '#default_value' => $platformInstanceLabel,
       '#disabled' => TRUE,
     ];

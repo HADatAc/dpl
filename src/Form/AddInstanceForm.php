@@ -46,6 +46,7 @@ class AddInstanceForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
     //dpm($elementtype);
     // Does the repo have a social network?
     $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
@@ -63,10 +64,10 @@ class AddInstanceForm extends FormBase {
     $this->setElementName(NULL);
     $autocomplete = '';
     if ($elementtype == 'platforminstance') {
-      $this->setElementName("Platform Instance");
+      $this->setElementName(ucfirst($preferred_platform) . " Instance");
       $autocomplete = 'dpl.platform_autocomplete';
       $treepath = 'platform';
-      $treename = 'Platform';
+      $treename = ucfirst($preferred_platform);
     }
     if ($elementtype == 'instrumentinstance') {
       $this->setElementName(ucfirst($preferred_instrument)." Instance");

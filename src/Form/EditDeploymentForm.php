@@ -36,6 +36,7 @@ class EditDeploymentForm extends FormBase {
     $api = \Drupal::service('rep.api_connector');
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
 
     // RETRIEVE DEPLOYMENT
     $uri_decode=base64_decode($deploymenturi);
@@ -78,7 +79,7 @@ class EditDeploymentForm extends FormBase {
 
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t(ucfirst($preferred_platform) . ' Instance'),
       '#default_value' => $platformInstanceLabel,
       '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
     ];

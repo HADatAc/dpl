@@ -99,6 +99,8 @@ class ViewDeploymentForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi = NULL) {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
 
     // ROOT URL
     $root_url = \Drupal::request()->getBaseUrl();
@@ -176,7 +178,7 @@ class ViewDeploymentForm extends FormBase {
     //
     $form['platform_instance'] = [
       '#type' => 'details',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t($platform_label . ' Instance'),
       '#group' => 'tabs',
     ];
 
@@ -185,7 +187,7 @@ class ViewDeploymentForm extends FormBase {
       // If no platformInstance was provided, show a warning message.
       $form['platform_instance']['no_platform'] = [
         '#type' => 'item',
-        '#markup' => '<p class="text-warning">' . $this->t('This Deployment has no associated Platform Instance.') . '</p>',
+        '#markup' => '<p class="text-warning">' . $this->t('This Deployment has no associated ' . $platform_label . ' Instance.') . '</p>',
       ];
     }
     else {
@@ -273,7 +275,7 @@ class ViewDeploymentForm extends FormBase {
     //
     $form['platform_elements'] = [
       '#type' => 'details',
-      '#title' => $this->t('Platform Elements'),
+      '#title' => $this->t($platform_label . ' Elements'),
       '#group' => 'tabs',
     ];
 
@@ -281,7 +283,7 @@ class ViewDeploymentForm extends FormBase {
       // If no platformInstance, we cannot fetch elements.
       $form['platform_elements']['no_platform_elements'] = [
         '#type' => 'item',
-        '#markup' => '<p class="text-warning">' . $this->t('No Platform Instance available to show elements.') . '</p>',
+        '#markup' => '<p class="text-warning">' . $this->t('No ' . $platform_label . ' Instance available to show elements.') . '</p>',
       ];
     }
     else {
@@ -291,7 +293,7 @@ class ViewDeploymentForm extends FormBase {
       if (empty($platformTypeUri)) {
         $form['platform_elements']['no_elements'] = [
           '#type' => 'item',
-          '#markup' => '<p class="text-warning">' . $this->t('Platform Type URI is missing.') . '</p>',
+          '#markup' => '<p class="text-warning">' . $this->t($platform_label . ' Type URI is missing.') . '</p>',
         ];
       }
       else {
@@ -302,7 +304,7 @@ class ViewDeploymentForm extends FormBase {
         if (empty($platform_type_result->isSuccessful) || !$platform_type_result->isSuccessful) {
           $form['platform_elements']['api_error'] = [
             '#type' => 'item',
-            '#markup' => '<p class="text-warning">' . $this->t('Failed to retrieve Platform Type.') . '</p>',
+            '#markup' => '<p class="text-warning">' . $this->t('Failed to retrieve ' . $platform_label . ' Type.') . '</p>',
           ];
         }
         else {
@@ -315,7 +317,7 @@ class ViewDeploymentForm extends FormBase {
           if (empty($firstContainerUri)) {
             $form['platform_elements']['no_structure'] = [
               '#type' => 'item',
-              '#markup' => '<p class="text-warning">' . $this->t('This Platform Type has no defined structure.') . '</p>',
+              '#markup' => '<p class="text-warning">' . $this->t('This ' . $platform_label . ' Type has no defined structure.') . '</p>',
             ];
           }
           else {
@@ -324,7 +326,7 @@ class ViewDeploymentForm extends FormBase {
             if (empty($containerResponse)) {
               $form['platform_elements']['container_error'] = [
                 '#type' => 'item',
-                '#markup' => '<p class="text-warning">' . $this->t('Failed to retrieve Platform container structure.') . '</p>',
+                '#markup' => '<p class="text-warning">' . $this->t('Failed to retrieve ' . $platform_label . ' container structure.') . '</p>',
               ];
             }
             else {

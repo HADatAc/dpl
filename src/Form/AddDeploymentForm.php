@@ -26,6 +26,7 @@ class AddDeploymentForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
 
     //$form['deployment_name'] = [
     //  '#type' => 'textfield',
@@ -33,7 +34,7 @@ class AddDeploymentForm extends FormBase {
     //];
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t(ucfirst($preferred_platform) . ' Instance'),
       '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
     ];
     $form['deployment_instrument_instance'] = [

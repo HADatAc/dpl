@@ -89,13 +89,19 @@ class DPLListForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'Platform';
+
+    $platform_label = ucfirst($preferred_platform);
+    $platform_plural = preg_match('/[^aeiou]y$/i', $platform_label)
+      ? substr($platform_label, 0, -1) . 'ies'
+      : $platform_label . 's';
 
     $class_name = "";
     switch ($elementtype) {
 
       // PLATFORM
       case "platform":
-        $class_name = $preferred_instrument . "s";
+        $class_name = $platform_plural;
         $header = Platform::generateHeader();
         $output = Platform::generateOutput($this->getList());
         break;
@@ -116,7 +122,7 @@ class DPLListForm extends FormBase {
 
       // PLATFORM INSTANCE
       case "platforminstance":
-        $class_name = "Platform Instances";
+        $class_name = $platform_label . " Instances";
         $header = VSTOIInstance::generateHeader($elementtype);
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;

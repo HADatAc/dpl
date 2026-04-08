@@ -170,13 +170,19 @@ class DPLSelectForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'Platform';
+
+    $platform_label = ucfirst($preferred_platform);
+    $platform_plural = preg_match('/[^aeiou]y$/i', $platform_label)
+      ? substr($platform_label, 0, -1) . 'ies'
+      : $platform_label . 's';
 
     switch ($this->element_type) {
 
       // PLATFORM
       case "platform":
-        $this->single_class_name = "Platform";
-        $this->plural_class_name = "Platforms";
+        $this->single_class_name = $platform_label;
+        $this->plural_class_name = $platform_plural;
         $header = Platform::generateHeader();
         $output = Platform::generateOutput($this->getList());
         $outputCard = Platform::generateCardOutput($this->getList());
@@ -184,8 +190,8 @@ class DPLSelectForm extends FormBase {
 
       // PLATFORM INSTANCE
       case "platforminstance":
-        $this->single_class_name = "Platform Instance";
-        $this->plural_class_name = "Platform Instances";
+        $this->single_class_name = $platform_label . " Instance";
+        $this->plural_class_name = $platform_label . " Instances";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
         $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
@@ -283,7 +289,10 @@ class DPLSelectForm extends FormBase {
 
     $form['actions_wrapper']['buttons_container'] = [
       '#type' => 'container',
-      '#attributes' => ['class' => ['d-flex', 'gap-2']],
+      '#attributes' => [
+        'class' => ['d-flex', 'gap-2', 'flex-nowrap'],
+        'style' => 'flex-wrap:nowrap;overflow-x:auto;'
+      ],
     ];
 
     $form['actions_wrapper']['buttons_container']['add_element'] = [
@@ -296,6 +305,36 @@ class DPLSelectForm extends FormBase {
     ];
 
     if ($view_type == 'table') {
+      $form['actions_wrapper']['buttons_container']['edit_selected_element'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Edit ' . $this->single_class_name . ' Selected'),
+        '#name' => 'edit_element',
+        '#attributes' => [
+          'class' => ['btn', 'btn-primary', 'edit-element-button'],
+        ],
+      ];
+
+      $form['actions_wrapper']['buttons_container']['delete_selected_element'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Delete ' . $this->plural_class_name . ' Selected'),
+        '#name' => 'delete_element',
+        '#attributes' => [
+          'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+          'class' => ['btn', 'btn-primary', 'delete-element-button'],
+        ],
+      ];
+
+      if ($this->element_type == 'componentstem') {
+        $form['actions_wrapper']['buttons_container']['derive_componentstem'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Derive New ' . $preferred_component . ' Stem from Selected'),
+          '#name' => 'derive_componentstem',
+          '#attributes' => [
+            'class' => ['btn', 'btn-primary', 'derive-button'],
+          ],
+        ];
+      }
+
       $status_options = [
         '_' => $this->t('All Status'),
         VSTOI::DRAFT => $this->t('Draft'),
@@ -449,35 +488,6 @@ class DPLSelectForm extends FormBase {
    */
   protected function buildTableView(array &$form, FormStateInterface $form_state, $header, $output)
   {
-    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
-
-    $form['edit_selected_element'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Edit ' . $this->single_class_name . ' Selected'),
-      '#name' => 'edit_element',
-      '#attributes' => [
-        'class' => ['btn', 'btn-primary', 'edit-element-button'],
-      ],
-    ];
-    $form['delete_selected_element'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Delete ' . $this->plural_class_name . ' Selected'),
-      '#name' => 'delete_element',
-      '#attributes' => [
-        'onclick' => 'if(!confirm("Really Delete?")){return false;}',
-        'class' => ['btn', 'btn-primary', 'delete-element-button'],
-      ],
-    ];
-    if ($this->element_type == 'componentstem') {
-      $form['derive_componentstem'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Derive New ' . $preferred_component. ' Stem from Selected'),
-        '#name' => 'derive_componentstem',
-        '#attributes' => [
-          'class' => ['btn', 'btn-primary', 'derive-button'],
-        ],
-      ];
-    }
     $form['element_table'] = [
       '#type' => 'tableselect',
       '#header' => $header,

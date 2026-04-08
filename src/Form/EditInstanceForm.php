@@ -59,6 +59,7 @@ class EditInstanceForm extends FormBase {
 
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
 
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -85,11 +86,11 @@ class EditInstanceForm extends FormBase {
     $this->setElementName(NULL);
     $autocomplete = '';
     if ($this->getElement()->hascoTypeUri == VSTOI::PLATFORM_INSTANCE) {
-      $this->setElementName("Platform Instance");
+      $this->setElementName(ucfirst($preferred_platform) . " Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
       $treepath = 'platform';
-      $treename = 'Platform';
+      $treename = ucfirst($preferred_platform);
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
       $this->setElementName(ucfirst($preferred_instrument)." Instance");
       $this->setElementType("instrumentinstance");

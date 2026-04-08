@@ -40,9 +40,20 @@ class EditPlatformForm extends FormBase {
   }
 
   /**
+   * Dynamic page title based on preferred platform name.
+   */
+  public static function pageTitle() {
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    return t('Edit @platform', ['@platform' => ucfirst($preferred_platform)]);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $platformuri = NULL) {
+
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
 
     $form['#attached']['library'][] = 'rep/rep_modal';
     $form['#attached']['library'][] = 'core/drupal.dialog';
@@ -58,7 +69,7 @@ class EditPlatformForm extends FormBase {
     if ($obj->isSuccessful) {
       $this->setPlatform($obj->body);
     } else {
-      \Drupal::messenger()->addError(t("Failed to retrieve Platform."));
+      \Drupal::messenger()->addError(t('Failed to retrieve @platform.', ['@platform' => $platform_label]));
       self::backUrl();
       return;
     }
@@ -73,7 +84,7 @@ class EditPlatformForm extends FormBase {
       ],
       'main' => [
         '#type' => 'textfield',
-        '#title' => $this->t('Platform Type'),
+        '#title' => $this->t($platform_label . ' Type'),
         '#name' => 'platform_type',
         '#default_value' => Utils::fieldToAutocomplete($this->getPlatform()->superUri, $this->getPlatform()->label),
         '#id' => 'platform_type',
@@ -163,6 +174,8 @@ class EditPlatformForm extends FormBase {
     $submitted_values = $form_state->cleanValues()->getValues();
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
 
     if ($button_name === 'back') {
       self::backUrl();
@@ -188,12 +201,12 @@ class EditPlatformForm extends FormBase {
       $api->elementDel('platform',$this->getPlatformUri());
       $newPlatform = $api->elementAdd('platform',$platformJson);
 
-      \Drupal::messenger()->addMessage(t("Platform has been updated successfully."));
+      \Drupal::messenger()->addMessage(t('@platform has been updated successfully.', ['@platform' => $platform_label]));
       self::backUrl();
       return;
 
     }catch(\Exception $e){
-      \Drupal::messenger()->addError(t("An error occurred while updating the Platform: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t('An error occurred while updating @platform: @error', ['@platform' => lcfirst($platform_label), '@error' => $e->getMessage()]));
       self::backUrl();
       return;
     }

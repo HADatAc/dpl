@@ -240,13 +240,42 @@ class DPLSelectForm extends FormBase {
       '#title' => $this->t('<h4>' . $this->plural_class_name . ' maintained by <font color="DarkGreen">' . $this->manager_name . ' (' . $this->manager_email . ')</font></h4>'),
     ];
 
-    // ADD BUTTONS FOR VIEW MODE
-    $form['view_toggle'] = [
+    // Controls row: action buttons (left) + view toggle and filters (right).
+    $form['controls_row'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['d-flex', 'justify-content-between', 'align-items-start', 'flex-wrap', 'gap-2', 'mb-0'],
+        'style' => 'margin-bottom:0!important;',
+      ],
+    ];
+
+    $form['controls_row']['buttons_container'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['d-flex', 'flex-wrap', 'gap-2']],
+    ];
+
+    $form['controls_row']['buttons_container']['add_element'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add New ' . $this->single_class_name),
+      '#name' => 'add_element',
+      '#attributes' => [
+        'class' => ['btn', 'btn-primary', 'add-element-button'],
+      ],
+    ];
+
+    $form['controls_row']['right_controls'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['d-flex', 'flex-column', 'align-items-end', 'gap-2'],
+      ],
+    ];
+
+    $form['controls_row']['right_controls']['view_toggle'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['view-toggle', 'd-flex', 'justify-content-end']],
     ];
 
-    $form['view_toggle']['table_view'] = [
+    $form['controls_row']['right_controls']['view_toggle']['table_view'] = [
       '#type' => 'submit',
       '#value' => '',
       '#name' => 'view_table',
@@ -259,7 +288,7 @@ class DPLSelectForm extends FormBase {
       '#limit_validation_errors' => [],
     ];
 
-    $form['view_toggle']['card_view'] = [
+    $form['controls_row']['right_controls']['view_toggle']['card_view'] = [
       '#type' => 'submit',
       '#value' => '',
       '#name' => 'view_card',
@@ -270,29 +299,6 @@ class DPLSelectForm extends FormBase {
       ],
       '#submit' => ['::viewCardSubmit'],
       '#limit_validation_errors' => [],
-    ];
-
-    // Actions row (Add + filters)
-    $form['actions_wrapper'] = [
-      '#type' => 'container',
-      '#attributes' => [
-        'class' => ['d-flex', 'align-items-center', 'justify-content-between', 'mb-0'],
-        'style' => 'margin-bottom:0!important;'
-      ],
-    ];
-
-    $form['actions_wrapper']['buttons_container'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['d-flex', 'gap-2']],
-    ];
-
-    $form['actions_wrapper']['buttons_container']['add_element'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Add New ' . $this->single_class_name),
-      '#name' => 'add_element',
-      '#attributes' => [
-        'class' => ['btn', 'btn-primary', 'add-element-button'],
-      ],
     ];
 
     if ($view_type == 'table') {
@@ -306,7 +312,7 @@ class DPLSelectForm extends FormBase {
         VSTOI::DEPRECATED => $this->t('Deprecated'),
       ];
 
-      $form['actions_wrapper']['filter_container'] = [
+      $form['controls_row']['right_controls']['filter_container'] = [
         '#type' => 'container',
         '#attributes' => [
           'class' => ['d-flex', 'ms-auto', 'mb-0'],
@@ -314,7 +320,7 @@ class DPLSelectForm extends FormBase {
         ],
       ];
 
-      $form['actions_wrapper']['filter_container']['filter_label'] = [
+      $form['controls_row']['right_controls']['filter_container']['filter_label'] = [
         '#type' => 'label',
         '#title' => $this->t('Filter(s): '),
         '#attributes' => [
@@ -322,7 +328,7 @@ class DPLSelectForm extends FormBase {
         ],
       ];
 
-      $form['actions_wrapper']['filter_container']['status_filter'] = [
+      $form['controls_row']['right_controls']['filter_container']['status_filter'] = [
         '#type' => 'select',
         '#options' => $status_options,
         '#default_value' => $status_filter,

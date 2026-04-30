@@ -197,7 +197,7 @@ class ViewDeploymentForm extends FormBase {
       $form['platform_instance']['platform_uri'] = [
         '#type' => 'item',
         '#title' => $this->t('URI'),
-        '#markup' => t('<a target="_new" href="' . $root_url . REPGUI::DESCRIBE_PAGE . base64_encode($platform->uri) . '">' . $platform->uri . '</a>'),
+        '#markup' => Markup::create(Utils::describeAnchor((string) $platform->uri, (string) $platform->uri)),
         '#wrapper_attributes' => [
           'class' => ['mt-3']
         ],
@@ -366,7 +366,7 @@ class ViewDeploymentForm extends FormBase {
       $form['instrument_instance']['instrument_uri'] = [
         '#type' => 'item',
         '#title' => $this->t('URI'),
-        '#markup' => t('<a target="_new" href="' . $root_url . REPGUI::DESCRIBE_PAGE . base64_encode($instrument->uri) . '">' . $instrument->uri . '</a>'),
+        '#markup' => Markup::create(Utils::describeAnchor((string) $instrument->uri, (string) $instrument->uri)),
         '#wrapper_attributes' => [
           'class' => ['mt-3']
         ],

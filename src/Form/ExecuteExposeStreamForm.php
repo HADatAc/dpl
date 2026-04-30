@@ -158,10 +158,9 @@ class ExecuteExposeStreamForm extends FormBase {
       ];
     }
 
-    $uri_string = Utils::namespaceUri($this->getStream()->uri);
-    $href = $root_url . REPGUI::DESCRIBE_PAGE . base64_encode($uri_string);
-
-    $link_html = '<a target="_new" href="' . $href . '" target="_blank">' . $uri_string . '</a>';
+    $full_uri = (string) ($this->getStream()->uri ?? '');
+    $uri_string = Utils::namespaceUri($full_uri);
+    $link_html = Utils::describeAnchor($full_uri, $uri_string);
 
     $form['stream_uri'] = [
       '#type'   => 'markup',

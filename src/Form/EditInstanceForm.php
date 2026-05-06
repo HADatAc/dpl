@@ -53,10 +53,6 @@ class EditInstanceForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $instanceuri = NULL) {
-
-    // Does the repo have a social network?
-    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
-
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
     $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
@@ -171,39 +167,55 @@ class EditInstanceForm extends FormBase {
       '#title' => $this->t('Acquisition Date'),
       '#default_value' => $this->getElement()->hasAcquisitionDate,
     ];
-    if ($socialEnabled) {
-      $api = \Drupal::service('rep.api_connector');
-      $ownerUri = '';
-      if (isset($this->getElement()->hasOwnerUri) && $this->getElement()->hasOwnerUri != NULL) {
-        $ownerUri = $api->getUri($this->getElement()->hasOwnerUri);
+
+    $ownerDefault = '';
+    if (isset($this->getElement()->hasOwnerUri) && $this->getElement()->hasOwnerUri != NULL) {
+      $ownerLabel = (string) $this->getElement()->hasOwnerUri;
+      try {
+        $ownerObj = $api->parseObjectResponse($api->getUri($this->getElement()->hasOwnerUri), 'getUri');
+        if (is_object($ownerObj)) {
+          $ownerLabel = (string) ($ownerObj->label ?? ($ownerObj->name ?? $ownerLabel));
+        }
       }
-      $maintainerUri = '';
-      if (isset($this->getElement()->hasMaintainerUri) && $this->getElement()->hasMaintainerUri != NULL) {
-        $maintainerUri = $api->getUri($this->getElement()->hasMaintainerUri);
+      catch (\Throwable $e) {
+        // Keep URI as label fallback.
       }
-      $form['instance_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        '#default_value' => isset($this->getElement()->hasOwnerUri) ?
-                              Utils::fieldToAutocomplete($this->getElement()->hasOwnerUri, $ownerUri->label) : '',
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'organization',
-        ],
-      ];
-      $form['instance_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        '#default_value' => isset($this->getElement()->hasMaintainerUri) ?
-                              Utils::fieldToAutocomplete($this->getElement()->hasMaintainerUri, $maintainerUri->label) : '',
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'person',
-        ],
-      ];
+      $ownerDefault = Utils::fieldToAutocomplete($this->getElement()->hasOwnerUri, $ownerLabel);
     }
+
+    $maintainerDefault = '';
+    if (isset($this->getElement()->hasMaintainerUri) && $this->getElement()->hasMaintainerUri != NULL) {
+      $maintainerLabel = (string) $this->getElement()->hasMaintainerUri;
+      try {
+        $maintainerObj = $api->parseObjectResponse($api->getUri($this->getElement()->hasMaintainerUri), 'getUri');
+        if (is_object($maintainerObj)) {
+          $maintainerLabel = (string) ($maintainerObj->label ?? ($maintainerObj->name ?? $maintainerLabel));
+        }
+      }
+      catch (\Throwable $e) {
+        // Keep URI as label fallback.
+      }
+      $maintainerDefault = Utils::fieldToAutocomplete($this->getElement()->hasMaintainerUri, $maintainerLabel);
+    }
+
+    $form['instance_owner'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Owner'),
+      '#default_value' => $ownerDefault,
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
+    $form['instance_maintainer'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Maintainer'),
+      '#default_value' => $maintainerDefault,
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
     // --- DAMAGE FIELDS INLINE ---
     // 1) Container flex/Bootstrap row
     $form['damage_wrapper'] = [
@@ -319,7 +331,6 @@ class EditInstanceForm extends FormBase {
     try{
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
       $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
       $damageDate = $form_state->getValue('has_damage_date') ?: '';
       $acquisitionDate = '';
@@ -343,10 +354,8 @@ class EditInstanceForm extends FormBase {
         $payload['hasDamageDate'] = $damageDate;
       }
 
-      if ($socialEnabled) {
-        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
-        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
-      }
+      $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+      $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
 
       $payload['hasSIRManagerEmail'] = \Drupal::currentUser()->getEmail();
 

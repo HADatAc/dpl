@@ -48,8 +48,6 @@ class AddInstanceForm extends FormBase {
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
     $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
     //dpm($elementtype);
-    // Does the repo have a social network?
-    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -140,26 +138,22 @@ class AddInstanceForm extends FormBase {
       '#type' => 'date',
       '#title' => $this->t('Acquisition Date'),
     ];
-    if ($socialEnabled) {
-      $form['instance_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'organization',
-        ],
-      ];
-      $form['instance_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'person',
-        ],
-      ];
-    }
+    $form['instance_owner'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Owner'),
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
+    $form['instance_maintainer'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Maintainer'),
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
     // Group container to lay out fields inline
     $form['damage_wrapper'] = [
       '#type' => 'container',
@@ -295,7 +289,6 @@ class AddInstanceForm extends FormBase {
       $useremail = \Drupal::currentUser()->getEmail();
       $newInstanceUri = Utils::uriGen($this->getElementType());
 
-      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
       // $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
       // $damageDate = $form_state->getValue('has_damage_date') ?: '';
 
@@ -312,11 +305,9 @@ class AddInstanceForm extends FormBase {
         // 'isDamaged'         => $isDamaged === 'true',
       ];
 
-      // 2) Conditionally add owner/maintainer
-      if ($socialEnabled) {
-        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
-        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
-      }
+      // 2) Owner and maintainer accept organizations and people.
+      $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+      $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
 
       // 3) Conditionally add damage date
       // if ($isDamaged === 'true' && $damageDate) {

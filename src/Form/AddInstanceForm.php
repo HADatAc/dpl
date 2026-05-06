@@ -321,13 +321,41 @@ class AddInstanceForm extends FormBase {
       $streamJson = json_encode($payload);
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd($this->getElementType(),$streamJson);
+      $apiResponse = $api->elementAdd($this->getElementType(), $streamJson);
+      $parsed = $api->parseObjectResponse($apiResponse, 'elementAdd');
+      if ($parsed === NULL) {
+        self::backUrl();
+        return;
+      }
+
+      // Guard against responses that are already decoded but logically failed.
+      $decodedResponse = NULL;
+      if (is_string($apiResponse)) {
+        $decodedResponse = json_decode($apiResponse);
+      }
+      elseif (is_array($apiResponse)) {
+        $decodedResponse = (object) $apiResponse;
+      }
+      elseif (is_object($apiResponse)) {
+        $decodedResponse = $apiResponse;
+      }
+
+      if (is_object($decodedResponse) && isset($decodedResponse->isSuccessful) && !$decodedResponse->isSuccessful) {
+        $errorMessage = t('API service failed to add @name.', ['@name' => strtolower($this->getElementName())]);
+        if (isset($decodedResponse->body) && is_string($decodedResponse->body) && $decodedResponse->body !== '') {
+          $errorMessage = $decodedResponse->body;
+        }
+        \Drupal::messenger()->addError($errorMessage);
+        self::backUrl();
+        return;
+      }
+
       \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));
       self::backUrl();
       return;
 
     }catch(\Exception $e){
-      \Drupal::messenger()->addMessage(t("An error occurred while adding stream: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t("An error occurred while adding instance: ".$e->getMessage()));
       self::backUrl();
       return;
     }

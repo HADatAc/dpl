@@ -8,11 +8,14 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\dpl\Form\ListDeploymentStatePage;
 use Drupal\rep\Entity\Deployment;
+use Drupal\rep\ManageOwnerFilter;
 use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\REPGUI;
 
 class ManageDeploymentsForm extends FormBase {
+
+  private const KEYWORD_SCAN_LIMIT = 9999;
 
   /**
    * {@inheritdoc}
@@ -80,6 +83,9 @@ class ManageDeploymentsForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $state=NULL, $page=NULL, $pagesize=NULL) {
 
+    $page = $page ?? 1;
+    $pagesize = $pagesize ?? 9;
+
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
 
@@ -106,8 +112,45 @@ class ManageDeploymentsForm extends FormBase {
     $this->setManagerEmail($user->getEmail());
     $this->setManagerName($user->getAccountName());
 
-    // View mode (table/card)
     $session = \Drupal::request()->getSession();
+
+    // Filters (persisted in session)
+    $is_admin = ManageOwnerFilter::isAdmin();
+
+    $text_filter = $form_state->getValue('text_filter');
+    if ($text_filter === NULL) {
+      $text_filter = $session->get('dpl_manage_deployments_text_filter', '');
+    }
+    else {
+      $session->set('dpl_manage_deployments_text_filter', $text_filter);
+    }
+    $text_filter = trim((string) $text_filter);
+
+    $manager_filter = '';
+    if ($is_admin) {
+      $manager_filter = $form_state->getValue('manager_filter');
+      if ($manager_filter === NULL) {
+        $manager_filter = $session->get('dpl_manage_deployments_manager_filter', '');
+      }
+      else {
+        $manager_filter = ManageOwnerFilter::normalizeSelectedEmail($manager_filter);
+        $session->set('dpl_manage_deployments_manager_filter', $manager_filter);
+      }
+    }
+    else {
+      // Avoid carrying admin-only state for non-admin users.
+      $session->remove('dpl_manage_deployments_manager_filter');
+    }
+
+    $effective_manager_email = $this->getManagerEmail();
+    if ($is_admin && $manager_filter !== '') {
+      $effective_manager_email = $manager_filter;
+    }
+    $form_state->set('effective_manager_email', $effective_manager_email);
+
+    $has_active_filters = ($text_filter !== '') || ($is_admin && trim((string) $manager_filter) !== '');
+
+    // View mode (table/card)
     $view_type = $form_state->get('view_type') ?? $session->get('dpl_select_view_type') ?? 'table';
     $form_state->set('view_type', $view_type);
     $table_active_class = ($view_type === 'table') ? ['selected-button'] : [];
@@ -123,36 +166,91 @@ class ManageDeploymentsForm extends FormBase {
 
     $this->setPageSize($pagesize);
     $this->setListSize(-1);
+
+    $api_total = 0;
     if ($this->getState() != NULL) {
-      // $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
-      $this->setListSize(ListDeploymentStatePage::total($apiState, $this->getManagerEmail()));
+      $api_total = ListDeploymentStatePage::total($apiState, $effective_manager_email);
     }
-    if (gettype($this->list_size) == 'string') {
-      $total_pages = "0";
-    } else {
-      if ($this->list_size % $pagesize == 0) {
-        $total_pages = $this->list_size / $pagesize;
-      } else {
-        $total_pages = floor($this->list_size / $pagesize) + 1;
+
+    $keyword_active = ($text_filter !== '');
+    // Always set base list size from API first so route pagination works.
+    // When keyword filtering is active, we'll recompute list size after filtering.
+    $this->setListSize($api_total);
+
+    // Compute total pages (at least 1)
+    $total_pages = 1;
+    if (is_numeric($this->list_size) && $pagesize > 0) {
+      $size = (int) $this->list_size;
+      if ($size > 0) {
+        $total_pages = (int) ceil($size / $pagesize);
       }
     }
+
+    // Clamp current page
+    $page = max(1, min((int) $page, (int) $total_pages));
 
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $next_page, $pagesize);
+      $next_page_link = ListDeploymentStatePage::link($this->getState(), $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListDeploymentStatePage::link($apiState, $this->getManagerEmail(), $previous_page, $pagesize);
+      $previous_page_link = ListDeploymentStatePage::link($this->getState(), $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListDeploymentStatePage::exec($apiState, $this->getManagerEmail(), $page, $pagesize));
+    if ($keyword_active) {
+      $scan_limit = self::KEYWORD_SCAN_LIMIT;
+      $fetch_size = $scan_limit;
+      if (is_numeric($api_total)) {
+        $fetch_size = min($scan_limit, max(0, (int) $api_total));
+      }
+
+      $all_deployments = [];
+      if ($fetch_size > 0) {
+        $all_deployments = ListDeploymentStatePage::exec($apiState, $effective_manager_email, 1, $fetch_size);
+      }
+      if (!is_array($all_deployments)) {
+        $all_deployments = [];
+      }
+
+      $filtered = $this->filterDeploymentsByKeyword($all_deployments, $text_filter);
+      $filtered_total = count($filtered);
+      $this->setListSize($filtered_total);
+
+      // Recompute total pages based on filtered results.
+      $total_pages = 1;
+      if ($filtered_total > 0 && $pagesize > 0) {
+        $total_pages = (int) ceil($filtered_total / $pagesize);
+      }
+      $page = max(1, min((int) $page, (int) $total_pages));
+
+      $offset = ($page <= 1) ? 0 : (($page - 1) * $pagesize);
+      $page_list = array_slice($filtered, $offset, $pagesize);
+      $this->setList($page_list);
+
+      // Update pager links based on the (possibly) new total_pages.
+      if ($page < $total_pages) {
+        $next_page = $page + 1;
+        $next_page_link = ListDeploymentStatePage::link($this->getState(), $next_page, $pagesize);
+      } else {
+        $next_page_link = '';
+      }
+      if ($page > 1) {
+        $previous_page = $page - 1;
+        $previous_page_link = ListDeploymentStatePage::link($this->getState(), $previous_page, $pagesize);
+      } else {
+        $previous_page_link = '';
+      }
+    }
+    else {
+      $this->setList(ListDeploymentStatePage::exec($apiState, $effective_manager_email, $page, $pagesize));
+    }
 
     //dpm($this->getList());
 
@@ -249,7 +347,90 @@ class ManageDeploymentsForm extends FormBase {
       //],
       'card_body' => [
         '#type' => 'container',
-        '#attributes' => ['class' => ['card-body']],
+        '#attributes' => ['class' => ['card-body'], 'id' => 'deployments-card-body-wrapper'],
+      ],
+    ];
+
+    $show_owner_indicator = $is_admin && $manager_filter !== '' && strcasecmp($effective_manager_email, $manager_filter) === 0;
+    if ($show_owner_indicator) {
+      $form['card']['card_body']['owner_indicator'] = [
+        '#type' => 'item',
+        '#markup' => $this->t('<div class="alert alert-info py-2 mb-3"><strong>A visualizar owner:</strong> @owner</div>', [
+          '@owner' => $effective_manager_email,
+        ]),
+      ];
+    }
+
+    // Collapsed filters panel (homogeneous with other manage screens)
+    $form['card']['card_body']['filters_panel'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Filter(s)'),
+      '#open' => $has_active_filters,
+      '#attributes' => [
+        'class' => ['dpl-manage-filters-panel'],
+      ],
+    ];
+
+    $form['card']['card_body']['filters_panel']['filter_container'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['row', 'g-2', 'align-items-end', 'dpl-manage-filters'],
+      ],
+    ];
+
+    $form['card']['card_body']['filters_panel']['filter_container']['text_filter'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Keyword'),
+      '#title_display' => 'invisible',
+      '#default_value' => $text_filter,
+      '#prefix' => '<div class="col-12 col-lg-4">',
+      '#suffix' => '</div>',
+      '#ajax' => [
+        'callback' => '::ajaxReloadCardBody',
+        'wrapper' => 'deployments-card-body-wrapper',
+        'event' => 'change',
+      ],
+      '#attributes' => [
+        'class' => ['form-control'],
+        'placeholder' => $this->t('Type in your search criteria'),
+        'onkeydown' => 'if (event.keyCode == 13) { event.preventDefault(); this.blur(); }',
+      ],
+    ];
+
+    if ($is_admin) {
+      $form['card']['card_body']['filters_panel']['filter_container']['manager_filter'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('User'),
+        '#title_display' => 'invisible',
+        '#default_value' => $manager_filter,
+        '#prefix' => '<div class="col-12 col-lg-4">',
+        '#suffix' => '</div>',
+        '#ajax' => [
+          'callback' => '::ajaxReloadCardBody',
+          'wrapper' => 'deployments-card-body-wrapper',
+          'event' => 'change',
+        ],
+        '#attributes' => [
+          'class' => ['form-control'],
+          'placeholder' => $this->t('User email (owner filter)'),
+        ],
+      ];
+    }
+
+    $form['card']['card_body']['filters_panel']['filter_container']['clear_filters'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Clear Filters'),
+      '#name' => 'clear_filters',
+      '#limit_validation_errors' => [],
+      '#prefix' => '<div class="col-12 col-md-4 col-lg-2 d-grid">',
+      '#suffix' => '</div>',
+      '#attributes' => [
+        'class' => ['btn', 'btn-outline-secondary'],
+      ],
+      '#ajax' => [
+        'callback' => '::ajaxReloadCardBody',
+        'wrapper' => 'deployments-card-body-wrapper',
+        'event' => 'click',
       ],
     ];
 
@@ -514,8 +695,8 @@ class ManageDeploymentsForm extends FormBase {
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), 1, $pagesize),
-        'last' => ListDeploymentStatePage::link($this->getState(), $this->getManagerEmail(), $total_pages, $pagesize),
+        'first' => ListDeploymentStatePage::link($this->getState(), 1, $pagesize),
+        'last' => ListDeploymentStatePage::link($this->getState(), $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),
@@ -648,6 +829,11 @@ class ManageDeploymentsForm extends FormBase {
     // RETRIEVE TRIGGERING BUTTON
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
+
+    if ($button_name === 'clear_filters') {
+      $this->clearSavedFilters($form_state);
+      return;
+    }
 
     // SET USER ID AND PREVIOUS URL FOR TRACKING STORE URLS
     $uid = \Drupal::currentUser()->id();
@@ -784,6 +970,86 @@ class ManageDeploymentsForm extends FormBase {
     }
 
     return;
+  }
+
+  /**
+   * AJAX callback to reload the card body wrapper when filters change.
+   */
+  public function ajaxReloadCardBody(array &$form, FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+    return $form['card']['card_body'];
+  }
+
+  /**
+   * Clear persisted filters for Manage Deployments.
+   */
+  protected function clearSavedFilters(FormStateInterface $form_state): void {
+    $session = \Drupal::request()->getSession();
+    $session->remove('dpl_manage_deployments_text_filter');
+    $session->remove('dpl_manage_deployments_manager_filter');
+
+    $input = $form_state->getUserInput();
+    unset($input['text_filter'], $input['manager_filter']);
+    $form_state->setUserInput($input);
+
+    $form_state->setValue('text_filter', '');
+    $form_state->setValue('manager_filter', '');
+    $form_state->setRebuild(TRUE);
+  }
+
+  /**
+   * In-memory keyword filter for deployments.
+   *
+   * Searches across common scalar properties and nested instance labels.
+   */
+  protected function filterDeploymentsByKeyword(array $deployments, string $keyword): array {
+    $needle = trim($keyword);
+    if ($needle === '') {
+      return $deployments;
+    }
+
+    $needle = function_exists('mb_strtolower') ? mb_strtolower($needle) : strtolower($needle);
+    $filtered = [];
+
+    foreach ($deployments as $deployment) {
+      if (!is_object($deployment)) {
+        continue;
+      }
+
+      $parts = [];
+      foreach (['uri', 'label', 'designedAt', 'startedAt', 'endedAt'] as $prop) {
+        if (isset($deployment->{$prop}) && $deployment->{$prop} !== NULL) {
+          $parts[] = (string) $deployment->{$prop};
+        }
+      }
+
+      if (isset($deployment->platformInstance)) {
+        if (isset($deployment->platformInstance->label)) {
+          $parts[] = (string) $deployment->platformInstance->label;
+        }
+        if (isset($deployment->platformInstance->uri)) {
+          $parts[] = (string) $deployment->platformInstance->uri;
+        }
+      }
+
+      if (isset($deployment->instrumentInstance)) {
+        if (isset($deployment->instrumentInstance->label)) {
+          $parts[] = (string) $deployment->instrumentInstance->label;
+        }
+        if (isset($deployment->instrumentInstance->uri)) {
+          $parts[] = (string) $deployment->instrumentInstance->uri;
+        }
+      }
+
+      $haystack = implode(' ', $parts);
+      $haystack = function_exists('mb_strtolower') ? mb_strtolower($haystack) : strtolower($haystack);
+
+      if ($haystack !== '' && strpos($haystack, $needle) !== FALSE) {
+        $filtered[] = $deployment;
+      }
+    }
+
+    return $filtered;
   }
 
   public function stateLink($state, $page, $pagesize) {

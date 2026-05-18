@@ -17,6 +17,8 @@ use Drupal\rep\Vocabulary\VSTOI;
 
 class DPLSelectForm extends FormBase {
 
+  private const KEYWORD_SCAN_LIMIT = 9999;
+
   /**
    * {@inheritdoc}
    */
@@ -83,6 +85,11 @@ class DPLSelectForm extends FormBase {
     $table_active_class = ($view_type === 'table') ? ['selected-button'] : [];
     $card_active_class = ($view_type === 'card') ? ['selected-button'] : [];
 
+    // Pagination vars (defined upfront so they can be adjusted after keyword filtering).
+    $total_pages = 1;
+    $next_page_link = '';
+    $previous_page_link = '';
+
     if ($view_type === 'card') {
       $form['#attached']['library'][] = 'rep/infinitescroll';
     }
@@ -94,6 +101,18 @@ class DPLSelectForm extends FormBase {
     else {
       $session->set('dpl_select_status_filter', $status_filter);
     }
+
+    // Keyword filter (persisted per element type)
+    $text_filter_key = 'dpl_select_text_filter.' . (string) $this->element_type;
+    $text_filter = $form_state->getValue('text_filter');
+    if ($text_filter === NULL) {
+      $text_filter = $session->get($text_filter_key, '');
+    }
+    else {
+      $session->set($text_filter_key, $text_filter);
+    }
+    $text_filter = trim((string) $text_filter);
+    $keyword_active = ($text_filter !== '');
 
     $is_admin = ManageOwnerFilter::isAdmin();
     $manager_filter_key = 'dpl_select_manager_filter.' . (string) $this->element_type;
@@ -121,40 +140,66 @@ class DPLSelectForm extends FormBase {
         }
       }
 
-      // Compute total pages (at least 1)
-      $total_pages = 1;
-      if (is_numeric($this->list_size) && $pagesize > 0) {
-        $size = (int) $this->list_size;
-        if ($size > 0) {
-          $total_pages = (int) ceil($size / $pagesize);
+      // When keyword filter is active, fetch a larger slice for in-memory filtering.
+      if ($keyword_active) {
+        $base_total = $this->getListSize();
+        $scan_limit = self::KEYWORD_SCAN_LIMIT;
+        $fetch_size = $scan_limit;
+        if (is_numeric($base_total)) {
+          $fetch_size = min($scan_limit, max(0, (int) $base_total));
         }
-      }
 
-      // Clamp current page
-      $page = max(1, min((int) $page, (int) $total_pages));
+        if ($fetch_size > 0) {
+          if ($status_filter === '_' || $status_filter === NULL || $status_filter === '') {
+            $this->setList(ListManagerEmailPage::exec($this->element_type, $effective_manager_email, 1, $fetch_size));
+          }
+          else {
+            $this->setList(ListManagerEmailPage::execByStatusManagerEmail($this->element_type, $status_filter, $effective_manager_email, FALSE, 1, $fetch_size));
+          }
+        }
+        else {
+          $this->setList([]);
+        }
 
-      // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
-      if ($page < $total_pages) {
-        $next_page = $page + 1;
-        $next_page_link = ListManagerEmailPage::link($this->element_type, $next_page, $pagesize);
-      } else {
-        $next_page_link = '';
-      }
-      if ($page > 1) {
-        $previous_page = $page - 1;
-        $previous_page_link = ListManagerEmailPage::link($this->element_type, $previous_page, $pagesize);
-      } else {
-        $previous_page_link = '';
-      }
-
-      $form_state->set('current_page', $page);
-      $form_state->set('page_size', $pagesize);
-
-      if ($status_filter === '_' || $status_filter === NULL || $status_filter === '') {
-        $this->setList(ListManagerEmailPage::exec($this->element_type, $effective_manager_email, $page, $pagesize));
+        // Pagination will be recomputed after filtering $output.
+        $form_state->set('current_page', $page);
+        $form_state->set('page_size', $pagesize);
       }
       else {
-        $this->setList(ListManagerEmailPage::execByStatusManagerEmail($this->element_type, $status_filter, $effective_manager_email, FALSE, $page, $pagesize));
+        // Compute total pages (at least 1)
+        if (is_numeric($this->list_size) && $pagesize > 0) {
+          $size = (int) $this->list_size;
+          if ($size > 0) {
+            $total_pages = (int) ceil($size / $pagesize);
+          }
+        }
+
+        // Clamp current page
+        $page = max(1, min((int) $page, (int) $total_pages));
+
+        // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
+        if ($page < $total_pages) {
+          $next_page = $page + 1;
+          $next_page_link = ListManagerEmailPage::link($this->element_type, $next_page, $pagesize);
+        } else {
+          $next_page_link = '';
+        }
+        if ($page > 1) {
+          $previous_page = $page - 1;
+          $previous_page_link = ListManagerEmailPage::link($this->element_type, $previous_page, $pagesize);
+        } else {
+          $previous_page_link = '';
+        }
+
+        $form_state->set('current_page', $page);
+        $form_state->set('page_size', $pagesize);
+
+        if ($status_filter === '_' || $status_filter === NULL || $status_filter === '') {
+          $this->setList(ListManagerEmailPage::exec($this->element_type, $effective_manager_email, $page, $pagesize));
+        }
+        else {
+          $this->setList(ListManagerEmailPage::execByStatusManagerEmail($this->element_type, $status_filter, $effective_manager_email, FALSE, $page, $pagesize));
+        }
       }
     } else {
       // SET PAGE_SIZE
@@ -172,11 +217,30 @@ class DPLSelectForm extends FormBase {
         }
       }
 
-      if ($status_filter === '_' || $status_filter === NULL || $status_filter === '') {
-        $this->setList(ListManagerEmailPage::exec($this->element_type, $effective_manager_email, 1, $pagesize));
+      $fetch_size = $pagesize;
+      if ($keyword_active) {
+        $scan_limit = self::KEYWORD_SCAN_LIMIT;
+        $size = $this->getListSize();
+        $fetch_size = $scan_limit;
+        if (is_numeric($size)) {
+          $size_int = (int) $size;
+          if ($size_int > 0) {
+            $fetch_size = min($scan_limit, $size_int);
+          }
+          elseif ($size_int === 0) {
+            $fetch_size = 0;
+          }
+        }
+      }
+
+      if ($fetch_size <= 0) {
+        $this->setList([]);
+      }
+      elseif ($status_filter === '_' || $status_filter === NULL || $status_filter === '') {
+        $this->setList(ListManagerEmailPage::exec($this->element_type, $effective_manager_email, 1, $fetch_size));
       }
       else {
-        $this->setList(ListManagerEmailPage::execByStatusManagerEmail($this->element_type, $status_filter, $effective_manager_email, FALSE, 1, $pagesize));
+        $this->setList(ListManagerEmailPage::execByStatusManagerEmail($this->element_type, $status_filter, $effective_manager_email, FALSE, 1, $fetch_size));
       }
     }
 
@@ -249,6 +313,45 @@ class DPLSelectForm extends FormBase {
       default:
         $this->single_class_name = "Object of Unknown Type";
         $this->plural_class_name = "Objects of Unknown Types";
+    }
+
+    // Apply in-memory keyword filtering to the table view output.
+    if ($view_type == 'table' && $keyword_active) {
+      $filtered_output = $this->filterOutputByKeyword($output, $text_filter);
+      $filtered_total = count($filtered_output);
+      $this->setListSize($filtered_total);
+
+      $total_pages = 1;
+      if ($filtered_total > 0 && $pagesize > 0) {
+        $total_pages = (int) ceil($filtered_total / $pagesize);
+      }
+      $page = max(1, min((int) $page, (int) $total_pages));
+      $form_state->set('current_page', $page);
+
+      $previous_page_link = ($page > 1)
+        ? ListManagerEmailPage::link($this->element_type, $page - 1, $pagesize)
+        : '';
+      $next_page_link = ($page < $total_pages)
+        ? ListManagerEmailPage::link($this->element_type, $page + 1, $pagesize)
+        : '';
+
+      $offset = ($page <= 1) ? 0 : (($page - 1) * $pagesize);
+      $output = array_slice($filtered_output, $offset, $pagesize, TRUE);
+    }
+
+    // Apply in-memory keyword filtering to the card view output.
+    if ($view_type == 'card' && $keyword_active) {
+      $filtered_output_card = $this->filterOutputByKeyword($outputCard, $text_filter);
+      $filtered_total = count($filtered_output_card);
+      $this->setListSize($filtered_total);
+
+      $current_page_size = (int) ($form_state->get('page_size') ?? $pagesize ?? 9);
+      if ($current_page_size > 0) {
+        $outputCard = array_slice($filtered_output_card, 0, $current_page_size, TRUE);
+      }
+      else {
+        $outputCard = [];
+      }
     }
 
     // PUT FORM TOGETHER
@@ -359,67 +462,109 @@ class DPLSelectForm extends FormBase {
           ],
         ];
       }
+    }
 
-      $status_options = [
-        '_' => $this->t('All Status'),
-        VSTOI::DRAFT => $this->t('Draft'),
-        VSTOI::UNDER_REVIEW => $this->t('Under Review'),
-        VSTOI::CURRENT => $this->t('Current'),
-        VSTOI::DEPLOYED => $this->t('Deployed'),
-        VSTOI::DAMAGED => $this->t('Damaged'),
-        VSTOI::DEPRECATED => $this->t('Deprecated'),
-      ];
+    $status_options = [
+      '_' => $this->t('All Status'),
+      VSTOI::DRAFT => $this->t('Draft'),
+      VSTOI::UNDER_REVIEW => $this->t('Under Review'),
+      VSTOI::CURRENT => $this->t('Current'),
+      VSTOI::DEPLOYED => $this->t('Deployed'),
+      VSTOI::DAMAGED => $this->t('Damaged'),
+      VSTOI::DEPRECATED => $this->t('Deprecated'),
+    ];
 
-      $form['actions_wrapper']['filter_container'] = [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['d-flex', 'ms-auto', 'mb-0'],
-          'style' => 'margin-bottom:0!important;'
-        ],
-      ];
+    $has_active_filters = ($text_filter !== '')
+      || ($status_filter !== '_' && $status_filter !== NULL && $status_filter !== '')
+      || ($is_admin && trim((string) $manager_filter) !== '');
 
-      $form['actions_wrapper']['filter_container']['filter_label'] = [
-        '#type' => 'label',
-        '#title' => $this->t('Filter(s): '),
-        '#attributes' => [
-          'class' => ['pt-3', 'me-2', 'fw-bold'],
-        ],
-      ];
+    $ajax_wrapper = ($view_type === 'card') ? 'cards-lazy-wrapper' : 'element-table-wrapper';
+    $ajax_callback = ($view_type === 'card') ? '::ajaxReloadCards' : '::ajaxReloadTable';
 
-      if ($is_admin) {
-        $form['actions_wrapper']['filter_container']['manager_filter'] = [
-          '#type' => 'textfield',
-          '#title' => $this->t('User'),
-          '#title_display' => 'invisible',
-          '#default_value' => $manager_filter,
-          '#ajax' => [
-            'callback' => '::ajaxReloadTable',
-            'wrapper' => 'element-table-wrapper',
-            'event' => 'change',
-          ],
-          '#attributes' => [
-            'class' => ['form-control', 'w-auto', 'mt-2', 'me-1'],
-            'style' => 'min-width:240px;margin-bottom:0!important;float:right;',
-            'placeholder' => $this->t('User email (Draft/Under Review)'),
-          ],
-        ];
-      }
+    $form['actions_wrapper']['filters_panel'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Filter(s)'),
+      '#open' => $has_active_filters,
+      '#attributes' => [
+        'class' => ['dpl-manage-filters-panel'],
+      ],
+    ];
 
-      $form['actions_wrapper']['filter_container']['status_filter'] = [
-        '#type' => 'select',
-        '#options' => $status_options,
-        '#default_value' => $status_filter,
+    $form['actions_wrapper']['filters_panel']['filter_container'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['row', 'g-2', 'align-items-end', 'dpl-manage-filters'],
+      ],
+    ];
+
+    $form['actions_wrapper']['filters_panel']['filter_container']['text_filter'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Keyword'),
+      '#title_display' => 'invisible',
+      '#default_value' => $text_filter,
+      '#prefix' => '<div class="col-12 col-lg-4">',
+      '#suffix' => '</div>',
+      '#ajax' => [
+        'callback' => $ajax_callback,
+        'wrapper' => $ajax_wrapper,
+        'event' => 'change',
+      ],
+      '#attributes' => [
+        'class' => ['form-control'],
+        'placeholder' => $this->t('Type in your search criteria'),
+        'onkeydown' => 'if (event.keyCode == 13) { event.preventDefault(); this.blur(); }',
+      ],
+    ];
+
+    if ($is_admin) {
+      $form['actions_wrapper']['filters_panel']['filter_container']['manager_filter'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('User'),
+        '#title_display' => 'invisible',
+        '#default_value' => $manager_filter,
+        '#prefix' => '<div class="col-12 col-lg-4">',
+        '#suffix' => '</div>',
         '#ajax' => [
-          'callback' => '::ajaxReloadTable',
-          'wrapper' => 'element-table-wrapper',
+          'callback' => $ajax_callback,
+          'wrapper' => $ajax_wrapper,
           'event' => 'change',
         ],
         '#attributes' => [
-          'class' => ['form-select', 'w-auto', 'mt-2'],
-          'style' => 'margin-bottom:0!important;float:right;'
+          'class' => ['form-control'],
+          'placeholder' => $this->t('User email (Draft/Under Review)'),
         ],
       ];
     }
+
+    $form['actions_wrapper']['filters_panel']['filter_container']['status_filter'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Status'),
+      '#title_display' => 'invisible',
+      '#options' => $status_options,
+      '#default_value' => $status_filter,
+      '#prefix' => '<div class="col-12 col-md-4 col-lg-2">',
+      '#suffix' => '</div>',
+      '#ajax' => [
+        'callback' => $ajax_callback,
+        'wrapper' => $ajax_wrapper,
+        'event' => 'change',
+      ],
+      '#attributes' => [
+        'class' => ['form-select'],
+      ],
+    ];
+
+    $form['actions_wrapper']['filters_panel']['filter_container']['clear_filters'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Clear Filters'),
+      '#name' => 'clear_filters',
+      '#limit_validation_errors' => [],
+      '#prefix' => '<div class="col-12 col-md-4 col-lg-2 d-grid">',
+      '#suffix' => '</div>',
+      '#attributes' => [
+        'class' => ['btn', 'btn-outline-secondary'],
+      ],
+    ];
 
     // RENDER BASED ON VIEW TYPE
     if ($view_type == 'table') {
@@ -525,6 +670,65 @@ class DPLSelectForm extends FormBase {
   public function ajaxReloadCards(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
     return $form['cards_lazy_wrapper'];
+  }
+
+  /**
+   * Clear persisted table filters for the current element type.
+   */
+  protected function clearSavedFilters(FormStateInterface $form_state): void {
+    $session = \Drupal::request()->getSession();
+    $suffix = (string) $this->element_type;
+
+    $session->remove('dpl_select_status_filter');
+    $session->remove('dpl_select_text_filter.' . $suffix);
+    $session->remove('dpl_select_manager_filter.' . $suffix);
+
+    $input = $form_state->getUserInput();
+    unset($input['text_filter'], $input['manager_filter'], $input['status_filter']);
+    $form_state->setUserInput($input);
+
+    $form_state->setValue('text_filter', '');
+    $form_state->setValue('manager_filter', '');
+    $form_state->setValue('status_filter', '_');
+    $form_state->setRebuild(TRUE);
+  }
+
+  /**
+   * Filters the given $output rows by $keyword (case-insensitive).
+   *
+   * Searches across all scalar fields in each row, stripping HTML tags.
+   */
+  protected function filterOutputByKeyword(array $output, string $keyword): array {
+    $needle = trim($keyword);
+    if ($needle === '') {
+      return $output;
+    }
+
+    $needle = function_exists('mb_strtolower') ? mb_strtolower($needle) : strtolower($needle);
+    $filtered = [];
+
+    foreach ($output as $row_key => $row) {
+      if (!is_array($row)) {
+        continue;
+      }
+
+      foreach ($row as $value) {
+        if (is_array($value)) {
+          $value_str = strip_tags((string) \Drupal::service('renderer')->renderPlain($value));
+        }
+        else {
+          $value_str = strip_tags((string) $value);
+        }
+
+        $value_str = function_exists('mb_strtolower') ? mb_strtolower($value_str) : strtolower($value_str);
+        if ($value_str !== '' && strpos($value_str, $needle) !== FALSE) {
+          $filtered[$row_key] = $row;
+          break;
+        }
+      }
+    }
+
+    return $filtered;
   }
 
   /**
@@ -784,6 +988,11 @@ class DPLSelectForm extends FormBase {
     // RETRIEVE TRIGGERING BUTTON
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
+
+    if ($button_name === 'clear_filters') {
+      $this->clearSavedFilters($form_state);
+      return;
+    }
 
     // SET USER ID AND PREVIOUS URL FOR TRACKING STORE URLS
     $uid = \Drupal::currentUser()->id();

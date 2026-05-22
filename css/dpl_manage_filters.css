@@ -1,0 +1,32 @@
+.dpl-manage-filters .form-control,
+.dpl-manage-filters .form-select {
+  width: 100%;
+  max-width: none;
+}
+
+.dpl-manage-filters-panel {
+  margin-top: 0.25rem;
+  border: 1px solid #d7dce2;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.dpl-manage-filters-panel > summary {
+  cursor: pointer;
+  padding: 0.65rem 0.9rem;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.dpl-manage-filters-panel > summary:hover {
+  color: #0b5ed7;
+}
+
+.dpl-manage-filters-panel[open] > summary {
+  border-bottom: 1px solid #e6eaef;
+  margin-bottom: 0.5rem;
+}
+
+.dpl-manage-filters-panel .dpl-manage-filters {
+  padding: 0 0.85rem 0.85rem;
+}

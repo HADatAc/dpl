@@ -5,6 +5,10 @@ namespace Drupal\dpl\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\AppendCommand;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\ListManagerEmailPage;
 use Drupal\rep\ManageOwnerFilter;
@@ -84,6 +88,8 @@ class DPLSelectForm extends FormBase {
     $form_state->set('view_type', $view_type);
     $table_active_class = ($view_type === 'table') ? ['selected-button'] : [];
     $card_active_class = ($view_type === 'card') ? ['selected-button'] : [];
+
+    $form['#attached']['library'][] = 'dpl/dpl_manage_filters';
 
     // Pagination vars (defined upfront so they can be adjusted after keyword filtering).
     $total_pages = 1;
@@ -597,6 +603,15 @@ class DPLSelectForm extends FormBase {
 
       $this->buildCardView($form['cards_lazy_wrapper'], $form_state, $header, $outputCard);
 
+      $form['cards_lazy_wrapper']['records_count'] = [
+        '#type' => 'item',
+        '#markup' => $this->t('<div id="count-cards" style="font-weight:bold; margin-top:10px; padding-right:2rem;">Currently viewing @count of @total @class</div>', [
+          '@count' => count($this->getList()),
+          '@total' => (int) $this->getListSize(),
+          '@class' => $this->plural_class_name,
+        ]),
+      ];
+
       $total_items = $this->getListSize();
       $current_page_size = $form_state->get('page_size') ?? 9;
 
@@ -669,6 +684,65 @@ class DPLSelectForm extends FormBase {
    */
   public function ajaxReloadCards(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
+
+    $triggering_element = $form_state->getTriggeringElement();
+    $trigger_name = (string) ($triggering_element['#name'] ?? '');
+
+    if ($trigger_name === 'load_more') {
+      $response = new AjaxResponse();
+
+      $previous = (int) ($form_state->get('previous_page_size') ?? 0);
+      $cards_container = $form['cards_lazy_wrapper']['element_cards_wrapper'] ?? [];
+
+      $card_keys = [];
+      if (is_array($cards_container)) {
+        foreach (array_keys($cards_container) as $key) {
+          if (is_string($key) && $key !== '' && $key[0] !== '#') {
+            $card_keys[] = $key;
+          }
+        }
+      }
+
+      $previous = max(0, min($previous, count($card_keys)));
+      $new_keys = array_slice($card_keys, $previous);
+      $append_build = [];
+      foreach ($new_keys as $k) {
+        $append_build[$k] = $cards_container[$k];
+      }
+
+      if (!empty($append_build)) {
+        $rendered = (string) \Drupal::service('renderer')->renderPlain($append_build);
+        if (trim($rendered) !== '') {
+          $response->addCommand(new AppendCommand('#element-cards-wrapper', $rendered));
+        }
+      }
+
+      $loaded = count($card_keys);
+      $total = (int) ($this->getListSize() ?? 0);
+      $has_more = $total > $loaded;
+
+      $count_markup = '<div id="count-cards" style="font-weight:bold; margin-top:10px; padding-right:2rem;">'
+        . $this->t('Currently viewing @count of @total @class', [
+          '@count' => $loaded,
+          '@total' => $total,
+          '@class' => $this->plural_class_name,
+        ])
+        . '</div>';
+      $response->addCommand(new ReplaceCommand('#count-cards', $count_markup));
+
+      $response->addCommand(new InvokeCommand('#list_state', 'val', [$has_more ? 1 : 0]));
+      if (!$has_more) {
+        $response->addCommand(new InvokeCommand('#load-more-button', 'hide', []));
+      }
+
+      $response->addCommand(new InvokeCommand('html, body', 'animate', [
+        ['scrollTop' => 99999],
+        'slow',
+      ]));
+
+      return $response;
+    }
+
     return $form['cards_lazy_wrapper'];
   }
 
@@ -756,6 +830,19 @@ class DPLSelectForm extends FormBase {
       '#type' => 'container',
       '#attributes' => ['id' => 'element-cards-wrapper', 'class' => ['row', 'mt-3']],
     ];
+
+    if (empty($output)) {
+      $form['element_cards_wrapper']['no_results'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['col-12']],
+        'message' => [
+          '#markup' => '<div class="alert alert-info mb-0">'
+            . $this->t('No @items found for the current filters.', ['@items' => $this->plural_class_name])
+            . '</div>',
+        ],
+      ];
+      return;
+    }
 
     foreach ($output as $key => $item) {
       $sanitized_key = md5($key);
@@ -926,6 +1013,7 @@ class DPLSelectForm extends FormBase {
   {
     // Atualiza o tamanho da página para carregar mais itens
     $current_page_size = $form_state->get('page_size') ?? 9;
+    $form_state->set('previous_page_size', (int) $current_page_size);
     $pagesize = $current_page_size + 9; // Soma mais 9 ao tamanho atual
     $form_state->set('page_size', $pagesize);
 

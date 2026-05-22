@@ -88,6 +88,7 @@ class ManageDeploymentsForm extends FormBase {
 
     // Attach custom library.
     $form['#attached']['library'][] = 'dpl/dpl_accordion';
+    $form['#attached']['library'][] = 'dpl/dpl_manage_filters';
 
     // FIND Deployment State Related to URL State
     switch ($state) {

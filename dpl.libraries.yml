@@ -15,6 +15,12 @@ dpl_accordion:
       css/dpl_accordion.css: {}
   js:
     js/dpl_accordion.js: {}
+
+dpl_manage_filters:
+  version: VERSION
+  css:
+    theme:
+      css/dpl_manage_filters.css: {}
 dpl_onlytabs:
   version: VERSION
   css:

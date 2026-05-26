@@ -47,6 +47,7 @@ class AddInstanceForm extends FormBase {
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
     $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $preferred_commandinstance = \Drupal::config('rep.settings')->get('preferred_commandinstance') ?? 'command instance';
     //dpm($elementtype);
 
     // MODAL
@@ -78,6 +79,12 @@ class AddInstanceForm extends FormBase {
       $autocomplete = 'dpl.component_autocomplete';
       $treepath = 'component';
       $treename = ucfirst($preferred_component);
+    }
+    if ($elementtype == 'commandinstance') {
+      $this->setElementName(ucfirst($preferred_commandinstance));
+      $autocomplete = 'dpl.commandinstance_autocomplete';
+      $treepath = 'command';
+      $treename = ucfirst($preferred_commandinstance);
     }
 
     if ($this->getElementName() == NULL) {
@@ -270,6 +277,9 @@ class AddInstanceForm extends FormBase {
     }
     if ($this->getElementType() == 'componentinstance') {
       $hascoType = VSTOI::COMPONENT_INSTANCE;
+    }
+    if ($this->getElementType() == 'commandinstance') {
+      $hascoType = VSTOI::COMMAND_INSTANCE;
     }
 
     $typeUri = '';

@@ -85,6 +85,20 @@ dpl.manage_component_instances:
   requirements:
     _permission: 'access content'
 
+dpl.manage_command_instances:
+  title: Manage Command Instances
+  description: Manage Command Instances
+  route_name: dpl.select_element
+  route_parameters:
+    elementtype: 'commandinstance'
+    page: '1'
+    pagesize: '9'
+  parent: dpl.manage_top_level
+  menu_name: main
+  weight: 24
+  requirements:
+    _permission: 'access content'
+
 dpl.manage_deployments:
   title: Manage Deployments
   description: Manage Deployments

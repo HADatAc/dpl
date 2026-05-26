@@ -237,6 +237,14 @@ dpl.componentinstance_autocomplete:
   requirements:
     _permission: 'access content'
 
+dpl.commandinstance_autocomplete:
+  path: '/dpl/type/autocomplete/commandinstance'
+  defaults:
+    _controller: '\Drupal\dpl\Controller\AutocompleteController::execCommandInstance'
+    _format: json
+  requirements:
+    _permission: 'access content'
+
 # API RUI TEST OPTIONS
 
 dpl.platform_list:

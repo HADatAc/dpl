@@ -39,6 +39,10 @@ class AutocompleteController extends ControllerBase{
     return self::exec($request, 'componentinstance');
   }
 
+  public function execCommandInstance(Request $request) {
+    return self::exec($request, 'commandinstance');
+  }
+
   /**
    * @return JsonResponse
    */

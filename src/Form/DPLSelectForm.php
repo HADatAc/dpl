@@ -256,6 +256,7 @@ class DPLSelectForm extends FormBase {
     $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
     $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'Platform';
+    $preferred_commandinstance = \Drupal::config('rep.settings')->get('preferred_commandinstance') ?? 'Command Instance';
 
     $platform_label = ucfirst($preferred_platform);
     $platform_plural = preg_match('/[^aeiou]y$/i', $platform_label)
@@ -295,6 +296,15 @@ class DPLSelectForm extends FormBase {
       case "componentinstance":
         $this->single_class_name = $preferred_component . " Instance";
         $this->plural_class_name = $preferred_component . " Instances";
+        $header = VSTOIInstance::generateHeader($this->element_type);
+        $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
+        $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
+        break;
+
+      // COMMAND INSTANCE
+      case "commandinstance":
+        $this->single_class_name = ucfirst($preferred_commandinstance);
+        $this->plural_class_name = ucfirst($preferred_commandinstance) . "s";
         $header = VSTOIInstance::generateHeader($this->element_type);
         $output = VSTOIInstance::generateOutput($this->element_type, $this->getList());
         $outputCard = VSTOIInstance::generateCardOutput($this->element_type, $this->getList());
@@ -1111,7 +1121,8 @@ class DPLSelectForm extends FormBase {
       }
       if ($this->element_type == 'platforminstance' ||
           $this->element_type == 'instrumentinstance' ||
-          $this->element_type == 'componentinstance') {
+          $this->element_type == 'componentinstance' ||
+          $this->element_type == 'commandinstance') {
         Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.add_instance');
         $url = Url::fromRoute('dpl.add_instance');
         $url->setRouteParameter('elementtype', $this->element_type);
@@ -1141,7 +1152,8 @@ class DPLSelectForm extends FormBase {
         }
         if ($this->element_type == 'platforminstance' ||
             $this->element_type == 'instrumentinstance' ||
-            $this->element_type == 'componentinstance') {
+            $this->element_type == 'componentinstance' ||
+            $this->element_type == 'commandinstance') {
           Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
           $url = Url::fromRoute('dpl.edit_instance');
           $url->setRouteParameter('instanceuri', base64_encode($first));
@@ -1159,7 +1171,7 @@ class DPLSelectForm extends FormBase {
         $api = \Drupal::service('rep.api_connector');
         foreach($rows as $shortUri) {
           $uri = Utils::plainUri($shortUri);
-          $api->elementDel('platform',$uri);
+          $api->elementDel($this->element_type, $uri);
         }
         \Drupal::messenger()->addMessage(t("Selected " . $this->plural_class_name . " has/have been deleted successfully."));
         return;
@@ -1185,28 +1197,40 @@ class DPLSelectForm extends FormBase {
     $uid = \Drupal::currentUser()->id();
     $previousUrl = \Drupal::request()->getRequestUri();
 
-    // Rastreia a URL para fins de navegação
-    Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_' . $this->element_type);
-
     // Defina o parâmetro correto com base no tipo de elemento
     $params = [];
     switch ($this->element_type) {
       case 'platform':
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_platform');
         $params = ['platformuri' => base64_encode($uri)];
+        $route = 'dpl.edit_platform';
         break;
       case 'stream':
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_stream');
         $params = ['streamuri' => base64_encode($uri)];
+        $route = 'dpl.edit_stream';
         break;
       case 'deployment':
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_deployment');
         $params = ['deploymenturi' => base64_encode($uri)];
+        $route = 'dpl.edit_deployment';
+        break;
+      case 'platforminstance':
+      case 'instrumentinstance':
+      case 'componentinstance':
+      case 'commandinstance':
+        Utils::trackingStoreUrls($uid, $previousUrl, 'dpl.edit_instance');
+        $params = ['instanceuri' => base64_encode($uri)];
+        $route = 'dpl.edit_instance';
         break;
       default:
         $params = ['elementuri' => base64_encode($uri)];
+        $route = 'dpl.edit_' . $this->element_type;
         break;
     }
 
     // Define a URL de edição com o parâmetro correto
-    $url = Url::fromRoute('dpl.edit_' . $this->element_type, $params);
+    $url = Url::fromRoute($route, $params);
 
     // Redireciona para a URL de edição
     $form_state->setRedirectUrl($url);

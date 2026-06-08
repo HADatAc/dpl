@@ -47,6 +47,8 @@ class DPLListForm extends FormBase {
     $page = $page ?? 1;
     $pagesize = $pagesize ?? 12;
 
+    $form['#attached']['library'][] = 'dpl/dpl_manage_filters';
+
     // Keyword filter (defaults from route)
     $text_filter = $form_state->getValue('text_filter');
     if ($text_filter === NULL) {
@@ -159,33 +161,36 @@ class DPLListForm extends FormBase {
     ];
 
     // Filter UI
-    $form['filter_container'] = [
-      '#type' => 'container',
+    $form['filters_panel'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Filter(s)'),
+      '#open' => trim((string) $text_filter) !== '',
       '#attributes' => [
-        'class' => ['d-flex', 'ms-auto', 'mb-0'],
-        'style' => 'margin-bottom:0!important;'
+        'class' => ['dpl-manage-filters-panel'],
       ],
     ];
 
-    $form['filter_container']['filter_label'] = [
-      '#type' => 'label',
-      '#title' => $this->t('Filter(s): '),
+    $form['filters_panel']['filter_container'] = [
+      '#type' => 'container',
       '#attributes' => [
-        'class' => ['pt-3', 'me-2', 'fw-bold'],
-      ]
+        'class' => ['row', 'g-2', 'align-items-end', 'dpl-manage-filters'],
+      ],
     ];
 
-    $form['filter_container']['text_filter'] = [
+    $form['filters_panel']['filter_container']['text_filter'] = [
       '#type' => 'textfield',
+      '#title' => $this->t('Keyword'),
+      '#title_display' => 'invisible',
       '#default_value' => $text_filter,
+      '#prefix' => '<div class="col-12 col-lg-4">',
+      '#suffix' => '</div>',
       '#ajax' => [
         'callback' => '::ajaxReloadTable',
         'wrapper' => 'element-table-wrapper',
         'event' => 'change',
       ],
       '#attributes' => [
-        'class' => ['form-select', 'w-auto', 'mt-2', 'me-1'],
-        'style' => 'max-width:230px;margin-bottom:0!important;float:right;',
+        'class' => ['form-control'],
         'placeholder' => 'Type in your search criteria',
         'onkeydown' => 'if (event.keyCode == 13) { event.preventDefault(); this.blur(); }',
       ],

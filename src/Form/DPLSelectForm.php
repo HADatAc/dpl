@@ -73,7 +73,11 @@ class DPLSelectForm extends FormBase {
     $this->manager_name = $user->name->value;
 
     // GET ELEMENT TYPE
-    $this->element_type = $elementtype;
+    // Keep backward compatibility with older links that still use "instance".
+    $legacy_type_alias = [
+      'instance' => 'instrumentinstance',
+    ];
+    $this->element_type = $legacy_type_alias[$elementtype] ?? $elementtype;
     if ($page === NULL) {
       $page = 1;
     }
@@ -262,6 +266,11 @@ class DPLSelectForm extends FormBase {
       ? substr($platform_label, 0, -1) . 'ies'
       : $platform_label . 's';
 
+    // Safe defaults to avoid uninitialized-variable fatals for unknown types.
+    $header = [];
+    $output = [];
+    $outputCard = [];
+
     switch ($this->element_type) {
 
       // PLATFORM
@@ -319,6 +328,9 @@ class DPLSelectForm extends FormBase {
       default:
         $this->single_class_name = "Object of Unknown Type";
         $this->plural_class_name = "Objects of Unknown Types";
+        $header = [];
+        $output = [];
+        $outputCard = [];
     }
 
     // Apply in-memory keyword filtering to the table view output.
@@ -416,15 +428,14 @@ class DPLSelectForm extends FormBase {
     $form['actions_wrapper'] = [
       '#type' => 'container',
       '#attributes' => [
-        'class' => ['d-flex', 'align-items-center', 'justify-content-between', 'mb-0'],
-        'style' => 'margin-bottom:0!important;'
+        'class' => ['d-flex', 'flex-column', 'align-items-stretch', 'mb-0'],
       ],
     ];
 
     $form['actions_wrapper']['buttons_container'] = [
       '#type' => 'container',
       '#attributes' => [
-        'class' => ['d-flex', 'gap-2', 'flex-nowrap'],
+        'class' => ['d-flex', 'gap-2', 'flex-nowrap', 'justify-content-start', 'mb-2'],
         'style' => 'flex-wrap:nowrap;overflow-x:auto;'
       ],
     ];
@@ -492,7 +503,7 @@ class DPLSelectForm extends FormBase {
       '#title' => $this->t('Filter(s)'),
       '#open' => $has_active_filters,
       '#attributes' => [
-        'class' => ['dpl-manage-filters-panel'],
+        'class' => ['dpl-manage-filters-panel', 'w-100'],
       ],
     ];
 

@@ -152,7 +152,17 @@ class AddPlatformForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('platform',$platformJson);
+      $addResponse = $api->elementAdd('platform', $platformJson);
+      $created = $api->parseObjectResponse($addResponse, 'elementAdd');
+      if ($created === NULL) {
+        throw new \RuntimeException('API rejected platform creation payload.');
+      }
+
+      $verify = $api->parseObjectResponse($api->getUri($newPlatformUri), 'getUri');
+      if ($verify === NULL) {
+        throw new \RuntimeException('Platform was not persisted after create call.');
+      }
+
       \Drupal::messenger()->addMessage(t('@platform has been added successfully.', ['@platform' => $platform_label]));
       self::backUrl();
       return;

@@ -149,7 +149,17 @@ class AddDeploymentForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('deployment',$deploymentJson);
+      $addResponse = $api->elementAdd('deployment', $deploymentJson);
+      $created = $api->parseObjectResponse($addResponse, 'elementAdd');
+      if ($created === NULL) {
+        throw new \RuntimeException('API rejected deployment creation payload.');
+      }
+
+      $verify = $api->parseObjectResponse($api->getUri($newDeploymentUri), 'getUri');
+      if ($verify === NULL) {
+        throw new \RuntimeException('Deployment was not persisted after create call.');
+      }
+
       \Drupal::messenger()->addMessage(t("Deployment has been added successfully."));
       self::backUrl();
       return;

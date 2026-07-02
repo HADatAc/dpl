@@ -324,8 +324,7 @@ class AddInstanceForm extends FormBase {
       $apiResponse = $api->elementAdd($this->getElementType(), $streamJson);
       $parsed = $api->parseObjectResponse($apiResponse, 'elementAdd');
       if ($parsed === NULL) {
-        self::backUrl();
-        return;
+        throw new \RuntimeException('API rejected instance creation payload.');
       }
 
       // Guard against responses that are already decoded but logically failed.
@@ -345,9 +344,12 @@ class AddInstanceForm extends FormBase {
         if (isset($decodedResponse->body) && is_string($decodedResponse->body) && $decodedResponse->body !== '') {
           $errorMessage = $decodedResponse->body;
         }
-        \Drupal::messenger()->addError($errorMessage);
-        self::backUrl();
-        return;
+        throw new \RuntimeException((string) $errorMessage);
+      }
+
+      $verify = $api->parseObjectResponse($api->getUri($newInstanceUri), 'getUri');
+      if ($verify === NULL) {
+        throw new \RuntimeException('Instance was not persisted after create call.');
       }
 
       \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));

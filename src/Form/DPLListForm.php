@@ -44,47 +44,66 @@ class DPLListForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $elementtype=NULL, $keyword=NULL, $page=NULL, $pagesize=NULL) {
 
+    $page = $page ?? 1;
+    $pagesize = $pagesize ?? 12;
+
+    $form['#attached']['library'][] = 'dpl/dpl_manage_filters';
+
+    // Keyword filter (defaults from route)
+    $text_filter = $form_state->getValue('text_filter');
+    if ($text_filter === NULL) {
+      $text_filter = ($keyword !== NULL && $keyword !== '_' ? $keyword : '');
+    }
+    $keyword_param = ($text_filter === NULL || $text_filter === '') ? '_' : $text_filter;
+
     // GET TOTAL NUMBER OF ELEMENTS AND TOTAL NUMBER OF PAGES
     $this->setListSize(-1);
     if ($elementtype != NULL) {
-      $this->setListSize(ListKeywordPage::total($elementtype, $keyword));
+      $this->setListSize(ListKeywordPage::total($elementtype, $keyword_param));
     }
-    if (gettype($this->list_size) == 'string') {
-      $total_pages = "0";
-    } else {
-      if ($this->list_size % $pagesize == 0) {
-        $total_pages = $this->list_size / $pagesize;
-      } else {
-        $total_pages = floor($this->list_size / $pagesize) + 1;
+    $total_pages = 1;
+    if (is_numeric($this->list_size) && $pagesize > 0) {
+      $size = (int) $this->list_size;
+      if ($size > 0) {
+        $total_pages = (int) ceil($size / $pagesize);
       }
     }
+
+    // Clamp current page
+    $page = max(1, min((int) $page, (int) $total_pages));
 
     // CREATE LINK FOR NEXT PAGE AND PREVIOUS PAGE
     if ($page < $total_pages) {
       $next_page = $page + 1;
-      $next_page_link = ListKeywordPage::link($elementtype, $keyword, $next_page, $pagesize);
+      $next_page_link = ListKeywordPage::link($elementtype, $keyword_param, $next_page, $pagesize);
     } else {
       $next_page_link = '';
     }
     if ($page > 1) {
       $previous_page = $page - 1;
-      $previous_page_link = ListKeywordPage::link($elementtype, $keyword, $previous_page, $pagesize);
+      $previous_page_link = ListKeywordPage::link($elementtype, $keyword_param, $previous_page, $pagesize);
     } else {
       $previous_page_link = '';
     }
 
     // RETRIEVE ELEMENTS
-    $this->setList(ListKeywordPage::exec($elementtype, $keyword, $page, $pagesize));
+    $this->setList(ListKeywordPage::exec($elementtype, $keyword_param, $page, $pagesize));
 
-    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument');
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'Instrument';
     $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'Component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'Platform';
+
+    $platform_label = ucfirst($preferred_platform);
+    $platform_plural = preg_match('/[^aeiou]y$/i', $platform_label)
+      ? substr($platform_label, 0, -1) . 'ies'
+      : $platform_label . 's';
 
     $class_name = "";
     switch ($elementtype) {
 
       // PLATFORM
       case "platform":
-        $class_name = $preferred_instrument . "s";
+        $class_name = $platform_plural;
         $header = Platform::generateHeader();
         $output = Platform::generateOutput($this->getList());
         break;
@@ -105,7 +124,7 @@ class DPLListForm extends FormBase {
 
       // PLATFORM INSTANCE
       case "platforminstance":
-        $class_name = "Platform Instances";
+        $class_name = $platform_label . " Instances";
         $header = VSTOIInstance::generateHeader($elementtype);
         $output = VSTOIInstance::generateOutput($elementtype, $this->getList());
         break;
@@ -141,20 +160,61 @@ class DPLListForm extends FormBase {
       '#markup' => t('<h3>Available <font style="color:DarkGreen;">' . $class_name . '</font></h3>'),
     ];
 
-    // PUT FORM TOGETHER
-    $form['element_table'] = [
+    // Filter UI
+    $form['filters_panel'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Filter(s)'),
+      '#open' => trim((string) $text_filter) !== '',
+      '#attributes' => [
+        'class' => ['dpl-manage-filters-panel'],
+      ],
+    ];
+
+    $form['filters_panel']['filter_container'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['row', 'g-2', 'align-items-end', 'dpl-manage-filters'],
+      ],
+    ];
+
+    $form['filters_panel']['filter_container']['text_filter'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Keyword'),
+      '#title_display' => 'invisible',
+      '#default_value' => $text_filter,
+      '#prefix' => '<div class="col-12 col-lg-4">',
+      '#suffix' => '</div>',
+      '#ajax' => [
+        'callback' => '::ajaxReloadTable',
+        'wrapper' => 'element-table-wrapper',
+        'event' => 'change',
+      ],
+      '#attributes' => [
+        'class' => ['form-control'],
+        'placeholder' => 'Type in your search criteria',
+        'onkeydown' => 'if (event.keyCode == 13) { event.preventDefault(); this.blur(); }',
+      ],
+    ];
+
+    // Table + pager wrapper (AJAX)
+    $form['element_table_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'element-table-wrapper'],
+    ];
+
+    $form['element_table_wrapper']['element_table'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $output,
       '#empty' => t('No results found'),
     ];
 
-    $form['pager'] = [
+    $form['element_table_wrapper']['pager'] = [
       '#theme' => 'list-page',
       '#items' => [
         'page' => strval($page),
-        'first' => ListKeywordPage::link($elementtype, $keyword, 1, $pagesize),
-        'last' => ListKeywordPage::link($elementtype, $keyword, $total_pages, $pagesize),
+        'first' => ListKeywordPage::link($elementtype, $keyword_param, 1, $pagesize),
+        'last' => ListKeywordPage::link($elementtype, $keyword_param, $total_pages, $pagesize),
         'previous' => $previous_page_link,
         'next' => $next_page_link,
         'last_page' => strval($total_pages),
@@ -164,6 +224,14 @@ class DPLListForm extends FormBase {
     ];
 
     return $form;
+  }
+
+  /**
+   * AJAX callback to reload list when filters change.
+   */
+  public function ajaxReloadTable(array &$form, FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+    return $form['element_table_wrapper'];
   }
 
   /**

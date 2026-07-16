@@ -53,9 +53,9 @@ class EditInstanceForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $instanceuri = NULL) {
-
-    // Does the repo have a social network?
-    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
 
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -82,23 +82,23 @@ class EditInstanceForm extends FormBase {
     $this->setElementName(NULL);
     $autocomplete = '';
     if ($this->getElement()->hascoTypeUri == VSTOI::PLATFORM_INSTANCE) {
-      $this->setElementName("Platform Instance");
+      $this->setElementName(ucfirst($preferred_platform) . " Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
       $treepath = 'platform';
-      $treename = 'Platform';
+      $treename = ucfirst($preferred_platform);
     } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
-      $this->setElementName("Instrument Instance");
+      $this->setElementName(ucfirst($preferred_instrument)." Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
       $treepath = 'instrument';
-      $treename = 'Instrument';
+      $treename = ucfirst($preferred_instrument);
     } else if ($this->getElement()->hascoTypeUri == VSTOI::COMPONENT_INSTANCE) {
-      $this->setElementName("Component Instance");
+      $this->setElementName(ucfirst($preferred_component)." Instance");
       $this->setElementType("componentinstance");
       $autocomplete = 'dpl.component_autocomplete';
       $treepath = 'component';
-      $treename = 'Component';
+      $treename = ucfirst($preferred_component);
     }
 
     if ($this->getElementName() == NULL) {
@@ -167,39 +167,55 @@ class EditInstanceForm extends FormBase {
       '#title' => $this->t('Acquisition Date'),
       '#default_value' => $this->getElement()->hasAcquisitionDate,
     ];
-    if ($socialEnabled) {
-      $api = \Drupal::service('rep.api_connector');
-      $ownerUri = '';
-      if (isset($this->getElement()->hasOwnerUri) && $this->getElement()->hasOwnerUri != NULL) {
-        $ownerUri = $api->getUri($this->getElement()->hasOwnerUri);
+
+    $ownerDefault = '';
+    if (isset($this->getElement()->hasOwnerUri) && $this->getElement()->hasOwnerUri != NULL) {
+      $ownerLabel = (string) $this->getElement()->hasOwnerUri;
+      try {
+        $ownerObj = $api->parseObjectResponse($api->getUri($this->getElement()->hasOwnerUri), 'getUri');
+        if (is_object($ownerObj)) {
+          $ownerLabel = (string) ($ownerObj->label ?? ($ownerObj->name ?? $ownerLabel));
+        }
       }
-      $maintainerUri = '';
-      if (isset($this->getElement()->hasMaintainerUri) && $this->getElement()->hasMaintainerUri != NULL) {
-        $maintainerUri = $api->getUri($this->getElement()->hasMaintainerUri);
+      catch (\Throwable $e) {
+        // Keep URI as label fallback.
       }
-      $form['instance_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        '#default_value' => isset($this->getElement()->hasOwnerUri) ?
-                              Utils::fieldToAutocomplete($this->getElement()->hasOwnerUri, $ownerUri->label) : '',
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'organization',
-        ],
-      ];
-      $form['instance_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        '#default_value' => isset($this->getElement()->hasMaintainerUri) ?
-                              Utils::fieldToAutocomplete($this->getElement()->hasMaintainerUri, $maintainerUri->label) : '',
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'person',
-        ],
-      ];
+      $ownerDefault = Utils::fieldToAutocomplete($this->getElement()->hasOwnerUri, $ownerLabel);
     }
+
+    $maintainerDefault = '';
+    if (isset($this->getElement()->hasMaintainerUri) && $this->getElement()->hasMaintainerUri != NULL) {
+      $maintainerLabel = (string) $this->getElement()->hasMaintainerUri;
+      try {
+        $maintainerObj = $api->parseObjectResponse($api->getUri($this->getElement()->hasMaintainerUri), 'getUri');
+        if (is_object($maintainerObj)) {
+          $maintainerLabel = (string) ($maintainerObj->label ?? ($maintainerObj->name ?? $maintainerLabel));
+        }
+      }
+      catch (\Throwable $e) {
+        // Keep URI as label fallback.
+      }
+      $maintainerDefault = Utils::fieldToAutocomplete($this->getElement()->hasMaintainerUri, $maintainerLabel);
+    }
+
+    $form['instance_owner'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Owner'),
+      '#default_value' => $ownerDefault,
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
+    $form['instance_maintainer'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Maintainer'),
+      '#default_value' => $maintainerDefault,
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
     // --- DAMAGE FIELDS INLINE ---
     // 1) Container flex/Bootstrap row
     $form['damage_wrapper'] = [
@@ -315,7 +331,6 @@ class EditInstanceForm extends FormBase {
     try{
       $useremail = \Drupal::currentUser()->getEmail();
 
-      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
       $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
       $damageDate = $form_state->getValue('has_damage_date') ?: '';
       $acquisitionDate = '';
@@ -339,22 +354,48 @@ class EditInstanceForm extends FormBase {
         $payload['hasDamageDate'] = $damageDate;
       }
 
-      if ($socialEnabled) {
-        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
-        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
-      }
+      $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+      $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
 
       $payload['hasSIRManagerEmail'] = \Drupal::currentUser()->getEmail();
 
       $instanceJson = json_encode($payload);
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd($this->getElementType(),$instanceJson);
-      \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));
+      $apiResponse = $api->elementAdd($this->getElementType(), $instanceJson);
+      $parsed = $api->parseObjectResponse($apiResponse, 'elementAdd');
+      if ($parsed === NULL) {
+        self::backUrl();
+        return;
+      }
+
+      // Guard against responses that are already decoded but logically failed.
+      $decodedResponse = NULL;
+      if (is_string($apiResponse)) {
+        $decodedResponse = json_decode($apiResponse);
+      }
+      elseif (is_array($apiResponse)) {
+        $decodedResponse = (object) $apiResponse;
+      }
+      elseif (is_object($apiResponse)) {
+        $decodedResponse = $apiResponse;
+      }
+
+      if (is_object($decodedResponse) && isset($decodedResponse->isSuccessful) && !$decodedResponse->isSuccessful) {
+        $errorMessage = t('API service failed to update @name.', ['@name' => strtolower($this->getElementName())]);
+        if (isset($decodedResponse->body) && is_string($decodedResponse->body) && $decodedResponse->body !== '') {
+          $errorMessage = $decodedResponse->body;
+        }
+        \Drupal::messenger()->addError($errorMessage);
+        self::backUrl();
+        return;
+      }
+
+      \Drupal::messenger()->addMessage(t($this->getElementName() . " has been updated successfully."));
       self::backUrl();
       return;
     }catch(\Exception $e){
-      \Drupal::messenger()->addMessage(t("An error occurred while adding stream: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t("An error occurred while updating instance: ".$e->getMessage()));
       self::backUrl();
       return;
     }

@@ -25,18 +25,21 @@ class AddDeploymentForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+
     //$form['deployment_name'] = [
     //  '#type' => 'textfield',
     //  '#title' => $this->t('Name'),
     //];
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t(ucfirst($preferred_platform) . ' Instance'),
       '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
     ];
     $form['deployment_instrument_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Instance'),
       '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
     ];
     $form['deployment_version'] = [
@@ -93,6 +96,8 @@ class AddDeploymentForm extends FormBase {
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     if ($button_name === 'back') {
       self::backUrl();
       return;
@@ -117,7 +122,7 @@ class AddDeploymentForm extends FormBase {
 
     $finalLabel = 'a deployment';
     if ($platformInstanceName == '' && $instrumentInstanceName != '') {
-      $finalLabel = 'a deployment with instrument ' . $instrumentInstanceName;
+      $finalLabel = 'a deployment with '.lcfirst($preferred_instrument).' ' . $instrumentInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName == '') {
       $finalLabel = 'a deployment @ ' . $platformInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName != '') {
@@ -144,7 +149,17 @@ class AddDeploymentForm extends FormBase {
         '"hasSIRManagerEmail":"'.$useremail.'"}';
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd('deployment',$deploymentJson);
+      $addResponse = $api->elementAdd('deployment', $deploymentJson);
+      $created = $api->parseObjectResponse($addResponse, 'elementAdd');
+      if ($created === NULL) {
+        throw new \RuntimeException('API rejected deployment creation payload.');
+      }
+
+      $verify = $api->parseObjectResponse($api->getUri($newDeploymentUri), 'getUri');
+      if ($verify === NULL) {
+        throw new \RuntimeException('Deployment was not persisted after create call.');
+      }
+
       \Drupal::messenger()->addMessage(t("Deployment has been added successfully."));
       self::backUrl();
       return;

@@ -73,6 +73,9 @@ class ExecuteCloseStreamForm extends FormBase {
     // Globals
     $api = \Drupal::service('rep.api_connector');
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
       \Drupal::messenger()->addError(t("Invalid Deployment execute/close operation."));
@@ -126,19 +129,21 @@ class ExecuteCloseStreamForm extends FormBase {
 
     $validationError = NULL;
 
-    if ($this->getStream()->method === 'Files') {
+    $isFilesMethod = strtolower((string) ($this->getStream()->method ?? '')) === 'files';
+
+    if ($isFilesMethod) {
       if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
+        $validationError = "Stream is missing both ".$preferred_study." and SEMANTIC DATA DICTIONARY.";
       }
       if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing associated STUDY.";
+        $validationError = "Stream is missing associated ".$preferred_study.".";
       }
       if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
         $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
       }
     } else {
       if (!isset($this->getStream()->study) ) {
-        $validationError = "Stream is missing STUDY.";
+        $validationError = "Stream is missing ".$preferred_study.".";
       }
     }
 
@@ -162,11 +167,11 @@ class ExecuteCloseStreamForm extends FormBase {
     ];
     $form['stream_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];
-    if ($this->getStream()->method === 'Files') {
+    if ($isFilesMethod) {
       $form['stream_semanticDataDictionary_instance'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Semantic Data Dictionary (SDD)'),
@@ -304,18 +309,26 @@ class ExecuteCloseStreamForm extends FormBase {
         'datasetUri'                => $orig->datasetUri,
       ];
 
-      if ($this->getStream()->method === 'files') {
+      if ($isFilesMethod) {
         $clone['semanticDataDictionaryUri'] = $orig->semanticDataDictionaryUri;
         $clone['deploymentUri']             = $orig->deploymentUri;
       }
 
       if ($this->getMode() === 'execute') {
-        $clone['startedAt']         = $form_state->getValue('stream_start_datetime')->format('Y-m-d\TH:i:s.v');
+        $startAt = $form_state->getValue('stream_start_datetime');
+        if (!$startAt instanceof \DateTimeInterface) {
+          $startAt = new \DateTimeImmutable('now');
+        }
+        $clone['startedAt']         = $startAt->format('Y-m-d\TH:i:s.v');
         $clone['hasStreamStatus']   = HASCO::ACTIVE;
       }
       elseif ($this->getMode() === 'close') {
         $clone['startedAt']         = $orig->startedAt;
-        $clone['endedAt']           = $form_state->getValue('stream_end_datetime')->format('Y-m-d\TH:i:s.v');
+        $endAt = $form_state->getValue('stream_end_datetime');
+        if (!$endAt instanceof \DateTimeInterface) {
+          $endAt = new \DateTimeImmutable('now');
+        }
+        $clone['endedAt']           = $endAt->format('Y-m-d\TH:i:s.v');
         $clone['hasStreamStatus']   = HASCO::CLOSED;
         $filename = $this->getStream()->messageArchiveId . '.txt';
         $this->stopSubscription($filename);
@@ -351,7 +364,7 @@ class ExecuteCloseStreamForm extends FormBase {
       $api->elementAdd('stream', json_encode($clone));
 
       // RENAME to execute because new end-points are still not working
-      if ($this->getMode() === 'execute' && $this->getStream()->method === 'files') {
+      if ($this->getMode() === 'execute' && $isFilesMethod) {
 
         $useremail = \Drupal::currentUser()->getEmail();
         $streamUri = $this->getStreamUri();
@@ -416,7 +429,7 @@ class ExecuteCloseStreamForm extends FormBase {
           }
         }
       }
-      
+
       \Drupal::messenger()->addMessage(t("Stream has been updated successfully."));
       self::backUrl();
       return;

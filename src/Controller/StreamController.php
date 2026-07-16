@@ -187,7 +187,7 @@ class StreamController extends ControllerBase {
       ], 500);
     }
 
-    // 5) All good — success!
+    // 5) All good - success!
     return new JsonResponse([
       'status' => 'success',
       'message' => $this->t('The file was successfully submitted for ingestion.'),

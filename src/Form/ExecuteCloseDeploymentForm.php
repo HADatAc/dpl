@@ -44,6 +44,11 @@ class ExecuteCloseDeploymentForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $mode = NULL, $deploymenturi = NULL) {
     $api = \Drupal::service('rep.api_connector');
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+    $platform_label = ucfirst($preferred_platform);
+    $instrument_label = ucfirst($preferred_instrument);
+
     // CHECK MODE
     if (($mode == NULL) ||
         ($mode != 'execute' && $mode != 'close')) {
@@ -69,30 +74,36 @@ class ExecuteCloseDeploymentForm extends FormBase {
     if (isset($this->getDeployment()->platformInstance) &&
         isset($this->getDeployment()->platformInstance->uri) &&
         isset($this->getDeployment()->platformInstance->label)) {
-      $platformInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platformInstance->uri,
-        $this->getDeployment()->platformInstance->label
+      $platformInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->platformInstance->uri,
+          $this->getDeployment()->platformInstance->label
+        ),
+        127
       );
     }
     $instrumentInstanceLabel = ' ';
     if (isset($this->getDeployment()->instrumentInstance) &&
         isset($this->getDeployment()->instrumentInstance->uri) &&
         isset($this->getDeployment()->instrumentInstance->label)) {
-      $instrumentInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrumentInstance->uri,
-        $this->getDeployment()->instrumentInstance->label
+      $instrumentInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->instrumentInstance->uri,
+          $this->getDeployment()->instrumentInstance->label
+        ),
+        127
       );
     }
 
     $validationError = NULL;
     if (!isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing both PLATFORM instance and INSTRUMENT instance.";
+      $validationError = "Deployment is missing both " . $platform_label . " instance and " . $instrument_label . " instance.";
     }
     if (!isset($this->getDeployment()->platformInstance) && isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing associated PLATFORM instance.";
+      $validationError = "Deployment is missing associated " . $platform_label . " instance.";
     }
     if (isset($this->getDeployment()->platformInstance) && !isset($this->getDeployment()->instrumentInstance)) {
-      $validationError = "Deployment is missing associated INSTRUMENT instance.";
+      $validationError = "Deployment is missing associated " . $instrument_label . " instance.";
     }
 
     //dpm($this->getDeployment());
@@ -117,13 +128,13 @@ class ExecuteCloseDeploymentForm extends FormBase {
     ];
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t($platform_label . ' Instance'),
       '#default_value' => $platformInstanceLabel,
       '#disabled' => TRUE,
     ];
     $form['deployment_instrument_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Instance'),
       '#default_value' => $instrumentInstanceLabel,
       '#disabled' => TRUE,
     ];
@@ -222,6 +233,8 @@ class ExecuteCloseDeploymentForm extends FormBase {
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     if ($button_name === 'back') {
       self::backUrl();
       return;
@@ -290,7 +303,7 @@ class ExecuteCloseDeploymentForm extends FormBase {
         $api->elementAdd('instrumentinstance', json_encode($iiClone, JSON_UNESCAPED_SLASHES));
 
       } else {
-        \Drupal::messenger()->addError(t("Failed to Execute, could not retrieve Instrument Instance."));
+        \Drupal::messenger()->addError(t("Failed to Execute, could not retrieve ".ucfirst($preferred_instrument)." Instance."));
         self::backUrl();
         return false;
       }

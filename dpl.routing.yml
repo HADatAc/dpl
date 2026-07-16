@@ -38,7 +38,7 @@ dpl.add_platform:
   path: 'dpl/manage/addplatform'
   defaults:
     _form: '\Drupal\dpl\Form\AddPlatformForm'
-    _title: 'Add Platform'
+    _title_callback: '\Drupal\dpl\Form\AddPlatformForm::pageTitle'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'
@@ -49,7 +49,7 @@ dpl.edit_platform:
   path: 'dpl/manage/editplatform/{platformuri}'
   defaults:
     _form: '\Drupal\dpl\Form\EditPlatformForm'
-    _title: 'Edit Platform'
+    _title_callback: '\Drupal\dpl\Form\EditPlatformForm::pageTitle'
   requirements:
     _permission: 'access content'
     _custom_access_check: 'TRUE'

@@ -79,6 +79,9 @@ class ExecuteExposeStreamForm extends FormBase {
     // Globals
     $api = \Drupal::service('rep.api_connector');
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     if (($mode == NULL) ||
         ($mode != 'expose')) {
       \Drupal::messenger()->addError(t("Invalid Stream expose operation."));
@@ -128,17 +131,17 @@ class ExecuteExposeStreamForm extends FormBase {
 
     if ($this->getStream()->method === 'Files') {
       if (!isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing both STUDY and SEMANTIC DATA DICTIONARY.";
+        $validationError = "Stream is missing both ".$preferred_study." and SEMANTIC DATA DICTIONARY.";
       }
       if (!isset($this->getStream()->study) && isset($this->getStream()->semanticDataDictionary)) {
-        $validationError = "Stream is missing associated STUDY.";
+        $validationError = "Stream is missing associated ".$preferred_study.".";
       }
       if (isset($this->getStream()->study) && !isset($this->getStream()->semanticDataDictionary)) {
         $validationError = "Stream is missing associated SEMANTIC DATA DICTIONARY.";
       }
     } else {
       if (!isset($this->getStream()->study) ) {
-        $validationError = "Stream is missing STUDY.";
+        $validationError = "Stream is missing ".$preferred_study.".";
       }
     }
 
@@ -155,10 +158,9 @@ class ExecuteExposeStreamForm extends FormBase {
       ];
     }
 
-    $uri_string = Utils::namespaceUri($this->getStream()->uri);
-    $href = $root_url . REPGUI::DESCRIBE_PAGE . base64_encode($uri_string);
-
-    $link_html = '<a target="_new" href="' . $href . '" target="_blank">' . $uri_string . '</a>';
+    $full_uri = (string) ($this->getStream()->uri ?? '');
+    $uri_string = Utils::namespaceUri($full_uri);
+    $link_html = Utils::describeAnchor($full_uri, $uri_string);
 
     $form['stream_uri'] = [
       '#type'   => 'markup',
@@ -173,7 +175,7 @@ class ExecuteExposeStreamForm extends FormBase {
     ];
     $form['stream_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#default_value' => $studyLabel,
       '#disabled' => TRUE,
     ];

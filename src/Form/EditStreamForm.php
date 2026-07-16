@@ -55,6 +55,9 @@ class EditStreamForm extends FormBase {
     $form['#attached']['library'][] = 'core/drupal.states';
     $form['#attached']['library'][] = 'core/jquery.once';
 
+    // Study Prefered name
+    $preferred_study = \Drupal::config('rep.settings')->get('preferred_study') ?? 'study';
+
     // 1) Load the existing Stream via API.
     $api = \Drupal::service('rep.api_connector');
     $decodedUri = base64_decode($streamuri);
@@ -85,10 +88,10 @@ class EditStreamForm extends FormBase {
           $topics[] = [
             'topic'      => $item->label ?? '',
             'deployment' => $dplObj
-              ? Utils::trimAutoCompleteString($dplObj->label, $dplObj->uri)
+              ? Utils::trimPreserveBracket(Utils::fieldToAutocomplete($dplObj->uri, $dplObj->label), 127)
               : '',
             'sdd'        => $sddObj
-              ? Utils::trimAutoCompleteString($sddObj->label, $sddObj->uri)
+              ? Utils::trimPreserveBracket(Utils::fieldToAutocomplete($sddObj->uri, $sddObj->label), 127)
               : '',
             'cellscope'  => is_array($item->cellScopeUri)
               ? ($item->cellScopeUri[0] ?? '')
@@ -103,9 +106,9 @@ class EditStreamForm extends FormBase {
     // 3) Prepare default for deployment autocomplete.
     $deploymentLabel = '';
     if (!empty($this->stream->deployment->uri) && !empty($this->stream->deployment->label)) {
-      $deploymentLabel = Utils::trimAutoCompleteString(
-        $this->stream->deployment->label,
-        $this->stream->deployment->uri
+      $deploymentLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete($this->stream->deployment->uri, $this->stream->deployment->label),
+        127
       );
     }
 
@@ -199,11 +202,11 @@ class EditStreamForm extends FormBase {
     // Study autocomplete field.
     $form['tabs']['tab_content']['tab1']['stream_study'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Study'),
+      '#title' => $this->t($preferred_study),
       '#autocomplete_route_name' => 'std.study_autocomplete',
-      '#default_value' => Utils::fieldToAutocomplete(
-        $this->stream->studyUri,
-        $this->stream->study->label
+      '#default_value' => Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete($this->stream->studyUri, $this->stream->study->label),
+        127
       ),
     ];
     // Version (readonly).
@@ -251,9 +254,9 @@ class EditStreamForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Semantic Data Dictionary'),
       '#autocomplete_route_name' => 'std.semanticdatadictionary_autocomplete',
-      '#default_value' => Utils::fieldToAutocomplete(
-        $this->stream->semanticDataDictionaryUri,
-        $this->stream->semanticDataDictionary->label
+      '#default_value' => Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete($this->stream->semanticDataDictionaryUri, $this->stream->semanticDataDictionary->label),
+        127
       ),
     ];
     // Cell Scope URI field.

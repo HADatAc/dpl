@@ -6,6 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Component\Utility\Xss;
+use Drupal\rep\Utils;
 use Drupal\rep\Vocabulary\VSTOI;
 
 /**
@@ -83,8 +84,13 @@ class AutocompleteController extends ControllerBase{
       if (isset($element->label, $element->uri)
           && $element->label !== ''
           && $element->uri !== '') {
+        $rawValue = Utils::fieldToAutocomplete($element->uri, $element->label);
+        $value = Utils::trimPreserveBracket($rawValue, 127);
+        if ($value === '') {
+          $value = '[' . $element->uri . ']';
+        }
         $results[] = [
-          'value' => $element->label . ' [' . $element->uri . ']',
+          'value' => $value,
           'label' => $element->label,
         ];
       }

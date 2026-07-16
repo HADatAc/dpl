@@ -44,9 +44,10 @@ class AddInstanceForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $elementtype = NULL) {
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_component = \Drupal::config('rep.settings')->get('preferred_component') ?? 'component';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
     //dpm($elementtype);
-    // Does the repo have a social network?
-    $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
 
     // MODAL
     $form['#attached']['library'][] = 'rep/rep_modal';
@@ -61,22 +62,22 @@ class AddInstanceForm extends FormBase {
     $this->setElementName(NULL);
     $autocomplete = '';
     if ($elementtype == 'platforminstance') {
-      $this->setElementName("Platform Instance");
+      $this->setElementName(ucfirst($preferred_platform) . " Instance");
       $autocomplete = 'dpl.platform_autocomplete';
       $treepath = 'platform';
-      $treename = 'Platform';
+      $treename = ucfirst($preferred_platform);
     }
     if ($elementtype == 'instrumentinstance') {
-      $this->setElementName("Instrument Instance");
+      $this->setElementName(ucfirst($preferred_instrument)." Instance");
       $autocomplete = 'dpl.instrument_autocomplete';
       $treepath = 'instrument';
-      $treename = 'Instrument';
+      $treename = ucfirst($preferred_instrument);
     }
     if ($elementtype == 'componentinstance') {
-      $this->setElementName("Component Instance");
+      $this->setElementName(ucfirst($preferred_component)." Instance");
       $autocomplete = 'dpl.component_autocomplete';
       $treepath = 'component';
-      $treename = 'Component';
+      $treename = ucfirst($preferred_component);
     }
 
     if ($this->getElementName() == NULL) {
@@ -137,26 +138,22 @@ class AddInstanceForm extends FormBase {
       '#type' => 'date',
       '#title' => $this->t('Acquisition Date'),
     ];
-    if ($socialEnabled) {
-      $form['instance_owner'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Owner'),
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'organization',
-        ],
-      ];
-      $form['instance_maintainer'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Maintainer'),
-        // '#required' => TRUE,
-        '#autocomplete_route_name'       => 'rep.social_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'entityType' => 'person',
-        ],
-      ];
-    }
+    $form['instance_owner'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Owner'),
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
+    $form['instance_maintainer'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Maintainer'),
+      '#autocomplete_route_name'       => 'rep.social_autocomplete',
+      '#autocomplete_route_parameters' => [
+        'entityType' => 'agent',
+      ],
+    ];
     // Group container to lay out fields inline
     $form['damage_wrapper'] = [
       '#type' => 'container',
@@ -292,7 +289,6 @@ class AddInstanceForm extends FormBase {
       $useremail = \Drupal::currentUser()->getEmail();
       $newInstanceUri = Utils::uriGen($this->getElementType());
 
-      $socialEnabled = \Drupal::config('rep.settings')->get('social_conf');
       // $isDamaged  = $form_state->getValue('is_damaged') ? 'true' : 'false';
       // $damageDate = $form_state->getValue('has_damage_date') ?: '';
 
@@ -309,11 +305,9 @@ class AddInstanceForm extends FormBase {
         // 'isDamaged'         => $isDamaged === 'true',
       ];
 
-      // 2) Conditionally add owner/maintainer
-      if ($socialEnabled) {
-        $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
-        $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
-      }
+      // 2) Owner and maintainer accept organizations and people.
+      $payload['hasOwnerUri']      = Utils::uriFromAutocomplete($form_state->getValue('instance_owner'));
+      $payload['hasMaintainerUri'] = Utils::uriFromAutocomplete($form_state->getValue('instance_maintainer'));
 
       // 3) Conditionally add damage date
       // if ($isDamaged === 'true' && $damageDate) {
@@ -327,13 +321,43 @@ class AddInstanceForm extends FormBase {
       $streamJson = json_encode($payload);
 
       $api = \Drupal::service('rep.api_connector');
-      $api->elementAdd($this->getElementType(),$streamJson);
+      $apiResponse = $api->elementAdd($this->getElementType(), $streamJson);
+      $parsed = $api->parseObjectResponse($apiResponse, 'elementAdd');
+      if ($parsed === NULL) {
+        throw new \RuntimeException('API rejected instance creation payload.');
+      }
+
+      // Guard against responses that are already decoded but logically failed.
+      $decodedResponse = NULL;
+      if (is_string($apiResponse)) {
+        $decodedResponse = json_decode($apiResponse);
+      }
+      elseif (is_array($apiResponse)) {
+        $decodedResponse = (object) $apiResponse;
+      }
+      elseif (is_object($apiResponse)) {
+        $decodedResponse = $apiResponse;
+      }
+
+      if (is_object($decodedResponse) && isset($decodedResponse->isSuccessful) && !$decodedResponse->isSuccessful) {
+        $errorMessage = t('API service failed to add @name.', ['@name' => strtolower($this->getElementName())]);
+        if (isset($decodedResponse->body) && is_string($decodedResponse->body) && $decodedResponse->body !== '') {
+          $errorMessage = $decodedResponse->body;
+        }
+        throw new \RuntimeException((string) $errorMessage);
+      }
+
+      $verify = $api->parseObjectResponse($api->getUri($newInstanceUri), 'getUri');
+      if ($verify === NULL) {
+        throw new \RuntimeException('Instance was not persisted after create call.');
+      }
+
       \Drupal::messenger()->addMessage(t($this->getElementName() . " has been added successfully."));
       self::backUrl();
       return;
 
     }catch(\Exception $e){
-      \Drupal::messenger()->addMessage(t("An error occurred while adding stream: ".$e->getMessage()));
+      \Drupal::messenger()->addError(t("An error occurred while adding instance: ".$e->getMessage()));
       self::backUrl();
       return;
     }

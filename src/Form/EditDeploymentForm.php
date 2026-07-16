@@ -35,6 +35,9 @@ class EditDeploymentForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $deploymenturi = NULL) {
     $api = \Drupal::service('rep.api_connector');
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+    $preferred_platform = \Drupal::config('rep.settings')->get('preferred_platform') ?? 'platform';
+
     // RETRIEVE DEPLOYMENT
     $uri_decode=base64_decode($deploymenturi);
     $rawresponse = $api->getUri($uri_decode);
@@ -51,18 +54,24 @@ class EditDeploymentForm extends FormBase {
     if (isset($this->getDeployment()->platformInstance) &&
         isset($this->getDeployment()->platformInstance->uri) &&
         isset($this->getDeployment()->platformInstance->label)) {
-      $platformInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->platformInstance->uri,
-        $this->getDeployment()->platformInstance->label
+      $platformInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->platformInstance->uri,
+          $this->getDeployment()->platformInstance->label
+        ),
+        127
       );
     }
     $instrumentInstanceLabel = ' ';
     if (isset($this->getDeployment()->instrumentInstance) &&
         isset($this->getDeployment()->instrumentInstance->uri) &&
         isset($this->getDeployment()->instrumentInstance->label)) {
-      $instrumentInstanceLabel = Utils::fieldToAutocomplete(
-        $this->getDeployment()->instrumentInstance->uri,
-        $this->getDeployment()->instrumentInstance->label
+      $instrumentInstanceLabel = Utils::trimPreserveBracket(
+        Utils::fieldToAutocomplete(
+          $this->getDeployment()->instrumentInstance->uri,
+          $this->getDeployment()->instrumentInstance->label
+        ),
+        127
       );
     }
 
@@ -70,13 +79,13 @@ class EditDeploymentForm extends FormBase {
 
     $form['deployment_platform_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Platform Instance'),
+      '#title' => $this->t(ucfirst($preferred_platform) . ' Instance'),
       '#default_value' => $platformInstanceLabel,
       '#autocomplete_route_name' => 'dpl.platforminstance_autocomplete',
     ];
     $form['deployment_instrument_instance'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Instrument Instance'),
+      '#title' => $this->t(ucfirst($preferred_instrument).' Instance'),
       '#default_value' => $instrumentInstanceLabel,
       '#autocomplete_route_name' => 'dpl.instrumentinstance_autocomplete',
     ];
@@ -136,6 +145,8 @@ class EditDeploymentForm extends FormBase {
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
+    $preferred_instrument = \Drupal::config('rep.settings')->get('preferred_instrument') ?? 'instrument';
+
     if ($button_name === 'back') {
       self::backUrl();
       return;
@@ -156,7 +167,7 @@ class EditDeploymentForm extends FormBase {
 
     $finalLabel = 'a deployment';
     if ($platformInstanceName == '' && $instrumentInstanceName != '') {
-      $finalLabel = 'a deployment with instrument ' . $instrumentInstanceName;
+      $finalLabel = 'a deployment with '.lcfirst($preferred_instrument).' ' . $instrumentInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName == '') {
       $finalLabel = 'a deployment @ ' . $platformInstanceName;
     } else if ($platformInstanceName != '' && $instrumentInstanceName != '') {

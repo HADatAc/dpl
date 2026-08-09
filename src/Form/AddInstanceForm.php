@@ -8,6 +8,7 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
+use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\VSTOI;
 
 class AddInstanceForm extends FormBase {
@@ -263,13 +264,13 @@ class AddInstanceForm extends FormBase {
 
     $hascoType = '';
     if ($this->getElementType() == 'platforminstance') {
-      $hascoType = VSTOI::PLATFORM_INSTANCE;
+      $hascoType = HASCO::PLATFORM_INSTANCE;
     }
     if ($this->getElementType() == 'instrumentinstance') {
-      $hascoType = VSTOI::INSTRUMENT_INSTANCE;
+      $hascoType = HASCO::INSTRUMENT_INSTANCE;
     }
     if ($this->getElementType() == 'componentinstance') {
-      $hascoType = VSTOI::COMPONENT_INSTANCE;
+      $hascoType = HASCO::COMPONENT_INSTANCE;
     }
 
     $typeUri = '';

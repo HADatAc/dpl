@@ -8,6 +8,7 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\rep\Constant;
 use Drupal\rep\Utils;
+use Drupal\rep\Vocabulary\HASCO;
 use Drupal\rep\Vocabulary\VSTOI;
 
 class EditInstanceForm extends FormBase {
@@ -81,19 +82,19 @@ class EditInstanceForm extends FormBase {
 
     $this->setElementName(NULL);
     $autocomplete = '';
-    if ($this->getElement()->hascoTypeUri == VSTOI::PLATFORM_INSTANCE) {
+    if ($this->getElement()->hascoTypeUri == HASCO::PLATFORM_INSTANCE) {
       $this->setElementName(ucfirst($preferred_platform) . " Instance");
       $this->setElementType("platforminstance");
       $autocomplete = 'dpl.platform_autocomplete';
       $treepath = 'platform';
       $treename = ucfirst($preferred_platform);
-    } else if ($this->getElement()->hascoTypeUri == VSTOI::INSTRUMENT_INSTANCE) {
+    } else if ($this->getElement()->hascoTypeUri == HASCO::INSTRUMENT_INSTANCE) {
       $this->setElementName(ucfirst($preferred_instrument)." Instance");
       $this->setElementType("instrumentinstance");
       $autocomplete = 'dpl.instrument_autocomplete';
       $treepath = 'instrument';
       $treename = ucfirst($preferred_instrument);
-    } else if ($this->getElement()->hascoTypeUri == VSTOI::COMPONENT_INSTANCE) {
+    } else if ($this->getElement()->hascoTypeUri == HASCO::COMPONENT_INSTANCE) {
       $this->setElementName(ucfirst($preferred_component)." Instance");
       $this->setElementType("componentinstance");
       $autocomplete = 'dpl.component_autocomplete';

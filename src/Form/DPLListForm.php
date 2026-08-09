@@ -117,7 +117,7 @@ class DPLListForm extends FormBase {
 
       // DEPLOYMENT
       case "deployment":
-        $class_name = $preferred_instrument . "s";
+        $class_name = "Deployments";
         $header = Deployment::generateHeader();
         $output = Deployment::generateOutput($this->getList());
         break;
